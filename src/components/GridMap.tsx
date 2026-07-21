@@ -214,9 +214,7 @@ export default function GridMap({
     if (map.getLayer('hvdc')) {
       map.setFilter(
         'hvdc',
-        network.construction
-          ? null
-          : (['==', ['get', 'status'], 'operational'] as never),
+        network.construction ? null : (['==', ['get', 'status'], 'operational'] as never),
       )
     }
     vis('carto', tiles)
@@ -272,6 +270,9 @@ export default function GridMap({
     pinnedRef.current = false
     hoverIdRef.current = null
     map.removeFeatureState({ source: 'stations' })
+    // The basemap differs per region (eu / na / merged for ALL) — without
+    // this, switching e.g. GB → ALL leaves the US floating on open sea.
+    src('land')?.setData(data.basemap as never)
     src('stations')?.setData(data.stations as never)
     src('transmission')?.setData(data.transmission as never)
     src('interconnectors')?.setData(data.interconnectors as never)
@@ -290,5 +291,12 @@ export default function GridMap({
     return () => clearTimeout(t)
   }, [resizeSignal])
 
-  return <div ref={containerRef} className="map-container" role="application" aria-label="Map of UK energy infrastructure" />
+  return (
+    <div
+      ref={containerRef}
+      className="map-container"
+      role="application"
+      aria-label="Map of UK energy infrastructure"
+    />
+  )
 }

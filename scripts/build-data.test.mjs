@@ -1,6 +1,13 @@
 // Pipeline unit tests (vitest picks up *.test.mjs too).
 import { describe, expect, it } from 'vitest'
-import { parseCapacityMW, parseVoltClass, simplify } from './pipeline-utils.mjs'
+import {
+  clipRingToBox,
+  parseCapacityMW,
+  parseVoltClass,
+  simplify,
+  unwrapRing,
+} from './pipeline-utils.mjs'
+import { buildRegionBasemap } from './basemap.mjs'
 
 describe('parseCapacityMW', () => {
   it('parses plain MW', () => {
@@ -69,5 +76,127 @@ describe('simplify', () => {
       [1, 1],
     ]
     expect(simplify(corner, 0.001)).toHaveLength(3)
+  })
+})
+
+describe('unwrapRing', () => {
+  it('leaves ordinary rings alone', () => {
+    const ring = [
+      [10, 50],
+      [11, 50],
+      [11, 51],
+      [10, 50],
+    ]
+    expect(unwrapRing(ring)).toEqual(ring)
+  })
+  it('makes antimeridian crossings continuous', () => {
+    const ring = [
+      [179, 65],
+      [-179.5, 65], // crosses 180 eastward
+      [-179.5, 66],
+      [179, 66],
+      [179, 65],
+    ]
+    const out = unwrapRing(ring)
+    expect(out.map(([x]) => x)).toEqual([179, 180.5, 180.5, 179, 179])
+    // closed ring stays closed
+    expect(out[0]).toEqual(out[out.length - 1])
+  })
+})
+
+describe('clipRingToBox', () => {
+  const box = [0, 0, 10, 10]
+  it('keeps a fully-inside ring, closed', () => {
+    const ring = [
+      [2, 2],
+      [8, 2],
+      [8, 8],
+      [2, 8],
+      [2, 2],
+    ]
+    const out = clipRingToBox(ring, box)
+    expect(out[0]).toEqual(out[out.length - 1])
+    expect(out.slice(0, -1)).toHaveLength(4)
+  })
+  it('clips a straddling ring to the box edge', () => {
+    const ring = [
+      [-5, 2],
+      [5, 2],
+      [5, 8],
+      [-5, 8],
+      [-5, 2],
+    ]
+    const out = clipRingToBox(ring, box)
+    expect(out).not.toBeNull()
+    for (const [x, y] of out) {
+      expect(x).toBeGreaterThanOrEqual(0)
+      expect(x).toBeLessThanOrEqual(10)
+      expect(y).toBeGreaterThanOrEqual(0)
+      expect(y).toBeLessThanOrEqual(10)
+    }
+    // area is halved: the kept part spans x 0..5, y 2..8
+    expect(Math.max(...out.map(([x]) => x))).toBe(5)
+    expect(Math.min(...out.map(([x]) => x))).toBe(0)
+  })
+  it('returns null when nothing remains', () => {
+    const ring = [
+      [20, 20],
+      [30, 20],
+      [30, 30],
+      [20, 20],
+    ]
+    expect(clipRingToBox(ring, box)).toBeNull()
+  })
+})
+
+describe('buildRegionBasemap', () => {
+  // A toy "Eurasia": crosses the antimeridian like Chukotka does, with a
+  // vertex inside the EU select box.
+  const eurasia = {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-179, 66], // beyond 180 (unwraps to 181)
+          [-179, 70],
+          [100, 70],
+          [10, 55], // inside the eu select box
+          [100, 40],
+          [-179, 66],
+        ],
+      ],
+    },
+  }
+  it('ships antimeridian-crossing land without wrap jumps', () => {
+    const fc = buildRegionBasemap({ features: [eurasia] }, 'eu')
+    expect(fc.features).toHaveLength(1)
+    for (const ring of fc.features[0].geometry.coordinates) {
+      for (let i = 1; i < ring.length; i++) {
+        expect(Math.abs(ring[i][0] - ring[i - 1][0])).toBeLessThanOrEqual(180)
+      }
+      for (const [x] of ring) {
+        expect(x).toBeLessThanOrEqual(180)
+        expect(x).toBeGreaterThanOrEqual(-35)
+      }
+    }
+  })
+  it('drops polygons outside the select box', () => {
+    const antarctica = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-60, -75],
+            [60, -75],
+            [0, -85],
+            [-60, -75],
+          ],
+        ],
+      },
+    }
+    const fc = buildRegionBasemap({ features: [antarctica] }, 'eu')
+    expect(fc.features).toHaveLength(0)
   })
 })

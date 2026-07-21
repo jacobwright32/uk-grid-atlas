@@ -113,6 +113,69 @@ export function smooth(waypoints, samplesPerSeg = 12) {
   return out.map(([x, y]) => [Math.round(x * 1e4) / 1e4, Math.round(y * 1e4) / 1e4])
 }
 
+/**
+ * Remove ±360° longitude jumps from a ring (antimeridian crossings).
+ * Natural Earth rings that cross 180° jump straight to -180°, which fill
+ * renderers draw as a world-wide horizontal slab. Unwrapping makes the
+ * longitudes continuous (they may exceed ±180) so the ring can then be
+ * clipped by a plain rectangle.
+ */
+export function unwrapRing(ring) {
+  if (ring.length < 2) return ring.slice()
+  const out = [ring[0].slice()]
+  let offset = 0
+  for (let i = 1; i < ring.length; i++) {
+    const dx = ring[i][0] - ring[i - 1][0]
+    if (dx > 180) offset -= 360
+    else if (dx < -180) offset += 360
+    out.push([ring[i][0] + offset, ring[i][1]])
+  }
+  return out
+}
+
+/**
+ * Sutherland–Hodgman clip of a closed ring against an axis-aligned box
+ * [minX, minY, maxX, maxY]. Returns a closed ring (first point repeated
+ * last) or null if nothing remains.
+ */
+export function clipRingToBox(ring, [minX, minY, maxX, maxY]) {
+  const closed =
+    ring.length > 1 &&
+    ring[0][0] === ring[ring.length - 1][0] &&
+    ring[0][1] === ring[ring.length - 1][1]
+  let pts = closed ? ring.slice(0, -1) : ring.slice()
+  const inside = [
+    (p) => p[0] >= minX,
+    (p) => p[0] <= maxX,
+    (p) => p[1] >= minY,
+    (p) => p[1] <= maxY,
+  ]
+  const cross = [
+    (a, b) => [minX, a[1] + ((b[1] - a[1]) * (minX - a[0])) / (b[0] - a[0])],
+    (a, b) => [maxX, a[1] + ((b[1] - a[1]) * (maxX - a[0])) / (b[0] - a[0])],
+    (a, b) => [a[0] + ((b[0] - a[0]) * (minY - a[1])) / (b[1] - a[1]), minY],
+    (a, b) => [a[0] + ((b[0] - a[0]) * (maxY - a[1])) / (b[1] - a[1]), maxY],
+  ]
+  for (let e = 0; e < 4 && pts.length; e++) {
+    const out = []
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i]
+      const b = pts[(i + 1) % pts.length]
+      const aIn = inside[e](a)
+      const bIn = inside[e](b)
+      if (aIn) {
+        out.push(a)
+        if (!bIn) out.push(cross[e](a, b))
+      } else if (bIn) {
+        out.push(cross[e](a, b))
+      }
+    }
+    pts = out
+  }
+  if (pts.length < 3) return null
+  return [...pts, pts[0].slice()]
+}
+
 /** Ray-cast point in ring. */
 export function inRing(pt, ring) {
   const [x, y] = pt

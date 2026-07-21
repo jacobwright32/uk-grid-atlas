@@ -16,7 +16,8 @@
     "data:build": "node scripts/build-data.mjs",
     "data:bmumap": "node scripts/build-bmu-map.mjs",
     "data:snapshot": "node scripts/fetch-live-snapshot.mjs",
-    "live:snapshots": "node scripts/fetch-entsoe-snapshot.mjs all"
+    "live:snapshots": "node scripts/fetch-entsoe-snapshot.mjs all",
+    "data:basemap": "node scripts/build-basemap.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.24.0",

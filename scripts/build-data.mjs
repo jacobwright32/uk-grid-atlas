@@ -12,6 +12,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as topojson from 'topojson-client'
 import { INTERCONNECTORS } from './interconnectors.mjs'
+import { buildRegionBasemap, REGIONS } from './basemap.mjs'
 import { inRing, parseCapacityMW, simplify, smooth } from './pipeline-utils.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -35,7 +36,8 @@ const COUNTRIES = {
       probes.every(([lon, lat]) => lat < 50.5 && lon > -0.5) || // Normandy
       probes.every(([lon, lat]) => lat < 53.9 && lon < -6.15), // Republic of Ireland
     /** Voltage (V) → line class (kV tier value stored in `v`). */
-    classify: (volts) => (volts >= 380000 ? 400 : volts >= 264000 ? 275 : volts >= 110000 ? 132 : null),
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 264000 ? 275 : volts >= 110000 ? 132 : null,
   },
   nl: {
     decimalComma: true,
@@ -49,15 +51,22 @@ const COUNTRIES = {
       lon < 2.9, // UK sector
     isForeignLine: () => false, // admin-area query already clips
     classify: (volts) =>
-      volts >= 340000 ? 380 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : volts >= 100000 ? 110 : null,
+      volts >= 340000
+        ? 380
+        : volts >= 200000
+          ? 220
+          : volts >= 140000
+            ? 150
+            : volts >= 100000
+              ? 110
+              : null,
   },
   be: {
     decimalComma: true,
     plantFiles: ['plants_be.json', 'plants_be_pbf.json'],
     seaFiles: ['sea_be.json'],
     lineFile: /^be_lines.*\.json$/,
-    isForeignSea: ([lon, lat]) =>
-      lat < 51.35 || lon < 2.3 || (lon > 3.02 && lat > 51.66), // FR / UK / NL Borssele
+    isForeignSea: ([lon, lat]) => lat < 51.35 || lon < 2.3 || (lon > 3.02 && lat > 51.66), // FR / UK / NL Borssele
     isForeignLine: () => false,
     classify: (volts) =>
       volts >= 340000 ? 380 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : null,
@@ -70,7 +79,15 @@ const COUNTRIES = {
     isForeignSea: ([lon]) => lon > -5.45, // GB Irish Sea farms
     isForeignLine: () => false,
     classify: (volts) =>
-      volts >= 380000 ? 400 : volts >= 264000 ? 275 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+      volts >= 380000
+        ? 400
+        : volts >= 264000
+          ? 275
+          : volts >= 200000
+            ? 220
+            : volts >= 100000
+              ? 110
+              : null,
   },
   dk: {
     decimalComma: true,
@@ -119,19 +136,24 @@ const COUNTRIES = {
     isForeignSea: () => false,
     isForeignLine: () => false,
     classify: (volts) =>
-      volts >= 700000 ? 765 : volts >= 450000 ? 500 : volts >= 300000 ? 345 : volts >= 200000 ? 230 : null,
+      volts >= 700000
+        ? 765
+        : volts >= 450000
+          ? 500
+          : volts >= 300000
+            ? 345
+            : volts >= 200000
+              ? 230
+              : null,
   },
-}
-
-const REGION_CLIPS = {
-  eu: { clip: [-11.5, 47.5, 11.0, 62.7], eps: 0.004, file: 'basemap.json' },
-  na: { clip: [-130.0, 23.0, -64.0, 52.0], eps: 0.006, file: 'basemap_na.json' },
 }
 
 const country = process.argv[2] ?? 'gb'
 const cfg = COUNTRIES[country]
 if (!cfg) {
-  console.error(`Unknown country "${country}" — expected one of: ${Object.keys(COUNTRIES).join(', ')}`)
+  console.error(
+    `Unknown country "${country}" — expected one of: ${Object.keys(COUNTRIES).join(', ')}`,
+  )
   process.exit(1)
 }
 const RAW_DIR = process.argv[3] ?? join(__dirname, '..', '..', 'data')
@@ -460,35 +482,10 @@ const icFeatures = INTERCONNECTORS.filter((ic) => ic.countries.includes(country)
 }))
 
 // ---------------------------------------------------------------- basemap
-const REGION = REGION_CLIPS[cfg.region ?? 'eu']
-const CLIP = REGION.clip
-function clipFeature(geom) {
-  const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
-  const kept = []
-  for (const poly of polys) {
-    const outer = poly[0]
-    const intersects = outer.some(
-      ([x, y]) => x >= CLIP[0] && x <= CLIP[2] && y >= CLIP[1] && y <= CLIP[3],
-    )
-    if (!intersects) continue
-    const simplified = poly.map((ring) => simplify(ring, REGION.eps))
-    if (simplified[0].length >= 4) kept.push(simplified)
-  }
-  return kept
-}
-const landPolys = []
-for (const f of landFC.features) landPolys.push(...clipFeature(f.geometry))
-const basemap = {
-  type: 'FeatureCollection',
-  features: landPolys.map((coords) => ({
-    type: 'Feature',
-    geometry: {
-      type: 'Polygon',
-      coordinates: coords.map((r) => r.map(([x, y]) => [Math.round(x * 1e4) / 1e4, Math.round(y * 1e4) / 1e4])),
-    },
-    properties: {},
-  })),
-}
+// Region coastline: selection + antimeridian-safe clipping live in
+// basemap.mjs (regenerate standalone with `npm run data:basemap`).
+const REGION = REGIONS[cfg.region ?? 'eu']
+const basemap = buildRegionBasemap(landFC, cfg.region ?? 'eu')
 
 // ------------------------------------------------------------------ output
 const write = (dir, name, obj) => {

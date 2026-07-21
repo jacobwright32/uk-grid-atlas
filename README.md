@@ -31,11 +31,12 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
   counts and GW totals track what's visible.
 - **Live output layer (Elexon)** — per-station figures from the free,
   key-less Elexon Insights API, fetched directly by the browser (the API is
-  CORS-open): scheduled output *right now* (PN), the latest fully-metered
+  CORS-open): scheduled output _right now_ (PN), the latest fully-metered
   day (B1610: average/peak/energy + a half-hourly sparkline and load factor
   in every hover card), live interconnector flows on the HVDC lines, and a
-  national transmission-mix strip. Dots resize by live output (bright) over
-  capacity (ghost); toggle it off in the sidebar.
+  national transmission-mix strip (collapsible to a compact chip — it starts
+  collapsed on phones). Dots resize by live output (bright) over capacity
+  (ghost); toggle it off in the sidebar.
 - **Self-contained dark basemap** (Natural Earth coastline) with an optional
   online CARTO raster underlay for street-level context.
 
@@ -62,7 +63,7 @@ docker build -t uk-grid-atlas . && docker run -p 8080:80 uk-grid-atlas
 The build is fully static — any static host works, no server or keys needed.
 
 - **GitHub Pages (included):** push this repo to GitHub (public), then in the
-  repo go to *Settings → Pages* and set **Source: GitHub Actions**. The
+  repo go to _Settings → Pages_ and set **Source: GitHub Actions**. The
   bundled `.github/workflows/deploy.yml` builds and publishes on every push
   to `main`; your site appears at `https://<user>.github.io/<repo>/`.
 - **Netlify:** `npm run build`, then drag the `dist/` folder onto
@@ -103,16 +104,16 @@ France (400/225; the huge 90/63 kV layer is omitted) and Germany (380/220;
 adding another is an afternoon, not a project. The live Elexon layer is
 GB-only; European countries would use ENTSO-E (roadmap).
 
-| Layer | Source | Notes |
-|---|---|---|
-| Generation sites | OpenStreetMap `power=plant` via Overpass | UK admin area + offshore bounding boxes; near-duplicates de-duplicated by name; foreign offshore farms excluded by heuristic |
-| Wind on/offshore split | Computed | Point-in-polygon against Natural Earth 1:10m land |
-| Transmission lines | OpenStreetMap `power=line` | `voltage` ≥ 275 kV UK-wide, ≥ 132 kV within Scotland; geometry simplified (RDP, ~25 m) |
-| Interconnectors / HVDC | Curated (`scripts/interconnectors.mjs`) | OSM submarine coverage is patchy, so routes are schematic; capacities/status from operator publications — update there |
-| Coastline | Natural Earth 1:10m (via `world-atlas`) | Clipped to NW Europe, simplified |
-| BMU → station map | Elexon `reference/bmunits/all` + `scripts/build-bmu-map.mjs` | Fuzzy name match with fuel-type guards + manual overrides; ~87% of BM-registered capacity mapped (rest is mostly retired plant) |
-| Live output (GB) | Elexon Insights API (browser-side) | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline |
-| Live output (EU) | ENTSO-E Transparency API (scheduled workflow) | A73 per-unit day series mapped to stations, A75 daily mix, A11 HVDC border flows → committed to `public/live/<cc>.json` every 6 h by `.github/workflows/live-snapshots.yml` |
+| Layer                  | Source                                                       | Notes                                                                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generation sites       | OpenStreetMap `power=plant` via Overpass                     | UK admin area + offshore bounding boxes; near-duplicates de-duplicated by name; foreign offshore farms excluded by heuristic                                                            |
+| Wind on/offshore split | Computed                                                     | Point-in-polygon against Natural Earth 1:10m land                                                                                                                                       |
+| Transmission lines     | OpenStreetMap `power=line`                                   | `voltage` ≥ 275 kV UK-wide, ≥ 132 kV within Scotland; geometry simplified (RDP, ~25 m)                                                                                                  |
+| Interconnectors / HVDC | Curated (`scripts/interconnectors.mjs`)                      | OSM submarine coverage is patchy, so routes are schematic; capacities/status from operator publications — update there                                                                  |
+| Coastline              | Natural Earth 1:10m (via `world-atlas`)                      | Two region bundles (Europe/Africa + Americas), antimeridian-safe rectangle clip, simplified — regenerate with `npm run data:basemap`                                                    |
+| BMU → station map      | Elexon `reference/bmunits/all` + `scripts/build-bmu-map.mjs` | Fuzzy name match with fuel-type guards + manual overrides; ~87% of BM-registered capacity mapped (rest is mostly retired plant)                                                         |
+| Live output (GB)       | Elexon Insights API (browser-side)                           | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline |
+| Live output (EU)       | ENTSO-E Transparency API (scheduled workflow)                | A73 per-unit day series mapped to stations, A75 daily mix, A11 HVDC border flows → committed to `public/live/<cc>.json` every 6 h by `.github/workflows/live-snapshots.yml`             |
 
 **Licences:** power data © OpenStreetMap contributors, ODbL; Natural Earth is
 public domain. Keep the attribution control visible if you deploy this.
@@ -128,7 +129,7 @@ public domain. Keep the attribution control visible if you deploy this.
   Wales) are intentionally out of scope.
 - Live per-station data exists only for BM-registered (mostly
   transmission-connected) units — roughly 70–80% of GB generation but a
-  minority of *sites*. Embedded solar and small wind have no public
+  minority of _sites_. Embedded solar and small wind have no public
   per-site feed; their hover cards say so. "Now" figures are the unit's
   own submitted schedule (PN), not metered output; metered actuals (B1610)
   lag by about a week. NI stations settle in the SEM, not BM, so they have
@@ -140,12 +141,12 @@ The EU countries' live layer refreshes itself via GitHub Actions once you add
 a free ENTSO-E token:
 
 1. Register at [transparency.entsoe.eu](https://transparency.entsoe.eu) (free).
-2. In *My Account Settings*, generate a **Web API Security Token** (if the
+2. In _My Account Settings_, generate a **Web API Security Token** (if the
    option isn't shown, email transparency@entsoe.eu with subject
    "Restful API access" and your account email — they enable it within a day).
-3. In your GitHub repo: *Settings → Secrets and variables → Actions →
-   New repository secret* — name `ENTSOE_TOKEN`, value = the token.
-4. *Actions → Refresh European live snapshots → Run workflow* (it also runs
+3. In your GitHub repo: _Settings → Secrets and variables → Actions →
+   New repository secret_ — name `ENTSOE_TOKEN`, value = the token.
+4. _Actions → Refresh European live snapshots → Run workflow_ (it also runs
    itself every 6 hours from then on).
 
 Each run finds the latest metered day per country, maps generation units to
@@ -201,24 +202,25 @@ Design decisions worth knowing:
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Type-check + production build |
-| `npm run build:single` | Self-contained single-file build |
-| `npm run test` | Vitest unit tests (lib + pipeline) |
-| `npm run lint` | oxlint |
-| `npm run format` | Prettier |
-| `npm run data:fetch` / `data:build` | Refresh the dataset |
+| Command                             | What it does                                          |
+| ----------------------------------- | ----------------------------------------------------- |
+| `npm run dev`                       | Vite dev server with HMR                              |
+| `npm run build`                     | Type-check + production build                         |
+| `npm run build:single`              | Self-contained single-file build                      |
+| `npm run test`                      | Vitest unit tests (lib + pipeline)                    |
+| `npm run lint`                      | oxlint                                                |
+| `npm run format`                    | Prettier                                              |
+| `npm run data:fetch` / `data:build` | Refresh the dataset                                   |
+| `npm run data:basemap`              | Rebuild just the coastline bundles from Natural Earth |
 
 ## Environment
 
-| Variable | Effect |
-|---|---|
+| Variable               | Effect                                              |
+| ---------------------- | --------------------------------------------------- |
 | `VITE_DEFAULT_TILES=1` | Start with the online CARTO raster underlay enabled |
 
 ---
 
-*Data extract date is shown in the sidebar. Power data © OpenStreetMap
+_Data extract date is shown in the sidebar. Power data © OpenStreetMap
 contributors (ODbL) · Coastline: Natural Earth · Interconnector registry
-curated from operator publications.*
+curated from operator publications._

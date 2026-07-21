@@ -30,6 +30,8 @@ export default function App() {
   const [tiles, setTiles] = useState(DEFAULT_TILES)
   const [liveMode, setLiveMode] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  // The mix panel crowds small screens — start it collapsed on phones.
+  const [mixOpen, setMixOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const [resizeSignal, setResizeSignal] = useState(0)
 
   useEffect(() => {
@@ -163,12 +165,32 @@ export default function App() {
         />
         {country.hasLive && live?.mix && mixRows.length > 0 && (
           <div className="mixstrip-dock">
-            <MixStrip
-              mix={live.mix}
-              rows={mixRows}
-              mode={live.basis === 'entsoe' ? 'daily' : live.source === 'snapshot' ? 'snapshot' : 'live'}
-              title={live.basis === 'entsoe' ? `${country.name} generation mix` : 'GB transmission mix'}
-            />
+            {mixOpen ? (
+              <MixStrip
+                mix={live.mix}
+                rows={mixRows}
+                mode={
+                  live.basis === 'entsoe'
+                    ? 'daily'
+                    : live.source === 'snapshot'
+                      ? 'snapshot'
+                      : 'live'
+                }
+                title={
+                  live.basis === 'entsoe' ? `${country.name} generation mix` : 'GB transmission mix'
+                }
+                onClose={() => setMixOpen(false)}
+              />
+            ) : (
+              <button
+                type="button"
+                className="mixstrip-reopen"
+                aria-label="Show the generation mix panel"
+                onClick={() => setMixOpen(true)}
+              >
+                ⚡ Mix · {fmtGW(live.mix.totalMW + Math.max(0, live.mix.importMW))}
+              </button>
+            )}
           </div>
         )}
       </main>
