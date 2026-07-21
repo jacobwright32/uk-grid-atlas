@@ -1,0 +1,39 @@
+name: Refresh European live snapshots
+
+on:
+  schedule:
+    - cron: '17 */6 * * *' # every 6 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-snapshots
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Fetch ENTSO-E snapshots
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: node scripts/fetch-entsoe-snapshot.mjs all
+      - name: Commit refreshed snapshots
+        run: |
+          git config user.name "grid-atlas-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/live data/entsoe-maps || true
+          if git diff --cached --quiet; then
+            echo "No snapshot changes."
+          else
+            git commit -m "chore: refresh European live snapshots"
+            git push
+          fi

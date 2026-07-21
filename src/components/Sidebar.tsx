@@ -25,9 +25,12 @@ interface Props {
   onLiveMode: (on: boolean) => void
 }
 
-function liveStatusLine(status: LiveStatus, live: LiveData | null): string {
-  if (status === 'loading') return 'Connecting to Elexon…'
-  if (status === 'unavailable') return 'Live feed unreachable — showing infrastructure only.'
+function liveStatusLine(status: LiveStatus, live: LiveData | null, kind: string): string {
+  if (status === 'loading') return kind === 'entsoe' ? 'Loading ENTSO-E snapshot…' : 'Connecting to Elexon…'
+  if (status === 'unavailable')
+    return kind === 'entsoe'
+      ? 'No snapshot yet — add the ENTSOE_TOKEN repo secret and run the "Refresh European live snapshots" workflow.'
+      : 'Live feed unreachable — showing infrastructure only.'
   const date = live?.meteredDate
     ? new Date(`${live.meteredDate}T12:00:00Z`).toLocaleDateString('en-GB', {
         weekday: 'short',
@@ -36,6 +39,8 @@ function liveStatusLine(status: LiveStatus, live: LiveData | null): string {
       })
     : null
   if (status === 'snapshot') return `Offline — bundled snapshot${date ? ` of ${date}` : ''}.`
+  if (live?.basis === 'entsoe')
+    return `ENTSO-E metered day: ${date ?? '—'} · refreshed every 6 h`
   return `Latest metered day: ${date ?? '—'}${live?.perStationNow ? ' · schedules live' : ''}`
 }
 
@@ -74,11 +79,17 @@ export default function Sidebar({
               />
               <span>Size dots by output (bright) over capacity (ghost)</span>
             </label>
-            <p className="footnote">{liveStatusLine(liveStatus, live)}</p>
-            {live && (
+            <p className="footnote">{liveStatusLine(liveStatus, live, country.liveKind)}</p>
+            {live && country.liveKind === 'elexon' && (
               <p className="footnote">
                 Unit-level data covers transmission-connected stations (~70–80% of GB generation);
                 embedded solar &amp; small sites have no public per-site feed.
+              </p>
+            )}
+            {live && country.liveKind === 'entsoe' && (
+              <p className="footnote">
+                Unit-level data covers plants ≥100 MW (ENTSO-E registry); smaller sites appear in
+                the mix but not per-station.
               </p>
             )}
           </>

@@ -18,7 +18,7 @@ export default function App() {
   const [countryId, setCountryId] = useState<CountryId>(countryFromHash)
   const country = COUNTRIES[countryId]
   const { data, error } = useGridData(countryId)
-  const { status: liveStatus, live, bmuMap } = useLiveData()
+  const { status: liveStatus, live, bmuMap } = useLiveData(country)
   const [enabled, setEnabled] = useState<Set<GroupId>>(allGroupIds)
   const [network, setNetwork] = useState<NetworkToggles>({
     t1: true,
@@ -46,7 +46,9 @@ export default function App() {
   const stats = useMemo(() => (data ? computeStats(data.stations) : null), [data])
   const totals = useMemo(() => (stats ? totalsFor(stats, enabled) : null), [stats, enabled])
   const mixRows = useMemo(() => {
-    if (countryId !== 'gb' || !data || !bmuMap || !live?.mix) return []
+    if (!live?.mix) return []
+    if (live.mixRows) return live.mixRows // ENTSO-E snapshots ship rows ready-made
+    if (countryId !== 'gb' || !data || !bmuMap) return []
     return computeMixRows(
       live.mix,
       fleetCapacity(bmuMap, data.stations),
@@ -159,9 +161,14 @@ export default function App() {
           liveMode={liveMode}
           resizeSignal={resizeSignal}
         />
-        {countryId === 'gb' && live?.mix && mixRows.length > 0 && (
+        {country.hasLive && live?.mix && mixRows.length > 0 && (
           <div className="mixstrip-dock">
-            <MixStrip mix={live.mix} rows={mixRows} isSnapshot={live.source === 'snapshot'} />
+            <MixStrip
+              mix={live.mix}
+              rows={mixRows}
+              mode={live.basis === 'entsoe' ? 'daily' : live.source === 'snapshot' ? 'snapshot' : 'live'}
+              title={live.basis === 'entsoe' ? `${country.name} generation mix` : 'GB transmission mix'}
+            />
           </div>
         )}
       </main>

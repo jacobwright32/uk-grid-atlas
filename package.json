@@ -15,7 +15,8 @@
     "data:fetch": "node scripts/fetch-overpass.mjs",
     "data:build": "node scripts/build-data.mjs",
     "data:bmumap": "node scripts/build-bmu-map.mjs",
-    "data:snapshot": "node scripts/fetch-live-snapshot.mjs"
+    "data:snapshot": "node scripts/fetch-live-snapshot.mjs",
+    "live:snapshots": "node scripts/fetch-entsoe-snapshot.mjs all"
   },
   "dependencies": {
     "maplibre-gl": "^5.24.0",
@@ -29,7 +30,9 @@
     "@types/react-dom": "^19.2.3",
     "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^6.0.3",
+    "fast-xml-parser": "^5.10.1",
     "oxlint": "^1.71.0",
+    "playwright-core": "^1.61.1",
     "prettier": "^3.9.6",
     "topojson-client": "^3.1.0",
     "typescript": "~6.0.2",

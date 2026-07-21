@@ -48,7 +48,9 @@ export default function GridMap({
   const pinnedRef = useRef(false)
   const popupRef = useRef<Popup | null>(null)
   const cardCtxRef = useRef<CardContext>({ live: null, bmuMap: null })
-  cardCtxRef.current = country.hasLive ? { live, bmuMap } : { live: null, bmuMap: null }
+  cardCtxRef.current = country.hasLive
+    ? { live, bmuMap, countryName: country.name }
+    : { live: null, bmuMap: null }
 
   // ------------------------------------------------------------------ init
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function GridMap({
       style: buildBaseStyle(data.basemap),
       bounds: country.bounds,
       fitBoundsOptions: { padding: 24 },
-      minZoom: 3.5,
+      minZoom: 2,
       maxZoom: 15,
       attributionControl: false,
       dragRotate: false,

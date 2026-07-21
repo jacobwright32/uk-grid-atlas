@@ -1,0 +1,288 @@
+/**
+ * fetch-entsoe-snapshot.mjs — bake per-country European live snapshots.
+ *
+ *   ENTSOE_TOKEN=... node scripts/fetch-entsoe-snapshot.mjs [cc|all]
+ *
+ * For each country: finds the latest day with per-unit data (A73), maps
+ * units to map stations (registry from A71 + fuzzy name matching, cached in
+ * data/entsoe-maps/<cc>.json), and writes public/live/<cc>.json with
+ * per-station day series, the daily generation mix, and HVDC border flows.
+ * Run by .github/workflows/live-snapshots.yml on a schedule.
+ */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+  ENTSOE_COUNTRIES,
+  EntsoeClient,
+  FLOW_BORDERS,
+  PSR_BUCKETS,
+  PSR_COMPAT,
+  dayWindow,
+  parseSeries,
+  stationDayFromSeries,
+} from './entsoe.mjs'
+import { INTERCONNECTORS } from './interconnectors.mjs'
+import { jaccard, stemTokens, tokens } from './live-matching.mjs'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const ROOT = join(__dirname, '..')
+const OUT_DIR = join(ROOT, 'public', 'live')
+const MAP_DIR = join(ROOT, 'data', 'entsoe-maps')
+mkdirSync(OUT_DIR, { recursive: true })
+mkdirSync(MAP_DIR, { recursive: true })
+
+const token = process.env.ENTSOE_TOKEN
+if (!token) {
+  console.log('ENTSOE_TOKEN not set — skipping European snapshots (nothing to do).')
+  process.exit(0)
+}
+const client = new EntsoeClient(token)
+
+const target = process.argv[2] ?? 'all'
+const countryIds = target === 'all' ? Object.keys(ENTSOE_COUNTRIES) : [target]
+
+const isoDaysAgo = (n) => {
+  const d = new Date(Date.now() - n * 24 * 3600 * 1000)
+  return d.toISOString().slice(0, 10)
+}
+
+// --------------------------------------------------- unit → station mapping
+function buildUnitMap(cc, units) {
+  const stations = JSON.parse(
+    readFileSync(join(ROOT, 'src', 'data', cc, 'stations.json'), 'utf8'),
+  ).features
+  const index = stations
+    .filter((f) => f.properties.name !== 'Unnamed site')
+    .map((f) => ({ id: f.properties.id, fuel: f.properties.fuel, toks: tokens(f.properties.name) }))
+
+  const overridesPath = join(MAP_DIR, `${cc}-overrides.json`)
+  const overrides = existsSync(overridesPath)
+    ? JSON.parse(readFileSync(overridesPath, 'utf8'))
+    : {}
+
+  const byUnit = {}
+  const unmatched = []
+  for (const u of units) {
+    if (!u.unitEic || !u.unitName) continue
+    if (overrides[u.unitEic]) {
+      byUnit[u.unitEic] = overrides[u.unitEic]
+      continue
+    }
+    const compat = PSR_COMPAT[u.psrType] ?? PSR_COMPAT.B20
+    const unitToks = tokens(u.unitName)
+    const stem = stemTokens(unitToks)
+    let best = null
+    for (const st of index) {
+      if (!compat.includes(st.fuel)) continue
+      const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
+      if (score >= 0.5 && (!best || score > best.score)) best = { id: st.id, score }
+    }
+    if (best) byUnit[u.unitEic] = best.id
+    else unmatched.push(u)
+  }
+  unmatched.sort((a, b) => (b.nominalP ?? 0) - (a.nominalP ?? 0))
+  return { byUnit, unmatched }
+}
+
+// --------------------------------------------------------------- main loop
+for (const cc of countryIds) {
+  const cfg = ENTSOE_COUNTRIES[cc]
+  if (!cfg) {
+    console.error(`unknown country ${cc}`)
+    continue
+  }
+  console.log(`\n=== ${cc.toUpperCase()} ===`)
+  try {
+    // 1. Unit registry (A71) — cached, refreshed when older than ~30 days.
+    const mapPath = join(MAP_DIR, `${cc}.json`)
+    let registry = existsSync(mapPath) ? JSON.parse(readFileSync(mapPath, 'utf8')) : null
+    const stale =
+      !registry ||
+      Date.now() - Date.parse(registry.builtAt ?? 0) > 30 * 24 * 3600 * 1000
+    if (stale) {
+      const units = []
+      for (const domain of cfg.unitDomains) {
+        const doc = await client.get({
+          documentType: 'A71',
+          processType: 'A33',
+          in_Domain: domain,
+          ...dayWindow(isoDaysAgo(3)),
+        })
+        for (const s of parseSeries(doc ?? {})) {
+          if (s.unitEic) units.push(s)
+        }
+      }
+      const { byUnit, unmatched } = buildUnitMap(cc, units)
+      registry = {
+        builtAt: new Date().toISOString(),
+        unitCount: units.length,
+        byUnit,
+        unmatchedTop: unmatched.slice(0, 20).map((u) => ({
+          eic: u.unitEic,
+          name: u.unitName,
+          psr: u.psrType,
+          mw: u.nominalP,
+        })),
+      }
+      writeFileSync(mapPath, JSON.stringify(registry, null, 1))
+      console.log(
+        `unit map: ${Object.keys(byUnit).length}/${units.length} matched (${unmatched.length} unmatched — see ${cc}.json unmatchedTop)`,
+      )
+    }
+
+    // 2. Latest day with per-unit actuals (A73), walking back up to 6 days.
+    let day = null
+    let unitSeries = []
+    for (let back = 1; back <= 6 && !day; back++) {
+      const candidate = isoDaysAgo(back)
+      const collected = []
+      for (const domain of cfg.unitDomains) {
+        const doc = await client.get({
+          documentType: 'A73',
+          processType: 'A16',
+          in_Domain: domain,
+          ...dayWindow(candidate),
+        })
+        if (doc) collected.push(...parseSeries(doc))
+      }
+      if (collected.length) {
+        day = candidate
+        unitSeries = collected
+      }
+    }
+    if (!day) {
+      console.warn(`${cc}: no A73 data in lookback window`)
+      continue
+    }
+
+    // 3. Aggregate unit series → stations.
+    const byStation = new Map()
+    let unmappedMW = 0
+    for (const s of unitSeries) {
+      const stationId = registry.byUnit[s.unitEic]
+      if (!stationId) {
+        unmappedMW += Math.max(...s.points.map((p) => p.mw), 0)
+        continue
+      }
+      if (!byStation.has(stationId)) byStation.set(stationId, [])
+      byStation.get(stationId).push(s)
+    }
+    const perStation = {}
+    for (const [stationId, list] of byStation) {
+      const d = stationDayFromSeries(list)
+      if (d) perStation[stationId] = d
+    }
+
+    // 4. Daily mix (A75) → MixRow-shaped buckets (daily average MW).
+    const bucketMW = new Map()
+    for (const domain of cfg.mixDomains) {
+      const doc = await client.get({
+        documentType: 'A75',
+        processType: 'A16',
+        in_Domain: domain,
+        ...dayWindow(day),
+      })
+      for (const s of parseSeries(doc ?? {})) {
+        if (s.outDomain && !s.inDomain) continue // consumption (pumping) series
+        const bucket = PSR_BUCKETS[s.psrType]
+        if (!bucket) continue
+        const perHour = 60 / s.stepMin
+        const mwh = s.points.reduce((a, p) => a + (Number.isFinite(p.mw) ? p.mw / perHour : 0), 0)
+        bucketMW.set(bucket[0], {
+          label: bucket[1],
+          mw: (bucketMW.get(bucket[0])?.mw ?? 0) + mwh / 24,
+        })
+      }
+    }
+
+    // 5. Border flows (A11) for this country's HVDC links, net daily average.
+    const flows = {}
+    let importMW = 0
+    for (const border of FLOW_BORDERS.filter((b) => b.countries.includes(cc))) {
+      const [home, away] = border.pair
+      let net = 0
+      for (const [outD, inD, sign] of [
+        [away, home, +1],
+        [home, away, -1],
+      ]) {
+        const doc = await client.get({
+          documentType: 'A11',
+          out_Domain: outD,
+          in_Domain: inD,
+          ...dayWindow(day),
+        })
+        for (const s of parseSeries(doc ?? {})) {
+          const perHour = 60 / s.stepMin
+          const mwh = s.points.reduce((a, p) => a + (Number.isFinite(p.mw) ? p.mw / perHour : 0), 0)
+          net += (sign * mwh) / 24
+        }
+      }
+      const links = border.links
+        .map((id) => INTERCONNECTORS.find((ic) => ic.id === id))
+        .filter(Boolean)
+      const capSum = links.reduce((a, l) => a + l.capMW, 0) || 1
+      for (const link of links) {
+        flows[link.id] = Math.round((net * link.capMW) / capSum)
+      }
+      importMW += Math.max(0, net)
+    }
+
+    // 6. Write snapshot.
+    const COLORS = {
+      wind: '#199e70',
+      solar: '#c98500',
+      gas: '#3987e5',
+      nuclear: '#9085e9',
+      coal: '#8a8a85',
+      biomass: '#d95926',
+      hydro: '#1899ac',
+      other: '#e66767',
+    }
+    const mixRows = [...bucketMW.entries()]
+      .map(([key, v]) => ({
+        key,
+        label: v.label,
+        color: COLORS[key] ?? '#898781',
+        nowMW: Math.round(v.mw),
+        capMW: 0, // registered-fleet capacity omitted in v1 for EU
+      }))
+      .filter((r) => r.nowMW > 0)
+      .sort((a, b) => b.nowMW - a.nowMW)
+    mixRows.push({
+      key: 'imports',
+      label: importMW >= 0 ? 'Imports (HVDC)' : 'Net export (HVDC)',
+      color: '#2dd4bf',
+      nowMW: Math.round(Math.abs(importMW)),
+      capMW: 0,
+    })
+
+    const totalMW = mixRows.filter((r) => r.key !== 'imports').reduce((a, r) => a + r.nowMW, 0)
+    const snapshot = {
+      version: 1,
+      basis: 'entsoe',
+      date: day,
+      generatedAt: new Date().toISOString(),
+      perStation,
+      mixRows,
+      mix: {
+        time: `${day}T12:00:00Z`,
+        fuels: mixRows
+          .filter((r) => r.key !== 'imports')
+          .map((r) => ({ key: r.key, label: r.label, mw: r.nowMW })),
+        interconnectors: flows,
+        totalMW,
+        importMW: Math.round(importMW),
+      },
+    }
+    writeFileSync(join(OUT_DIR, `${cc}.json`), JSON.stringify(snapshot))
+    console.log(
+      `${cc}: day ${day} · ${Object.keys(perStation).length} stations · mix ${Math.round(
+        totalMW / 100,
+      ) / 10} GW avg · ${Object.keys(flows).length} link flows · unmapped peak ${Math.round(unmappedMW)} MW`,
+    )
+  } catch (err) {
+    console.error(`${cc} failed:`, err.message)
+    process.exitCode = 1
+  }
+}

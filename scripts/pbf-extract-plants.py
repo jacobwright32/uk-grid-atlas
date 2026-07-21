@@ -43,34 +43,44 @@ def main() -> None:
     plant_ways = []  # {id, tags, refs}
     way_refs: dict[int, list[int]] = {}
     needed_nodes: set[int] = set()
-    for obj in osmium.FileProcessor(pbf_path, osmium.osm.WAY):
-        is_plant = obj.tags.get("power") == "plant"
-        is_member = obj.id in rel_member_ways
-        if not is_plant and not is_member:
+    for obj in osmium.FileProcessor(pbf_path, osmium.osm.WAY).with_filter(
+        osmium.filter.KeyFilter("power")
+    ):
+        if obj.tags.get("power") != "plant":
             continue
         refs = [n.ref for n in obj.nodes]
         needed_nodes.update(refs)
-        if is_member:
+        plant_ways.append({"id": obj.id, "tags": dict(obj.tags), "refs": refs})
+    if rel_member_ways:
+        for obj in osmium.FileProcessor(pbf_path, osmium.osm.WAY).with_filter(
+            osmium.filter.IdFilter(rel_member_ways)
+        ):
+            refs = [n.ref for n in obj.nodes]
+            needed_nodes.update(refs)
             way_refs[obj.id] = refs
-        if is_plant:
-            plant_ways.append({"id": obj.id, "tags": dict(obj.tags), "refs": refs})
 
     # ---- pass 3: node plants + locations for needed refs
     node_plants = []
     locations: dict[int, tuple[float, float]] = {}
-    for obj in osmium.FileProcessor(pbf_path, osmium.osm.NODE):
-        if obj.id in needed_nodes:
+    if needed_nodes:
+        for obj in osmium.FileProcessor(pbf_path, osmium.osm.NODE).with_filter(
+            osmium.filter.IdFilter(needed_nodes)
+        ):
             locations[obj.id] = (obj.location.lon, obj.location.lat)
-        if obj.tags and obj.tags.get("power") == "plant":
-            node_plants.append(
-                {
-                    "type": "node",
-                    "id": obj.id,
-                    "tags": dict(obj.tags),
-                    "lat": round(obj.location.lat, 7),
-                    "lon": round(obj.location.lon, 7),
-                }
-            )
+    for obj in osmium.FileProcessor(pbf_path, osmium.osm.NODE).with_filter(
+        osmium.filter.KeyFilter("power")
+    ):
+        if obj.tags.get("power") != "plant":
+            continue
+        node_plants.append(
+            {
+                "type": "node",
+                "id": obj.id,
+                "tags": dict(obj.tags),
+                "lat": round(obj.location.lat, 7),
+                "lon": round(obj.location.lon, 7),
+            }
+        )
 
     def centroid(refs) -> dict | None:
         lons, lats, n = 0.0, 0.0, 0

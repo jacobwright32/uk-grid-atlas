@@ -9,6 +9,7 @@ import type { StationDay } from '../lib/live-core.mjs'
 export interface CardContext {
   live: LiveData | null
   bmuMap: BmuMap | null
+  countryName?: string
 }
 
 /** All popup content is built with DOM APIs + textContent — never innerHTML —
@@ -43,7 +44,8 @@ function sparkline(day: StationDay, color: string): SVGSVGElement {
   svg.setAttribute('role', 'img')
   svg.setAttribute('aria-label', `Half-hourly output, peak ${fmtMW(day.peakMW)}`)
   const max = Math.max(day.peakMW, 1)
-  const x = (i: number) => (i / 47) * (W - 2) + 1
+  const n = Math.max(day.series.length - 1, 1)
+  const x = (i: number) => (i / n) * (W - 2) + 1
   const y = (mw: number) => H - 3 - (mw / max) * (H - 8)
   let d = ''
   let pen = false
@@ -100,7 +102,8 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
 
   // ------------------------------------------------------------ live block
   const live = ctx?.live
-  const mapped = ctx?.bmuMap?.stations[p.id]
+  const mapped =
+    live?.basis === 'entsoe' ? live.perStationDay.has(p.id) : Boolean(ctx?.bmuMap?.stations[p.id])
   if (live && mapped) {
     const block = el('div', 'card-live')
     const nowMW = live.perStationNow?.get(p.id)
@@ -123,7 +126,11 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
           ? ` · ${Math.min(150, Math.round((100 * day.avgMW) / p.capacityMW))}% load factor`
           : ''
       block.appendChild(
-        el('div', 'card-live-head', `Metered ${dateLabel}${live.source === 'snapshot' ? ' (snapshot)' : ''}`),
+        el(
+          'div',
+          'card-live-head',
+          `Metered ${dateLabel}${live.basis === 'entsoe' ? ' (ENTSO-E)' : live.source === 'snapshot' ? ' (snapshot)' : ''}`,
+        ),
       )
       const statRows = [
         row('Day average', fmtMW(day.avgMW)),
@@ -137,7 +144,13 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
     if (block.childNodes.length) root.appendChild(block)
   } else if (live) {
     root.appendChild(
-      el('div', 'card-live-none', 'No unit-level public feed — distribution-connected site'),
+      el(
+        'div',
+        'card-live-none',
+        live.basis === 'entsoe'
+          ? 'No unit-level feed — below the 100 MW ENTSO-E reporting threshold'
+          : 'No unit-level public feed — distribution-connected site',
+      ),
     )
   }
   return root
@@ -185,8 +198,9 @@ export function hvdcCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
 
   const flow = ctx?.live?.mix?.interconnectors[p.id]
   if (flow != null && p.status === 'operational') {
-    const dir = flow >= 0 ? 'importing to GB' : 'exporting from GB'
-    const r = row('Flow now', `${fmtMW(Math.abs(flow))} — ${dir}`)
+    const home = ctx?.countryName ?? 'GB'
+    const dir = flow >= 0 ? `importing to ${home}` : `exporting from ${home}`
+    const r = row(ctx?.live?.basis === 'entsoe' ? 'Flow (day avg)' : 'Flow now', `${fmtMW(Math.abs(flow))} — ${dir}`)
     if (r) {
       r.classList.add('card-live-now')
       root.appendChild(r)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { REAL_COUNTRY_IDS } from '../lib/countries'
+import { COUNTRIES, REAL_COUNTRY_IDS } from '../lib/countries'
 import type { CountryId, RealCountryId } from '../lib/countries'
 import { mergeGridData } from '../lib/merge'
 import type { GridData } from '../lib/types'
@@ -32,7 +32,14 @@ import deStations from '../data/de/stations.json?url'
 import deTransmission from '../data/de/transmission.json?url'
 import deInterconnectors from '../data/de/interconnectors.json?url'
 import deMeta from '../data/de/meta.json?url'
-import basemapUrl from '../data/basemap.json?url'
+import usStations from '../data/us/stations.json?url'
+import usTransmission from '../data/us/transmission.json?url'
+import usInterconnectors from '../data/us/interconnectors.json?url'
+import usMeta from '../data/us/meta.json?url'
+import basemapEuUrl from '../data/basemap.json?url'
+import basemapNaUrl from '../data/basemap_na.json?url'
+
+const BASEMAP_URLS = { eu: basemapEuUrl, na: basemapNaUrl } as const
 
 type Bundle = { stations: string; transmission: string; interconnectors: string; meta: string }
 
@@ -44,6 +51,7 @@ const URLS: Record<RealCountryId, Bundle> = {
   dk: { stations: dkStations, transmission: dkTransmission, interconnectors: dkInterconnectors, meta: dkMeta },
   fr: { stations: frStations, transmission: frTransmission, interconnectors: frInterconnectors, meta: frMeta },
   de: { stations: deStations, transmission: deTransmission, interconnectors: deInterconnectors, meta: deMeta },
+  us: { stations: usStations, transmission: usTransmission, interconnectors: usInterconnectors, meta: usMeta },
 }
 
 async function fetchJSON<T>(url: string): Promise<T> {
@@ -58,7 +66,15 @@ interface State {
 }
 
 const cache = new Map<CountryId, GridData>()
-let basemapCache: GridData['basemap'] | null = null
+const basemapCache = new Map<'eu' | 'na', GridData['basemap']>()
+
+async function loadBasemap(region: 'eu' | 'na'): Promise<GridData['basemap']> {
+  const cached = basemapCache.get(region)
+  if (cached) return cached
+  const bm = await fetchJSON<GridData['basemap']>(BASEMAP_URLS[region])
+  basemapCache.set(region, bm)
+  return bm
+}
 
 async function loadCountry(id: RealCountryId): Promise<GridData> {
   const cached = cache.get(id)
@@ -68,10 +84,9 @@ async function loadCountry(id: RealCountryId): Promise<GridData> {
     fetchJSON<GridData['stations']>(urls.stations),
     fetchJSON<GridData['transmission']>(urls.transmission),
     fetchJSON<GridData['interconnectors']>(urls.interconnectors),
-    basemapCache ? Promise.resolve(basemapCache) : fetchJSON<GridData['basemap']>(basemapUrl),
+    loadBasemap(COUNTRIES[id].region),
     fetchJSON<GridData['meta']>(urls.meta),
   ])
-  basemapCache = basemap
   const data: GridData = { stations, transmission, interconnectors, basemap, meta }
   cache.set(id, data)
   return data

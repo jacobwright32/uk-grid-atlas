@@ -111,7 +111,8 @@ GB-only; European countries would use ENTSO-E (roadmap).
 | Interconnectors / HVDC | Curated (`scripts/interconnectors.mjs`) | OSM submarine coverage is patchy, so routes are schematic; capacities/status from operator publications — update there |
 | Coastline | Natural Earth 1:10m (via `world-atlas`) | Clipped to NW Europe, simplified |
 | BMU → station map | Elexon `reference/bmunits/all` + `scripts/build-bmu-map.mjs` | Fuzzy name match with fuel-type guards + manual overrides; ~87% of BM-registered capacity mapped (rest is mostly retired plant) |
-| Live output | Elexon Insights API (browser-side) | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline |
+| Live output (GB) | Elexon Insights API (browser-side) | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline |
+| Live output (EU) | ENTSO-E Transparency API (scheduled workflow) | A73 per-unit day series mapped to stations, A75 daily mix, A11 HVDC border flows → committed to `public/live/<cc>.json` every 6 h by `.github/workflows/live-snapshots.yml` |
 
 **Licences:** power data © OpenStreetMap contributors, ODbL; Natural Earth is
 public domain. Keep the attribution control visible if you deploy this.
@@ -132,6 +133,26 @@ public domain. Keep the attribution control visible if you deploy this.
   own submitted schedule (PN), not metered output; metered actuals (B1610)
   lag by about a week. NI stations settle in the SEM, not BM, so they have
   no live layer either.
+
+### European live layer (ENTSO-E) — one-time setup
+
+The EU countries' live layer refreshes itself via GitHub Actions once you add
+a free ENTSO-E token:
+
+1. Register at [transparency.entsoe.eu](https://transparency.entsoe.eu) (free).
+2. In *My Account Settings*, generate a **Web API Security Token** (if the
+   option isn't shown, email transparency@entsoe.eu with subject
+   "Restful API access" and your account email — they enable it within a day).
+3. In your GitHub repo: *Settings → Secrets and variables → Actions →
+   New repository secret* — name `ENTSOE_TOKEN`, value = the token.
+4. *Actions → Refresh European live snapshots → Run workflow* (it also runs
+   itself every 6 hours from then on).
+
+Each run finds the latest metered day per country, maps generation units to
+map stations (`data/entsoe-maps/`, fuzzy-matched — check `unmatchedTop` there
+and add overrides in `<cc>-overrides.json` if a big plant is missed), and
+commits fresh snapshots that the site picks up on its next deploy. Until the
+token exists the sidebar simply says the snapshot is awaited; nothing breaks.
 
 ## Architecture
 

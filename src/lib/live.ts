@@ -24,15 +24,52 @@ export interface BmuMap {
 }
 
 export interface LiveData {
+  /** Which pipeline produced this data. */
+  basis: 'elexon' | 'entsoe'
   /** ISO settlement date of the metered day. */
   meteredDate: string | null
   perStationDay: Map<string, StationDay>
-  /** Scheduled output right now (PN), per station. */
+  /** Scheduled output right now (PN), per station — Elexon only. */
   perStationNow: Map<string, number> | null
   nowLabel: string | null
   mix: MixSnapshot | null
-  /** 'live' = fetched now; 'snapshot' = bundled fallback. */
+  /** Pre-computed mix rows (ENTSO-E snapshots ship them ready-made). */
+  mixRows: import('./fleet').MixRow[] | null
+  /** 'live' = fetched now; 'snapshot' = bundled/committed fallback. */
   source: 'live' | 'snapshot'
+}
+
+/** Shape of public/live/<cc>.json written by fetch-entsoe-snapshot.mjs. */
+interface EntsoeSnapshotFile {
+  version: number
+  basis: 'entsoe'
+  date: string
+  generatedAt: string
+  perStation: Record<string, StationDay>
+  mixRows: import('./fleet').MixRow[]
+  mix: MixSnapshot
+}
+
+/** Load a committed European snapshot; null when none exists yet (404). */
+export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | null> {
+  try {
+    const res = await fetch(`live/${countryId}.json`, { signal: AbortSignal.timeout(20_000) })
+    if (!res.ok) return null
+    const snap = (await res.json()) as EntsoeSnapshotFile
+    const perStationDay = new Map<string, StationDay>(Object.entries(snap.perStation))
+    return {
+      basis: 'entsoe',
+      meteredDate: snap.date,
+      perStationDay,
+      perStationNow: null,
+      nowLabel: null,
+      mix: snap.mix,
+      mixRows: snap.mixRows,
+      source: 'live',
+    }
+  } catch {
+    return null
+  }
 }
 
 async function getJSON<T>(url: string, timeoutMs = 30_000): Promise<T> {
@@ -152,21 +189,25 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
 
   if (day || nowData || mix) {
     return {
+      basis: 'elexon',
       meteredDate: day?.date ?? null,
       perStationDay: day?.per ?? snapshotToMap(snapshot),
       perStationNow: nowData?.perStation ?? null,
       nowLabel: nowData?.label ?? null,
       mix,
+      mixRows: null,
       source: 'live',
     }
   }
   // fully offline → bundled snapshot
   return {
+    basis: 'elexon',
     meteredDate: snapshot?.date ?? null,
     perStationDay: snapshotToMap(snapshot),
     perStationNow: null,
     nowLabel: null,
     mix: snapshot?.mix ?? null,
+    mixRows: null,
     source: 'snapshot',
   }
 }

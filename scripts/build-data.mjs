@@ -107,6 +107,25 @@ const COUNTRIES = {
     isForeignLine: () => false,
     classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
   },
+  us: {
+    region: 'na',
+    simplifyEps: 0.0005,
+    coordDp: 4,
+    // Continental US only for v1 (Alaska/Hawaii/PR omitted).
+    plantFiles: ['plants_us_pbf.json'],
+    seaFiles: ['sea_us.json'],
+    lineFile: /^us_lines.*\.json$/,
+    keep: ([lon, lat]) => lat >= 24.2 && lat <= 49.8 && lon >= -125.5 && lon <= -66.4,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) =>
+      volts >= 700000 ? 765 : volts >= 450000 ? 500 : volts >= 300000 ? 345 : volts >= 200000 ? 230 : null,
+  },
+}
+
+const REGION_CLIPS = {
+  eu: { clip: [-11.5, 47.5, 11.0, 62.7], eps: 0.004, file: 'basemap.json' },
+  na: { clip: [-130.0, 23.0, -64.0, 52.0], eps: 0.006, file: 'basemap_na.json' },
 }
 
 const country = process.argv[2] ?? 'gb'
@@ -257,6 +276,7 @@ for (const el of merged) {
   if (capacityMW != null && capacityMW > 1500 && SMALL_FUELS.has(group)) {
     capacityMW = capacityMW / 1000 >= 0.05 ? Math.round(capacityMW) / 1000 : null
   }
+  if (cfg.keep && !cfg.keep(coords)) continue
   const land = onLand(coords)
   // Offshore foreign-zone guard applies to every source: PBF extracts carry
   // a sea buffer that can include neighbours' wind farms (land sites are
@@ -332,10 +352,10 @@ for (const f of lineFiles) {
     let pts = el.geometry.map((g) => [g.lon, g.lat])
     const probes = [pts[0], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]]
     if (cfg.isForeignLine(probes)) continue
-    pts = simplify(pts, 0.00025).map(([x, y]) => [
-      Math.round(x * 1e5) / 1e5,
-      Math.round(y * 1e5) / 1e5,
-    ])
+    if (cfg.keep && !probes.some((p) => cfg.keep(p))) continue
+    const eps = cfg.simplifyEps ?? 0.00025
+    const dpm = 10 ** (cfg.coordDp ?? 5)
+    pts = simplify(pts, eps).map(([x, y]) => [Math.round(x * dpm) / dpm, Math.round(y * dpm) / dpm])
     lineFeatures.push({
       type: 'Feature',
       geometry: { type: 'LineString', coordinates: pts },
@@ -348,6 +368,80 @@ for (const f of lineFiles) {
     })
   }
 }
+
+// ------------------------------------------------- merge contiguous ways
+// OSM chops long circuits into many small ways; joining same-voltage chains
+// at degree-2 junctions collapses tens of thousands of feature envelopes.
+function mergeLines(features) {
+  const key = ([x, y]) => `${x},${y}`
+  const byV = new Map()
+  for (const f of features) {
+    if (!byV.has(f.properties.v)) byV.set(f.properties.v, [])
+    byV.get(f.properties.v).push(f)
+  }
+  const merged = []
+  for (const group of byV.values()) {
+    const ends = new Map() // endpoint key -> [{i, end}]
+    group.forEach((f, i) => {
+      const c = f.geometry.coordinates
+      for (const [pt, end] of [
+        [c[0], 'a'],
+        [c[c.length - 1], 'b'],
+      ]) {
+        const k = key(pt)
+        if (!ends.has(k)) ends.set(k, [])
+        ends.get(k).push({ i, end })
+      }
+    })
+    const used = new Array(group.length).fill(false)
+    const nextAt = (k, notI) => {
+      const list = (ends.get(k) ?? []).filter((e) => !used[e.i] && e.i !== notI)
+      return list.length === 1 && (ends.get(k) ?? []).length === 2 ? list[0] : null
+    }
+    for (let i = 0; i < group.length; i++) {
+      if (used[i]) continue
+      used[i] = true
+      let coords = [...group[i].geometry.coordinates]
+      const names = new Set()
+      const ops = new Set()
+      const collect = (f) => {
+        if (f.properties.name) names.add(f.properties.name)
+        if (f.properties.operator) ops.add(f.properties.operator)
+      }
+      collect(group[i])
+      // extend forward from tail, then backward from head
+      for (const dir of ['tail', 'head']) {
+        for (;;) {
+          const endPt = dir === 'tail' ? coords[coords.length - 1] : coords[0]
+          const nx = nextAt(key(endPt), -1)
+          if (!nx) break
+          used[nx.i] = true
+          collect(group[nx.i])
+          let c = [...group[nx.i].geometry.coordinates]
+          if (dir === 'tail') {
+            if (nx.end === 'b') c.reverse()
+            coords = coords.concat(c.slice(1))
+          } else {
+            if (nx.end === 'a') c.reverse()
+            coords = c.slice(0, -1).concat(coords)
+          }
+        }
+      }
+      merged.push({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: coords },
+        properties: {
+          v: group[i].properties.v,
+          name: names.size === 1 ? [...names][0] : null,
+          operator: ops.size === 1 ? [...ops][0] : null,
+          circuits: null,
+        },
+      })
+    }
+  }
+  return merged
+}
+const mergedLineFeatures = mergeLines(lineFeatures)
 
 // --------------------------------------------------------- interconnectors
 const icFeatures = INTERCONNECTORS.filter((ic) => ic.countries.includes(country)).map((ic) => ({
@@ -366,7 +460,8 @@ const icFeatures = INTERCONNECTORS.filter((ic) => ic.countries.includes(country)
 }))
 
 // ---------------------------------------------------------------- basemap
-const CLIP = [-11.5, 47.5, 11.0, 62.7]
+const REGION = REGION_CLIPS[cfg.region ?? 'eu']
+const CLIP = REGION.clip
 function clipFeature(geom) {
   const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
   const kept = []
@@ -376,7 +471,7 @@ function clipFeature(geom) {
       ([x, y]) => x >= CLIP[0] && x <= CLIP[2] && y >= CLIP[1] && y <= CLIP[3],
     )
     if (!intersects) continue
-    const simplified = poly.map((ring) => simplify(ring, 0.004))
+    const simplified = poly.map((ring) => simplify(ring, REGION.eps))
     if (simplified[0].length >= 4) kept.push(simplified)
   }
   return kept
@@ -403,16 +498,16 @@ const write = (dir, name, obj) => {
 }
 
 write(OUT_DIR, 'stations.json', { type: 'FeatureCollection', features: stationFeatures })
-write(OUT_DIR, 'transmission.json', { type: 'FeatureCollection', features: lineFeatures })
+write(OUT_DIR, 'transmission.json', { type: 'FeatureCollection', features: mergedLineFeatures })
 write(OUT_DIR, 'interconnectors.json', { type: 'FeatureCollection', features: icFeatures })
 write(OUT_DIR, 'meta.json', {
   generated: new Date().toISOString().slice(0, 10),
   stationCount: stationFeatures.length,
-  lineCount: lineFeatures.length,
+  lineCount: mergedLineFeatures.length,
   attribution: 'Power data © OpenStreetMap contributors (ODbL). Coastline: Natural Earth.',
 })
 const sharedDir = join(__dirname, '..', 'src', 'data')
-writeFileSync(join(sharedDir, 'basemap.json'), JSON.stringify(basemap))
+writeFileSync(join(sharedDir, REGION.file), JSON.stringify(basemap))
 
 console.log(`stations: ${stationFeatures.length}, lines: ${lineFeatures.length}`)
 const byFuel = {}

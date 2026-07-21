@@ -44,10 +44,12 @@ def main() -> None:
         )
         needed_nodes.update(refs)
 
-    # ---- pass 2: locations for just those nodes
+    # ---- pass 2: locations for just those nodes (C-side id filter)
     locations: dict[int, tuple[float, float]] = {}
-    for obj in osmium.FileProcessor(pbf_path, osmium.osm.NODE):
-        if obj.id in needed_nodes:
+    if needed_nodes:
+        for obj in osmium.FileProcessor(pbf_path, osmium.osm.NODE).with_filter(
+            osmium.filter.IdFilter(needed_nodes)
+        ):
             locations[obj.id] = (obj.location.lon, obj.location.lat)
 
     # ---- assemble Overpass-shaped output
