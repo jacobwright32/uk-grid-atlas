@@ -3,6 +3,7 @@ import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { GridData, GroupId, NetworkToggles } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
+import type { CountryConfig } from '../lib/countries'
 import { stationFilter } from '../lib/filter'
 import { buildBaseStyle, CARTO_SOURCE } from '../map/style'
 import {
@@ -15,13 +16,9 @@ import {
 import { cardFor } from '../map/popup'
 import type { CardContext } from '../map/popup'
 
-const UK_BOUNDS: [[number, number], [number, number]] = [
-  [-11.5, 49.3],
-  [4.5, 61.3],
-]
-
 interface Props {
   data: GridData
+  country: CountryConfig
   enabledGroups: ReadonlySet<GroupId>
   network: NetworkToggles
   tiles: boolean
@@ -35,6 +32,7 @@ interface Props {
 
 export default function GridMap({
   data,
+  country,
   enabledGroups,
   network,
   tiles,
@@ -50,7 +48,7 @@ export default function GridMap({
   const pinnedRef = useRef(false)
   const popupRef = useRef<Popup | null>(null)
   const cardCtxRef = useRef<CardContext>({ live: null, bmuMap: null })
-  cardCtxRef.current = { live, bmuMap }
+  cardCtxRef.current = country.hasLive ? { live, bmuMap } : { live: null, bmuMap: null }
 
   // ------------------------------------------------------------------ init
   useEffect(() => {
@@ -60,7 +58,7 @@ export default function GridMap({
     const map = new maplibregl.Map({
       container,
       style: buildBaseStyle(data.basemap),
-      bounds: UK_BOUNDS,
+      bounds: country.bounds,
       fitBoundsOptions: { padding: 24 },
       minZoom: 3.5,
       maxZoom: 15,
@@ -202,9 +200,14 @@ export default function GridMap({
     const vis = (id: string, on: boolean) => {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
     }
-    vis('lines-400', network.v400)
-    vis('lines-275', network.v275)
-    vis('lines-132', network.v132)
+    const tierIds = ['lines-t1', 'lines-t2', 'lines-t3'] as const
+    const tierOn = [network.t1, network.t2, network.t3] as const
+    country.tiers.forEach((tier, i) => {
+      const id = tierIds[i]!
+      if (!map.getLayer(id)) return
+      map.setFilter(id, ['in', ['get', 'v'], ['literal', tier.kvs]] as never)
+      vis(id, tierOn[i]! && tier.kvs.length > 0)
+    })
     vis('hvdc', network.hvdc)
     if (map.getLayer('hvdc')) {
       map.setFilter(
@@ -224,7 +227,7 @@ export default function GridMap({
   // ------------------------------------------------------ live → map state
   const applyLiveState = (map: MLMap) => {
     if (!readyRef.current) return
-    const showLive = liveMode && live != null
+    const showLive = liveMode && live != null && country.hasLive
     if (map.getLayer('stations-live')) {
       map.setLayoutProperty('stations-live', 'visibility', showLive ? 'visible' : 'none')
     }
@@ -237,7 +240,7 @@ export default function GridMap({
           : (['case', ['boolean', ['feature-state', 'hover'], false], 1, 0.85] as never),
       )
     }
-    if (!live) return
+    if (!live || !showLive) return
     // Feature ids from generateId are the feature's index in source order.
     data.stations.features.forEach((f, index) => {
       const id = f.properties.id
@@ -256,7 +259,28 @@ export default function GridMap({
     const map = mapRef.current
     if (map && readyRef.current) applyLiveState(map)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, liveMode])
+  }, [live, liveMode, country])
+
+  // ----------------------------------------------------- country data swap
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !readyRef.current) return
+    const src = (id: string) => map.getSource(id) as maplibregl.GeoJSONSource | undefined
+    popupRef.current?.remove()
+    pinnedRef.current = false
+    hoverIdRef.current = null
+    map.removeFeatureState({ source: 'stations' })
+    src('stations')?.setData(data.stations as never)
+    src('transmission')?.setData(data.transmission as never)
+    src('interconnectors')?.setData(data.interconnectors as never)
+    applyState(map)
+    applyLiveState(map)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  useEffect(() => {
+    mapRef.current?.fitBounds(country.bounds, { padding: 24, duration: 900 })
+  }, [country.id, country.bounds])
 
   useEffect(() => {
     if (resizeSignal === 0) return

@@ -11,6 +11,7 @@
  */
 export const INTERCONNECTORS = [
   {
+    countries: ['gb'],
     id: 'ifa',
     name: 'IFA (Interconnexion France–Angleterre)',
     to: 'France',
@@ -26,6 +27,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'ifa2',
     name: 'IFA2',
     to: 'France',
@@ -42,6 +44,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'eleclink',
     name: 'ElecLink (via Channel Tunnel)',
     to: 'France',
@@ -57,6 +60,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb', 'nl'],
     id: 'britned',
     name: 'BritNed',
     to: 'Netherlands',
@@ -73,6 +77,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'nemo',
     name: 'Nemo Link',
     to: 'Belgium',
@@ -88,6 +93,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'nsl',
     name: 'North Sea Link',
     to: 'Norway',
@@ -106,6 +112,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'viking',
     name: 'Viking Link',
     to: 'Denmark',
@@ -124,6 +131,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'moyle',
     name: 'Moyle Interconnector',
     to: 'Northern Ireland (SEM)',
@@ -139,6 +147,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'ewic',
     name: 'East–West Interconnector',
     to: 'Ireland',
@@ -155,6 +164,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'greenlink',
     name: 'Greenlink',
     to: 'Ireland',
@@ -171,6 +181,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'western-link',
     name: 'Western HVDC Link',
     to: 'Hunterston ↔ Connah’s Quay',
@@ -189,6 +200,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'caithness-moray',
     name: 'Caithness–Moray HVDC',
     to: 'Spittal ↔ Blackhillock',
@@ -205,6 +217,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'shetland',
     name: 'Shetland HVDC Link',
     to: 'Kergord ↔ Noss Head',
@@ -221,6 +234,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'neuconnect',
     name: 'NeuConnect',
     to: 'Germany',
@@ -238,6 +252,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'egl1',
     name: 'Eastern Green Link 1',
     to: 'Torness ↔ Hawthorn Pit',
@@ -254,6 +269,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
+    countries: ['gb'],
     id: 'egl2',
     name: 'Eastern Green Link 2',
     to: 'Peterhead ↔ Drax',
@@ -269,6 +285,41 @@ export const INTERCONNECTORS = [
       [-0.1, 54.3],
       [-0.2, 54.08],
       [-0.626, 53.748],
+    ],
+  },
+  {
+    countries: ['nl'],
+    id: 'norned',
+    name: 'NorNed',
+    to: 'Norway',
+    capMW: 700,
+    year: 2008,
+    kv: 450,
+    kind: 'interconnector',
+    status: 'operational',
+    waypoints: [
+      [6.83, 53.44],
+      [6.3, 54.5],
+      [5.8, 56.5],
+      [6.2, 57.8],
+      [6.62, 58.27],
+    ],
+  },
+  {
+    countries: ['nl'],
+    id: 'cobra',
+    name: 'COBRAcable',
+    to: 'Denmark',
+    capMW: 700,
+    year: 2019,
+    kv: 320,
+    kind: 'interconnector',
+    status: 'operational',
+    waypoints: [
+      [6.83, 53.44],
+      [6.4, 54.4],
+      [7.1, 55.1],
+      [8.68, 55.47],
     ],
   },
 ]

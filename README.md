@@ -1,4 +1,4 @@
-# ⚡ UK Grid Atlas
+# ⚡ Grid Atlas (UK 🇬🇧 + Netherlands 🇳🇱)
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
@@ -86,9 +86,16 @@ Pre-built GeoJSON ships in `src/data/`, so the app builds without network
 access. To refresh from source:
 
 ```bash
-npm run data:fetch   # download raw extracts from Overpass (public mirrors, retried)
-npm run data:build   # → src/data/*.json
+npm run data:fetch          # download GB raw extracts from Overpass (mirrors, retried)
+node scripts/build-data.mjs gb   # → src/data/gb/*.json
+node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via Overpass or
+                                 #   scripts/pbf-extract-lines.py on a Geofabrik .osm.pbf)
 ```
+
+The app is multi-country: a header switcher (also `#nl` in the URL) swaps
+data bundles, map bounds and voltage tiers per country (GB: 400/275/132 kV;
+NL: 380/220/150/110 kV). The live Elexon layer is GB-only; a Dutch
+equivalent would come from ENTSO-E (roadmap).
 
 | Layer | Source | Notes |
 |---|---|---|

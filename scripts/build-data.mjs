@@ -1,22 +1,64 @@
 /**
- * build-data.mjs — turn raw Overpass extracts into the app's GeoJSON bundles.
+ * build-data.mjs — turn raw Overpass extracts into per-country GeoJSON bundles.
  *
- * Inputs  (RAW_DIR): plants_uk.json, wind_sea.json, wind_sea2.json, lines_*.json
- * Outputs (src/data): stations.json, transmission.json, interconnectors.json,
- *                     basemap.json, meta.json
+ *   node scripts/build-data.mjs <country> [rawDir]     country: gb | nl
  *
- * Run:  node scripts/build-data.mjs [rawDir]
+ * Inputs  (RAW_DIR): country-specific raw extracts (see COUNTRIES below)
+ * Outputs (src/data/<country>/): stations.json, transmission.json,
+ *          interconnectors.json, meta.json  — plus shared src/data/basemap.json
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as topojson from 'topojson-client'
 import { INTERCONNECTORS } from './interconnectors.mjs'
-import { inRing, parseCapacityMW, parseVoltClass, simplify, smooth } from './pipeline-utils.mjs'
+import { inRing, parseCapacityMW, simplify, smooth } from './pipeline-utils.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const RAW_DIR = process.argv[2] ?? join(__dirname, '..', '..', 'data')
-const OUT_DIR = join(__dirname, '..', 'src', 'data')
+
+// ------------------------------------------------------- country registry
+const COUNTRIES = {
+  gb: {
+    plantFiles: ['plants_uk.json'],
+    seaFiles: ['wind_sea.json', 'wind_sea2.json'],
+    lineFile: /^lines_.*\.json$/,
+    /** Drop non-UK offshore plants picked up by the sea bounding boxes. */
+    isForeignSea: ([lon, lat]) =>
+      lat < 50.2 || // French Channel coast farms
+      (lat < 52.1 && lon > 2.25) || // Belgian / Dunkirk zone
+      (lat > 52.4 && lat < 53.3 && lon > 3.1) || // Dutch IJmuiden Ver zone
+      (lon < -5.6 && lat < 54.2) || // Irish east-coast farms
+      (lat > 60.9 && lon > 1.8), // Norwegian Hywind Tampen
+    /** Drop foreign line spillover (probes = first/mid/last points). */
+    isForeignLine: (probes) =>
+      probes.every(([lon, lat]) => lat < 51.15 && lon > 1.35) || // Pas-de-Calais
+      probes.every(([lon, lat]) => lat < 50.5 && lon > -0.5) || // Normandy
+      probes.every(([lon, lat]) => lat < 53.9 && lon < -6.15), // Republic of Ireland
+    /** Voltage (V) → line class (kV tier value stored in `v`). */
+    classify: (volts) => (volts >= 380000 ? 400 : volts >= 264000 ? 275 : volts >= 110000 ? 132 : null),
+  },
+  nl: {
+    plantFiles: ['nl_plants.json'],
+    seaFiles: ['nl_sea.json'],
+    lineFile: /^nl_lines.*\.json$/,
+    isForeignSea: ([lon, lat]) =>
+      lat < 51.66 || // Belgian zone
+      lon > 6.35 || // German Bight (Riffgat and east)
+      lon < 2.9, // UK sector
+    isForeignLine: () => false, // admin-area query already clips
+    classify: (volts) =>
+      volts >= 340000 ? 380 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : volts >= 100000 ? 110 : null,
+  },
+}
+
+const country = process.argv[2] ?? 'gb'
+const cfg = COUNTRIES[country]
+if (!cfg) {
+  console.error(`Unknown country "${country}" — expected one of: ${Object.keys(COUNTRIES).join(', ')}`)
+  process.exit(1)
+}
+const RAW_DIR = process.argv[3] ?? join(__dirname, '..', '..', 'data')
+const OUT_DIR = join(__dirname, '..', 'src', 'data', country)
 mkdirSync(OUT_DIR, { recursive: true })
 
 const readJSON = (p) => JSON.parse(readFileSync(p, 'utf8'))
@@ -68,6 +110,7 @@ const FUEL_GROUPS = {
   abandoned_mine_methane: 'gas',
   'mine gas': 'gas',
   coal: 'coal',
+  lignite: 'coal',
   wind: 'wind',
   solar: 'solar',
   hydro: 'hydro',
@@ -95,7 +138,7 @@ function fuelGroup(tags, name) {
   const primary = src.split(';')[0].trim()
   let group = FUEL_GROUPS[primary]
   if (!group && name) {
-    if (/solar/i.test(name)) group = 'solar'
+    if (/solar|zonnepark|zonneweide/i.test(name)) group = 'solar'
     else if (/wind/i.test(name)) group = 'wind'
     else if (/hydro/i.test(name)) group = 'hydro'
     else if (/battery|storage/i.test(name)) group = 'storage'
@@ -110,30 +153,20 @@ function fuelGroup(tags, name) {
 }
 
 // ----------------------------------------------------------------- stations
-const ukSet = readJSON(join(RAW_DIR, 'plants_uk.json')).elements
-const seaFiles = ['wind_sea.json', 'wind_sea2.json'].filter((f) => existsSync(join(RAW_DIR, f)))
-const seaSet = seaFiles.flatMap((f) => readJSON(join(RAW_DIR, f)).elements)
+const mainSet = cfg.plantFiles.flatMap((f) => readJSON(join(RAW_DIR, f)).elements)
+const seaSet = cfg.seaFiles
+  .filter((f) => existsSync(join(RAW_DIR, f)))
+  .flatMap((f) => readJSON(join(RAW_DIR, f)).elements)
 
-const ukIds = new Set(ukSet.map((e) => `${e.type}/${e.id}`))
-
-/** Heuristic: drop non-UK offshore plants picked up by the sea bounding boxes. */
-function isForeignSea([lon, lat]) {
-  if (lat < 50.2) return true // French Channel coast farms
-  if (lat < 52.1 && lon > 2.25) return true // Belgian / Dunkirk zone
-  if (lat > 52.4 && lat < 53.3 && lon > 3.1) return true // Dutch IJmuiden Ver zone
-  if (lon < -5.6 && lat < 54.2) return true // Irish east-coast farms
-  if (lat > 60.9 && lon > 1.8) return true // Norwegian Hywind Tampen
-  return false
-}
-
-const merged = [...ukSet]
+const seenIds = new Set(mainSet.map((e) => `${e.type}/${e.id}`))
+const merged = [...mainSet]
 for (const el of seaSet) {
   const key = `${el.type}/${el.id}`
-  if (ukIds.has(key)) continue
+  if (seenIds.has(key)) continue
   const c = el.center ?? (el.lat != null ? { lat: el.lat, lon: el.lon } : null)
   if (!c) continue
-  if (isForeignSea([c.lon, c.lat])) continue
-  ukIds.add(key)
+  if (cfg.isForeignSea([c.lon, c.lat])) continue
+  seenIds.add(key)
   merged.push(el)
 }
 
@@ -186,37 +219,39 @@ for (const el of merged) {
 }
 
 // ------------------------------------------------------------------- lines
-const lineFiles = readdirSync(RAW_DIR).filter((f) => /^lines_.*\.json$/.test(f))
+function parseVoltClass(v) {
+  if (!v) return null
+  let best = null
+  for (const part of String(v).split(';')) {
+    const n = parseInt(part.trim(), 10)
+    if (!Number.isFinite(n)) continue
+    const cls = cfg.classify(n)
+    if (cls != null) best = Math.max(best ?? 0, cls)
+  }
+  return best
+}
+
+const lineFiles = readdirSync(RAW_DIR).filter((f) => cfg.lineFile.test(f))
 const seenWays = new Set()
 const lineFeatures = []
-let skippedNoGeom = 0
 
 for (const f of lineFiles) {
   let data
   try {
     data = readJSON(join(RAW_DIR, f))
   } catch {
-    continue // partial/failed download artifacts
+    continue
   }
   for (const el of data.elements ?? []) {
     if (el.type !== 'way' || seenWays.has(el.id)) continue
     seenWays.add(el.id)
-    if (!el.geometry) {
-      skippedNoGeom++
-      continue
-    }
+    if (!el.geometry) continue
     const tags = el.tags ?? {}
     const v = parseVoltClass(tags.voltage)
     if (!v) continue
     let pts = el.geometry.map((g) => [g.lon, g.lat])
     const probes = [pts[0], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]]
-    // France spillover: Pas-de-Calais strip (UK's easternmost circuits at
-    // Richborough sit north of 51.15, Kent lines west of 1.35) and the
-    // Normandy coast (no UK 400/275 kV south of 50.5 east of -0.5 —
-    // Cornwall's southern circuits are all further west).
-    if (probes.every(([lon, lat]) => lat < 51.15 && lon > 1.35)) continue
-    if (probes.every(([lon, lat]) => lat < 50.5 && lon > -0.5)) continue
-    if (probes.every(([lon, lat]) => lat < 53.9 && lon < -6.15)) continue // Republic of Ireland
+    if (cfg.isForeignLine(probes)) continue
     pts = simplify(pts, 0.00025).map(([x, y]) => [
       Math.round(x * 1e5) / 1e5,
       Math.round(y * 1e5) / 1e5,
@@ -235,7 +270,7 @@ for (const f of lineFiles) {
 }
 
 // --------------------------------------------------------- interconnectors
-const icFeatures = INTERCONNECTORS.map((ic) => ({
+const icFeatures = INTERCONNECTORS.filter((ic) => ic.countries.includes(country)).map((ic) => ({
   type: 'Feature',
   geometry: { type: 'LineString', coordinates: smooth(ic.waypoints) },
   properties: {
@@ -251,7 +286,7 @@ const icFeatures = INTERCONNECTORS.map((ic) => ({
 }))
 
 // ---------------------------------------------------------------- basemap
-const CLIP = [-11.5, 47.5, 11.0, 62.7] // W,S,E,N
+const CLIP = [-11.5, 47.5, 11.0, 62.7]
 function clipFeature(geom) {
   const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
   const kept = []
@@ -281,26 +316,25 @@ const basemap = {
 }
 
 // ------------------------------------------------------------------ output
-const write = (name, obj) => {
+const write = (dir, name, obj) => {
   const s = JSON.stringify(obj)
-  writeFileSync(join(OUT_DIR, name), s)
-  console.log(`${name}: ${(s.length / 1024).toFixed(0)} kB`)
+  writeFileSync(join(dir, name), s)
+  console.log(`${country}/${name}: ${(s.length / 1024).toFixed(0)} kB`)
 }
 
-write('stations.json', { type: 'FeatureCollection', features: stationFeatures })
-write('transmission.json', { type: 'FeatureCollection', features: lineFeatures })
-write('interconnectors.json', { type: 'FeatureCollection', features: icFeatures })
-write('basemap.json', basemap)
-write('meta.json', {
+write(OUT_DIR, 'stations.json', { type: 'FeatureCollection', features: stationFeatures })
+write(OUT_DIR, 'transmission.json', { type: 'FeatureCollection', features: lineFeatures })
+write(OUT_DIR, 'interconnectors.json', { type: 'FeatureCollection', features: icFeatures })
+write(OUT_DIR, 'meta.json', {
   generated: new Date().toISOString().slice(0, 10),
   stationCount: stationFeatures.length,
   lineCount: lineFeatures.length,
   attribution: 'Power data © OpenStreetMap contributors (ODbL). Coastline: Natural Earth.',
 })
+const sharedDir = join(__dirname, '..', 'src', 'data')
+writeFileSync(join(sharedDir, 'basemap.json'), JSON.stringify(basemap))
 
-console.log(
-  `stations: ${stationFeatures.length}, lines: ${lineFeatures.length} (skipped ${skippedNoGeom} without geometry)`,
-)
+console.log(`stations: ${stationFeatures.length}, lines: ${lineFeatures.length}`)
 const byFuel = {}
 for (const f of stationFeatures) byFuel[f.properties.fuel] = (byFuel[f.properties.fuel] ?? 0) + 1
 console.log(byFuel)

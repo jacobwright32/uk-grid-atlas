@@ -1,5 +1,5 @@
 import type { LayerSpecification } from 'maplibre-gl'
-import { LINE_COLORS, fuelColorExpression } from '../lib/fuels'
+import { LINE_COLORS, TIER_COLORS, fuelColorExpression } from '../lib/fuels'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Expr = any
@@ -112,6 +112,10 @@ export function stationLayers(source: string): LayerSpecification[] {
   ]
 }
 
+/**
+ * Three generic voltage-tier layers; each country assigns its kV classes to
+ * tiers at runtime (GridMap sets the filters from the country config).
+ */
 export function transmissionLayers(source: string): LayerSpecification[] {
   const width = (base: number): Expr => [
     'interpolate',
@@ -124,31 +128,18 @@ export function transmissionLayers(source: string): LayerSpecification[] {
     13,
     base * 3.2,
   ]
+  const tier = (id: string, color: string, w: number, opacity: number): LayerSpecification => ({
+    id,
+    type: 'line',
+    source,
+    filter: ['in', ['get', 'v'], ['literal', []]] as never,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': color, 'line-width': width(w), 'line-opacity': opacity },
+  })
   return [
-    {
-      id: 'lines-132',
-      type: 'line',
-      source,
-      filter: ['==', ['get', 'v'], 132],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': LINE_COLORS.v132, 'line-width': width(0.9), 'line-opacity': 0.9 },
-    },
-    {
-      id: 'lines-275',
-      type: 'line',
-      source,
-      filter: ['==', ['get', 'v'], 275],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': LINE_COLORS.v275, 'line-width': width(1.25), 'line-opacity': 0.92 },
-    },
-    {
-      id: 'lines-400',
-      type: 'line',
-      source,
-      filter: ['==', ['get', 'v'], 400],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': LINE_COLORS.v400, 'line-width': width(1.6), 'line-opacity': 0.95 },
-    },
+    tier('lines-t3', TIER_COLORS[2], 0.9, 0.9),
+    tier('lines-t2', TIER_COLORS[1], 1.25, 0.92),
+    tier('lines-t1', TIER_COLORS[0], 1.6, 0.95),
   ]
 }
 
@@ -182,7 +173,7 @@ export const INTERACTIVE_LAYERS = [
   'stations-live',
   'stations',
   'hvdc',
-  'lines-400',
-  'lines-275',
-  'lines-132',
+  'lines-t1',
+  'lines-t2',
+  'lines-t3',
 ]

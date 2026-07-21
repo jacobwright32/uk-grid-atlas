@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
-import { GROUPS, LINE_COLORS } from '../lib/fuels'
+import { GROUPS, LINE_COLORS, TIER_COLORS } from '../lib/fuels'
 import { fmtCount, fmtGW } from '../lib/format'
 import type { StatsByGroup } from '../lib/filter'
 import type { GroupId, GridMeta, NetworkToggles } from '../lib/types'
 import type { LiveData } from '../lib/live'
 import type { LiveStatus } from '../hooks/useLiveData'
+import type { CountryConfig } from '../lib/countries'
 
 interface Props {
+  country: CountryConfig
   stats: StatsByGroup
   enabled: ReadonlySet<GroupId>
   onToggleGroup: (id: GroupId) => void
@@ -38,6 +40,7 @@ function liveStatusLine(status: LiveStatus, live: LiveData | null): string {
 }
 
 export default function Sidebar({
+  country,
   stats,
   enabled,
   onToggleGroup,
@@ -58,23 +61,29 @@ export default function Sidebar({
       <section>
         <div className="section-head">
           <h2>Live output</h2>
-          {liveStatus === 'live' && <span className="live-dot" aria-label="live" />}
+          {country.hasLive && liveStatus === 'live' && <span className="live-dot" aria-label="live" />}
         </div>
-        <label className="check-row">
-          <input
-            type="checkbox"
-            checked={liveMode}
-            disabled={!live}
-            onChange={(e) => onLiveMode(e.target.checked)}
-          />
-          <span>Size dots by output (bright) over capacity (ghost)</span>
-        </label>
-        <p className="footnote">{liveStatusLine(liveStatus, live)}</p>
-        {live && (
-          <p className="footnote">
-            Unit-level data covers transmission-connected stations (~70–80% of GB generation);
-            embedded solar &amp; small sites have no public per-site feed.
-          </p>
+        {country.hasLive ? (
+          <>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={liveMode}
+                disabled={!live}
+                onChange={(e) => onLiveMode(e.target.checked)}
+              />
+              <span>Size dots by output (bright) over capacity (ghost)</span>
+            </label>
+            <p className="footnote">{liveStatusLine(liveStatus, live)}</p>
+            {live && (
+              <p className="footnote">
+                Unit-level data covers transmission-connected stations (~70–80% of GB generation);
+                embedded solar &amp; small sites have no public per-site feed.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="footnote">{country.liveNote}</p>
         )}
       </section>
 
@@ -93,6 +102,7 @@ export default function Sidebar({
         <ul className="fuel-list">
           {GROUPS.map((g) => {
             const s = stats.get(g.id)
+            if (!s || s.count === 0) return null
             const on = enabled.has(g.id)
             return (
               <li key={g.id}>
@@ -124,24 +134,19 @@ export default function Sidebar({
           <h2>Network</h2>
         </div>
         <ul className="net-list">
-          <NetRow
-            label="400 kV lines"
-            swatch={<LineSwatch color={LINE_COLORS.v400} w={3} />}
-            on={network.v400}
-            onClick={() => onNetwork({ v400: !network.v400 })}
-          />
-          <NetRow
-            label="275 kV lines"
-            swatch={<LineSwatch color={LINE_COLORS.v275} w={2.2} />}
-            on={network.v275}
-            onClick={() => onNetwork({ v275: !network.v275 })}
-          />
-          <NetRow
-            label="132 kV (Scotland)"
-            swatch={<LineSwatch color={LINE_COLORS.v132} w={1.6} />}
-            on={network.v132}
-            onClick={() => onNetwork({ v132: !network.v132 })}
-          />
+          {country.tiers.map((tier, i) => {
+            const key = (['t1', 't2', 't3'] as const)[i]!
+            if (!tier.kvs.length) return null
+            return (
+              <NetRow
+                key={key}
+                label={tier.label}
+                swatch={<LineSwatch color={TIER_COLORS[i] ?? TIER_COLORS[2]} w={3 - i * 0.7} />}
+                on={network[key]}
+                onClick={() => onNetwork({ [key]: !network[key] })}
+              />
+            )
+          })}
           <NetRow
             label="HVDC links & interconnectors"
             swatch={<LineSwatch color={LINE_COLORS.hvdc} w={2.2} dashed />}
@@ -173,7 +178,8 @@ export default function Sidebar({
       <section className="about">
         <p>
           Sites are sized by installed capacity — hover any dot or line for details, click to pin.
-          Wind farms are split on/offshore automatically; pumped-storage hydro wears a white ring.
+          Wind farms are split on/offshore automatically
+          {country.id === 'gb' ? '; pumped-storage hydro wears a white ring' : ''}.
         </p>
         <p className="footnote">
           Data: © OpenStreetMap contributors (ODbL), extract {meta.generated}. Interconnectors

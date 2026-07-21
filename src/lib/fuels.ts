@@ -25,9 +25,10 @@ export const GROUPS: {
   { id: 'nuclear', label: 'Nuclear', color: '#9085e9', fuels: ['nuclear'] },
   { id: 'hydro', label: 'Hydro · pumped · tidal', color: '#1899ac', fuels: ['hydro', 'pumped', 'marine'] },
   { id: 'bioenergy', label: 'Bioenergy & waste', color: '#d95926', fuels: ['bioenergy', 'waste'] },
+  { id: 'coal', label: 'Coal', color: '#8a8a85', fuels: ['coal'] },
   { id: 'storage', label: 'Battery storage', color: '#d55181', fuels: ['storage'] },
   { id: 'oil', label: 'Oil & diesel', color: '#e66767', fuels: ['oil'] },
-  { id: 'other', label: 'Other / unknown', color: '#898781', fuels: ['coal', 'other'] },
+  { id: 'other', label: 'Other / unknown', color: '#6f6d66', fuels: ['other'] },
 ]
 
 export const GROUP_BY_ID: ReadonlyMap<GroupId, (typeof GROUPS)[number]> = new Map(
@@ -59,6 +60,9 @@ export const FUEL_LABEL: Record<FuelId, string> = {
   coal: 'Coal',
   other: 'Other',
 }
+
+/** Line-tier colours: brightest = backbone, dimmest = regional. */
+export const TIER_COLORS = ['#e8e6df', '#a8a69d', '#6f6d66'] as const
 
 /** MapLibre `match` expression mapping granular fuel → colour. */
 export function fuelColorExpression(): unknown[] {

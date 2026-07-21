@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import GridMap from './components/GridMap'
 import Sidebar from './components/Sidebar'
 import MixStrip from './components/MixStrip'
 import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
+import { COUNTRIES, countryFromHash } from './lib/countries'
+import type { CountryId } from './lib/countries'
 import { allGroupIds, computeStats, totalsFor } from './lib/filter'
 import { computeMixRows, fleetCapacity, interconnectorCapacity } from './lib/fleet'
 import { fmtCount, fmtGW } from './lib/format'
@@ -13,13 +15,15 @@ import './App.css'
 const DEFAULT_TILES = import.meta.env.VITE_DEFAULT_TILES === '1'
 
 export default function App() {
-  const { data, error } = useGridData()
+  const [countryId, setCountryId] = useState<CountryId>(countryFromHash)
+  const country = COUNTRIES[countryId]
+  const { data, error } = useGridData(countryId)
   const { status: liveStatus, live, bmuMap } = useLiveData()
   const [enabled, setEnabled] = useState<Set<GroupId>>(allGroupIds)
   const [network, setNetwork] = useState<NetworkToggles>({
-    v400: true,
-    v275: true,
-    v132: true,
+    t1: true,
+    t2: true,
+    t3: true,
     hvdc: true,
     construction: true,
   })
@@ -28,16 +32,27 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [resizeSignal, setResizeSignal] = useState(0)
 
+  useEffect(() => {
+    const onHash = () => setCountryId(countryFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  const switchCountry = (id: CountryId) => {
+    window.location.hash = id === 'gb' ? '' : id
+    setCountryId(id)
+  }
+
   const stats = useMemo(() => (data ? computeStats(data.stations) : null), [data])
   const totals = useMemo(() => (stats ? totalsFor(stats, enabled) : null), [stats, enabled])
   const mixRows = useMemo(() => {
-    if (!data || !bmuMap || !live?.mix) return []
+    if (countryId !== 'gb' || !data || !bmuMap || !live?.mix) return []
     return computeMixRows(
       live.mix,
       fleetCapacity(bmuMap, data.stations),
       interconnectorCapacity(data.interconnectors),
     )
-  }, [data, bmuMap, live])
+  }, [countryId, data, bmuMap, live])
 
   if (error) {
     return (
@@ -52,7 +67,7 @@ export default function App() {
         <span className="boot-bolt" aria-hidden="true">
           ⚡
         </span>
-        <p>Loading the UK grid…</p>
+        <p>Loading the grid…</p>
       </div>
     )
   }
@@ -84,11 +99,24 @@ export default function App() {
           <span className="bolt" aria-hidden="true">
             ⚡
           </span>
-          UK Grid Atlas
+          Grid Atlas
         </h1>
-        <p className="tagline">
-          Every utility-scale generator · the high-voltage network · HVDC links
-        </p>
+        <div className="country-switch" role="tablist" aria-label="Country">
+          {Object.values(COUNTRIES).map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={c.id === countryId}
+              className={`country-btn${c.id === countryId ? ' country-btn--on' : ''}`}
+              onClick={() => switchCountry(c.id)}
+              title={c.name}
+            >
+              <span aria-hidden="true">{c.flag}</span> {c.id.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <p className="tagline">{country.tagline}</p>
         <div className="headline-stats" aria-live="polite">
           <div className="stat">
             <span className="stat-num">{fmtCount(totals.count)}</span>
@@ -102,6 +130,7 @@ export default function App() {
       </header>
 
       <Sidebar
+        country={country}
         stats={stats}
         enabled={enabled}
         onToggleGroup={toggleGroup}
@@ -121,6 +150,7 @@ export default function App() {
       <main className="map-pane">
         <GridMap
           data={data}
+          country={country}
           enabledGroups={enabled}
           network={network}
           tiles={tiles}
@@ -129,7 +159,7 @@ export default function App() {
           liveMode={liveMode}
           resizeSignal={resizeSignal}
         />
-        {live?.mix && (
+        {countryId === 'gb' && live?.mix && mixRows.length > 0 && (
           <div className="mixstrip-dock">
             <MixStrip mix={live.mix} rows={mixRows} isSnapshot={live.source === 'snapshot'} />
           </div>

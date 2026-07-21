@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { loadLive } from '../lib/live'
 import type { BmuMap, LiveData, SnapshotFile } from '../lib/live'
 
-import bmuMapUrl from '../data/bmu-map.json?url'
-import snapshotUrl from '../data/live-snapshot.json?url'
+import bmuMapUrl from '../data/gb/bmu-map.json?url'
+import snapshotUrl from '../data/gb/live-snapshot.json?url'
 
 export type LiveStatus = 'loading' | 'live' | 'snapshot' | 'unavailable'
 

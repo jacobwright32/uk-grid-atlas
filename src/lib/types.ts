@@ -26,6 +26,7 @@ export type GroupId =
   | 'nuclear'
   | 'hydro'
   | 'bioenergy'
+  | 'coal'
   | 'storage'
   | 'oil'
   | 'other'
@@ -43,8 +44,8 @@ export interface StationProps {
 }
 
 export interface LineProps {
-  /** Voltage class in kV. */
-  v: 400 | 275 | 132
+  /** Voltage class in kV (country-specific: 400/275/132 GB, 380/220/150/110 NL). */
+  v: number
   name: string | null
   operator: string | null
   circuits: number | null
@@ -81,9 +82,9 @@ export interface GridData {
 }
 
 export interface NetworkToggles {
-  v400: boolean
-  v275: boolean
-  v132: boolean
+  t1: boolean
+  t2: boolean
+  t3: boolean
   hvdc: boolean
   construction: boolean
 }

@@ -1,5 +1,5 @@
 import type { MapGeoJSONFeature } from 'maplibre-gl'
-import { FUEL_COLOR, FUEL_LABEL, LINE_COLORS } from '../lib/fuels'
+import { FUEL_COLOR, FUEL_LABEL, LINE_COLORS, TIER_COLORS } from '../lib/fuels'
 import { fmtMW, humanise } from '../lib/format'
 import type { FuelId, InterconnectorProps, LineProps, StationProps } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
@@ -148,8 +148,7 @@ export function lineCard(f: MapGeoJSONFeature): HTMLElement {
   const root = card()
   const head = el('div', 'card-head')
   const swatch = el('span', 'card-line')
-  swatch.style.background =
-    p.v === 400 ? LINE_COLORS.v400 : p.v === 275 ? LINE_COLORS.v275 : LINE_COLORS.v132
+  swatch.style.background = p.v >= 340 ? TIER_COLORS[0] : p.v >= 200 ? TIER_COLORS[1] : TIER_COLORS[2]
   head.appendChild(swatch)
   head.appendChild(el('strong', 'card-title', `${p.v} kV transmission line`))
   root.appendChild(head)
