@@ -13,9 +13,16 @@ describe('parseCapacityMW', () => {
     expect(parseCapacityMW('750 kW')).toBeCloseTo(0.75)
     expect(parseCapacityMW('500000 W')).toBeCloseTo(0.5)
   })
-  it('bare numbers: MW when plausible, watts when huge', () => {
+  it('bare numbers: MW when plausible, kW when large, watts when huge', () => {
     expect(parseCapacityMW('420')).toBe(420)
+    expect(parseCapacityMW('12870')).toBeCloseTo(12.87) // bare kWp (common on DE solar)
     expect(parseCapacityMW('24000000')).toBe(24)
+  })
+  it('European decimal commas vs thousands separators', () => {
+    expect(parseCapacityMW('1,2 MW')).toBeCloseTo(1.2)
+    expect(parseCapacityMW('12,87 MWp')).toBeCloseTo(12.87)
+    expect(parseCapacityMW('1,218 MW')).toBe(1218)
+    expect(parseCapacityMW('1,218.5 MW')).toBeCloseTo(1218.5)
   })
   it('rejects junk', () => {
     expect(parseCapacityMW('yes')).toBeNull()

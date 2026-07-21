@@ -10,11 +10,38 @@ import nlStations from '../data/nl/stations.json?url'
 import nlTransmission from '../data/nl/transmission.json?url'
 import nlInterconnectors from '../data/nl/interconnectors.json?url'
 import nlMeta from '../data/nl/meta.json?url'
+import beStations from '../data/be/stations.json?url'
+import beTransmission from '../data/be/transmission.json?url'
+import beInterconnectors from '../data/be/interconnectors.json?url'
+import beMeta from '../data/be/meta.json?url'
+import ieStations from '../data/ie/stations.json?url'
+import ieTransmission from '../data/ie/transmission.json?url'
+import ieInterconnectors from '../data/ie/interconnectors.json?url'
+import ieMeta from '../data/ie/meta.json?url'
+import dkStations from '../data/dk/stations.json?url'
+import dkTransmission from '../data/dk/transmission.json?url'
+import dkInterconnectors from '../data/dk/interconnectors.json?url'
+import dkMeta from '../data/dk/meta.json?url'
+import frStations from '../data/fr/stations.json?url'
+import frTransmission from '../data/fr/transmission.json?url'
+import frInterconnectors from '../data/fr/interconnectors.json?url'
+import frMeta from '../data/fr/meta.json?url'
+import deStations from '../data/de/stations.json?url'
+import deTransmission from '../data/de/transmission.json?url'
+import deInterconnectors from '../data/de/interconnectors.json?url'
+import deMeta from '../data/de/meta.json?url'
 import basemapUrl from '../data/basemap.json?url'
 
-const URLS: Record<CountryId, { stations: string; transmission: string; interconnectors: string; meta: string }> = {
+type Bundle = { stations: string; transmission: string; interconnectors: string; meta: string }
+
+const URLS: Record<CountryId, Bundle> = {
   gb: { stations: gbStations, transmission: gbTransmission, interconnectors: gbInterconnectors, meta: gbMeta },
   nl: { stations: nlStations, transmission: nlTransmission, interconnectors: nlInterconnectors, meta: nlMeta },
+  be: { stations: beStations, transmission: beTransmission, interconnectors: beInterconnectors, meta: beMeta },
+  ie: { stations: ieStations, transmission: ieTransmission, interconnectors: ieInterconnectors, meta: ieMeta },
+  dk: { stations: dkStations, transmission: dkTransmission, interconnectors: dkInterconnectors, meta: dkMeta },
+  fr: { stations: frStations, transmission: frTransmission, interconnectors: frInterconnectors, meta: frMeta },
+  de: { stations: deStations, transmission: deTransmission, interconnectors: deInterconnectors, meta: deMeta },
 }
 
 async function fetchJSON<T>(url: string): Promise<T> {

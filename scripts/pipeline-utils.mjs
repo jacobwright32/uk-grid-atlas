@@ -1,9 +1,22 @@
 /** Pure helpers shared by the data pipeline — kept import-safe for tests. */
 
-/** Parse "1,200 MW" / "49.9MW" / "2 GW" / "750 kW" / bare numbers → MW. */
-export function parseCapacityMW(raw) {
+/**
+ * Parse "1,200 MW" / "49.9MW" / "2 GW" / "750 kW" / "1,2 MW" (European
+ * decimal comma) / bare numbers → MW.
+ */
+export function parseCapacityMW(raw, decimalComma = false) {
   if (!raw || typeof raw !== 'string') return null
-  const s = raw.replace(/,/g, '').trim().toLowerCase()
+  let s = raw.trim().toLowerCase()
+  if (decimalComma) {
+    // Continental locale: any digit,digit comma is a decimal ("12,870MW" =
+    // 12.87 MW). Dots stay decimals too — OSM mappers overwhelmingly use
+    // them that way even in dot-as-thousands locales.
+    s = s.replace(/(\d),(\d+)/g, '$1.$2')
+  } else {
+    // English locale: ",###" is a thousands separator; ",#"/",##" is a
+    // (rare) decimal slip.
+    s = s.replace(/(\d),(\d{3})(?!\d)/g, '$1$2').replace(/(\d),(\d{1,2})(?!\d)/g, '$1.$2')
+  }
   const m = s.match(/([\d.]+)\s*(gw|mw|kw|w)?/)
   if (!m) return null
   const n = parseFloat(m[1])
@@ -13,8 +26,12 @@ export function parseCapacityMW(raw) {
   if (unit === 'mw') return n
   if (unit === 'kw') return n / 1000
   if (unit === 'w') return n / 1e6
-  // no unit: OSM convention is MW-ish values; treat huge numbers as watts
-  return n > 100000 ? n / 1e6 : n
+  // No unit. OSM values are usually MW, but continental solar/biogas is
+  // often tagged in bare kW(p): nothing on Earth is a bare ">2000 MW" site,
+  // so large bare numbers are kW; astronomical ones are watts.
+  if (n > 100000) return n / 1e6
+  if (n > 2000) return n / 1000
+  return n
 }
 
 /** "400000;132000" → highest transmission class (400 / 275 / 132) or null. */

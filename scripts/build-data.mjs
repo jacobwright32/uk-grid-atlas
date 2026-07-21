@@ -38,16 +38,74 @@ const COUNTRIES = {
     classify: (volts) => (volts >= 380000 ? 400 : volts >= 264000 ? 275 : volts >= 110000 ? 132 : null),
   },
   nl: {
+    decimalComma: true,
     plantFiles: ['nl_plants.json'],
     seaFiles: ['nl_sea.json'],
     lineFile: /^nl_lines.*\.json$/,
     isForeignSea: ([lon, lat]) =>
       lat < 51.66 || // Belgian zone
       lon > 6.35 || // German Bight (Riffgat and east)
+      (lon > 6.0 && lat > 54.2) || // German Borkum-west cluster (He Dreiht etc.)
       lon < 2.9, // UK sector
     isForeignLine: () => false, // admin-area query already clips
     classify: (volts) =>
       volts >= 340000 ? 380 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : volts >= 100000 ? 110 : null,
+  },
+  be: {
+    decimalComma: true,
+    plantFiles: ['plants_be.json', 'plants_be_pbf.json'],
+    seaFiles: ['sea_be.json'],
+    lineFile: /^be_lines.*\.json$/,
+    isForeignSea: ([lon, lat]) =>
+      lat < 51.35 || lon < 2.3 || (lon > 3.02 && lat > 51.66), // FR / UK / NL Borssele
+    isForeignLine: () => false,
+    classify: (volts) =>
+      volts >= 340000 ? 380 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : null,
+  },
+  ie: {
+    // All-island view: Republic + Northern Ireland (the SEM is one market).
+    plantFiles: ['plants_ie2.json', 'plants_ie_pbf.json'],
+    seaFiles: ['sea_ie.json'],
+    lineFile: /^ie_lines.*\.json$/,
+    isForeignSea: ([lon]) => lon > -5.45, // GB Irish Sea farms
+    isForeignLine: () => false,
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 264000 ? 275 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
+  dk: {
+    decimalComma: true,
+    plantFiles: ['plants_dk.json', 'plants_dk_pbf.json'],
+    seaFiles: ['sea_dk1.json', 'sea_dk2.json'],
+    lineFile: /^dk_lines.*\.json$/,
+    isForeignSea: ([lon, lat]) =>
+      (lat < 55.35 && lon < 8.0) || // German Bight (DanTysk/Butendiek cluster)
+      (lat > 55.3 && lon > 12.7) || // Swedish Öresund (Lillgrund)
+      lon > 13.05, // German Baltic
+    isForeignLine: () => false,
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 140000 ? 150 : volts >= 125000 ? 132 : null,
+  },
+  fr: {
+    decimalComma: true,
+    // Metropolitan France only (plants query is bbox-bounded).
+    plantFiles: ['plants_fr.json', 'plants_fr_pbf.json'],
+    seaFiles: ['sea_fr1.json', 'sea_fr2.json', 'sea_fr3.json'],
+    lineFile: /^fr_lines.*\.json$/,
+    isForeignSea: ([, lat]) => lat > 50.25, // UK Channel farms
+    isForeignLine: (probes) => probes.every(([lon, lat]) => lat > 51.35 || lon < -5.5), // extract buffer
+    classify: (volts) => (volts >= 380000 ? 400 : volts >= 200000 ? 225 : null),
+  },
+  de: {
+    decimalComma: true,
+    plantFiles: ['plants_de.json', 'plants_de_pbf.json'],
+    seaFiles: ['sea_de1.json', 'sea_de2.json'],
+    lineFile: /^de_lines.*\.json$/,
+    isForeignSea: ([lon, lat]) =>
+      (lon < 6.2 && lat < 54.2) || // NL Gemini
+      lat > 55.35 || // Danish North Sea
+      (lat > 54.95 && lon > 12.3), // Danish Baltic (Kriegers Flak)
+    isForeignLine: () => false,
+    classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
   },
 }
 
@@ -153,12 +211,22 @@ function fuelGroup(tags, name) {
 }
 
 // ----------------------------------------------------------------- stations
-const mainSet = cfg.plantFiles.flatMap((f) => readJSON(join(RAW_DIR, f)).elements)
+// Plant files may overlap (Overpass + PBF extracts) — dedupe by osm id.
+const seenIds = new Set()
+const mainSet = []
+for (const f of cfg.plantFiles.filter((f) => existsSync(join(RAW_DIR, f)))) {
+  for (const el of readJSON(join(RAW_DIR, f)).elements) {
+    const key = `${el.type}/${el.id}`
+    if (seenIds.has(key)) continue
+    seenIds.add(key)
+    mainSet.push(el)
+  }
+}
+if (!mainSet.length) throw new Error(`no plant data found for ${country}`)
 const seaSet = cfg.seaFiles
   .filter((f) => existsSync(join(RAW_DIR, f)))
   .flatMap((f) => readJSON(join(RAW_DIR, f)).elements)
 
-const seenIds = new Set(mainSet.map((e) => `${e.type}/${e.id}`))
 const merged = [...mainSet]
 for (const el of seaSet) {
   const key = `${el.type}/${el.id}`
@@ -181,8 +249,20 @@ for (const el of merged) {
   const coords = [Math.round(c.lon * 1e5) / 1e5, Math.round(c.lat * 1e5) / 1e5]
   const name = tags.name ?? tags['name:en'] ?? null
   let group = fuelGroup(tags, name)
-  const capacityMW = parseCapacityMW(tags['plant:output:electricity'])
-  if (group === 'wind') group = onLand(coords) ? 'wind_onshore' : 'wind_offshore'
+  let capacityMW = parseCapacityMW(tags['plant:output:electricity'], cfg.decimalComma ?? false)
+  // Physical-plausibility guard: no single solar park / onshore wind farm /
+  // bio site / battery on Earth exceeds ~1.5 GW — values above that are
+  // almost certainly kW(p) tags without units.
+  const SMALL_FUELS = new Set(['solar', 'wind', 'bioenergy', 'waste', 'storage', 'marine'])
+  if (capacityMW != null && capacityMW > 1500 && SMALL_FUELS.has(group)) {
+    capacityMW = capacityMW / 1000 >= 0.05 ? Math.round(capacityMW) / 1000 : null
+  }
+  const land = onLand(coords)
+  // Offshore foreign-zone guard applies to every source: PBF extracts carry
+  // a sea buffer that can include neighbours' wind farms (land sites are
+  // safe — the coastline test exempts them).
+  if (!land && cfg.isForeignSea(coords)) continue
+  if (group === 'wind') group = land ? 'wind_onshore' : 'wind_offshore'
 
   const feature = {
     type: 'Feature',

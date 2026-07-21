@@ -1,4 +1,4 @@
-# ⚡ Grid Atlas (UK 🇬🇧 + Netherlands 🇳🇱)
+# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
@@ -92,10 +92,16 @@ node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via O
                                  #   scripts/pbf-extract-lines.py on a Geofabrik .osm.pbf)
 ```
 
-The app is multi-country: a header switcher (also `#nl` in the URL) swaps
-data bundles, map bounds and voltage tiers per country (GB: 400/275/132 kV;
-NL: 380/220/150/110 kV). The live Elexon layer is GB-only; a Dutch
-equivalent would come from ENTSO-E (roadmap).
+The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
+`#fr`, `#de` in the URL) swaps data bundles, map bounds and voltage tiers per
+country. Seven grids ship today: Great Britain (400/275/132 kV), the
+Netherlands (380/220/150/110), Belgium (380/220/150), the island of Ireland
+(400/275/220/110 — the SEM is mapped as one grid), Denmark (400/150/132),
+France (400/225; the huge 90/63 kV layer is omitted) and Germany (380/220;
+110 kV omitted). Each country is ~30 lines of config in
+`scripts/build-data.mjs` + `src/lib/countries.ts` plus its raw extracts —
+adding another is an afternoon, not a project. The live Elexon layer is
+GB-only; European countries would use ENTSO-E (roadmap).
 
 | Layer | Source | Notes |
 |---|---|---|

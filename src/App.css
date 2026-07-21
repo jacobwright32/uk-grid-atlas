@@ -643,6 +643,12 @@
   }
 }
 
+@media (max-width: 1360px) {
+  .tagline {
+    display: none;
+  }
+}
+
 /* ---------------------------------------------------------------- mobile */
 @media (max-width: 760px) {
   .shell {

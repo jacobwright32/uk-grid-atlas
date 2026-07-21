@@ -1,6 +1,6 @@
 /** Per-country configuration: bounds, voltage tiers, live-data support. */
 
-export type CountryId = 'gb' | 'nl'
+export type CountryId = 'gb' | 'nl' | 'be' | 'ie' | 'dk' | 'fr' | 'de'
 
 export interface VoltageTier {
   /** `v` values (kV classes) in this tier, highest tier first. */
@@ -20,6 +20,9 @@ export interface CountryConfig {
   liveNote: string
   tagline: string
 }
+
+const LIVE_NOTE =
+  'Live per-station output is UK-only for now (Elexon). European countries would use ENTSO-E data — on the roadmap.'
 
 export const COUNTRIES: Record<CountryId, CountryConfig> = {
   gb: {
@@ -53,8 +56,94 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [150, 110], label: '150 / 110 kV lines' },
     ],
     hasLive: false,
-    liveNote: 'Live per-station output is UK-only for now (Elexon). A Dutch layer would use ENTSO-E data — on the roadmap.',
+    liveNote: LIVE_NOTE,
     tagline: 'Elke grote centrale · het hoogspanningsnet · HVDC-verbindingen',
+  },
+  be: {
+    id: 'be',
+    name: 'Belgium',
+    flag: '🇧🇪',
+    bounds: [
+      [2.3, 49.4],
+      [6.5, 51.9],
+    ],
+    tiers: [
+      { kvs: [380], label: '380 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [150], label: '150 kV lines' },
+    ],
+    hasLive: false,
+    liveNote: LIVE_NOTE,
+    tagline: 'Elke centrale · chaque centrale · le réseau THT · HVDC',
+  },
+  ie: {
+    id: 'ie',
+    name: 'Ireland (all-island)',
+    flag: '🇮🇪',
+    bounds: [
+      [-10.8, 51.3],
+      [-5.2, 55.5],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [275, 220], label: '275 / 220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: false,
+    liveNote:
+      'The whole island shares one market (SEM). Live per-station output is UK-only for now — an all-island layer would use SEMO/ENTSO-E data.',
+    tagline: 'The all-island grid · every generator · HVDC links',
+  },
+  dk: {
+    id: 'dk',
+    name: 'Denmark',
+    flag: '🇩🇰',
+    bounds: [
+      [6.9, 54.4],
+      [13.3, 58.0],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [150, 132], label: '150 / 132 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: false,
+    liveNote: LIVE_NOTE,
+    tagline: 'Alle kraftværker · transmissionsnettet · HVDC-forbindelser',
+  },
+  fr: {
+    id: 'fr',
+    name: 'France',
+    flag: '🇫🇷',
+    bounds: [
+      [-5.5, 41.2],
+      [9.8, 51.3],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [225], label: '225 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: false,
+    liveNote: LIVE_NOTE + ' The 90/63 kV regional network is omitted to keep the map fast.',
+    tagline: 'Chaque centrale · le réseau THT · liaisons HVDC',
+  },
+  de: {
+    id: 'de',
+    name: 'Germany',
+    flag: '🇩🇪',
+    bounds: [
+      [5.5, 47.2],
+      [15.3, 55.2],
+    ],
+    tiers: [
+      { kvs: [380], label: '380 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: false,
+    liveNote: LIVE_NOTE + ' The vast 110 kV network is omitted to keep the map fast.',
+    tagline: 'Jedes Kraftwerk · das Höchstspannungsnetz · HGÜ-Verbindungen',
   },
 }
 
@@ -62,5 +151,5 @@ export const DEFAULT_COUNTRY: CountryId = 'gb'
 
 export function countryFromHash(): CountryId {
   const h = window.location.hash.replace('#', '').toLowerCase()
-  return h === 'nl' ? 'nl' : 'gb'
+  return h in COUNTRIES ? (h as CountryId) : DEFAULT_COUNTRY
 }
