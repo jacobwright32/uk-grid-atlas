@@ -1,6 +1,10 @@
 /** Per-country configuration: bounds, voltage tiers, live-data support. */
 
-export type CountryId = 'gb' | 'nl' | 'be' | 'ie' | 'dk' | 'fr' | 'de'
+export type CountryId = 'gb' | 'nl' | 'be' | 'ie' | 'dk' | 'fr' | 'de' | 'all'
+
+/** Countries with their own data bundles ('all' merges these at runtime). */
+export const REAL_COUNTRY_IDS = ['gb', 'nl', 'be', 'ie', 'dk', 'fr', 'de'] as const
+export type RealCountryId = (typeof REAL_COUNTRY_IDS)[number]
 
 export interface VoltageTier {
   /** `v` values (kV classes) in this tier, highest tier first. */
@@ -144,6 +148,24 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveNote: LIVE_NOTE + ' The vast 110 kV network is omitted to keep the map fast.',
     tagline: 'Jedes Kraftwerk · das Höchstspannungsnetz · HGÜ-Verbindungen',
+  },
+  all: {
+    id: 'all',
+    name: 'All countries',
+    flag: '🌍',
+    bounds: [
+      [-11.5, 41.0],
+      [15.5, 61.5],
+    ],
+    tiers: [
+      { kvs: [765, 500, 400, 380], label: 'Backbone (≥380 kV)' },
+      { kvs: [345, 275, 230, 225, 220], label: '220–345 kV' },
+      { kvs: [150, 132, 110], label: '110–150 kV' },
+    ],
+    hasLive: false,
+    liveNote:
+      'Seven grids, one map. Switch to a single country for its details — the live output layer runs on the GB view.',
+    tagline: 'Seven grids · one synchronous continent (almost) · every HVDC link',
   },
 }
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import type { CountryId } from '../lib/countries'
+import { REAL_COUNTRY_IDS } from '../lib/countries'
+import type { CountryId, RealCountryId } from '../lib/countries'
+import { mergeGridData } from '../lib/merge'
 import type { GridData } from '../lib/types'
 
 import gbStations from '../data/gb/stations.json?url'
@@ -34,7 +36,7 @@ import basemapUrl from '../data/basemap.json?url'
 
 type Bundle = { stations: string; transmission: string; interconnectors: string; meta: string }
 
-const URLS: Record<CountryId, Bundle> = {
+const URLS: Record<RealCountryId, Bundle> = {
   gb: { stations: gbStations, transmission: gbTransmission, interconnectors: gbInterconnectors, meta: gbMeta },
   nl: { stations: nlStations, transmission: nlTransmission, interconnectors: nlInterconnectors, meta: nlMeta },
   be: { stations: beStations, transmission: beTransmission, interconnectors: beInterconnectors, meta: beMeta },
@@ -58,7 +60,33 @@ interface State {
 const cache = new Map<CountryId, GridData>()
 let basemapCache: GridData['basemap'] | null = null
 
-/** Loads a country's GeoJSON bundles (cached per country after first load). */
+async function loadCountry(id: RealCountryId): Promise<GridData> {
+  const cached = cache.get(id)
+  if (cached) return cached
+  const urls = URLS[id]
+  const [stations, transmission, interconnectors, basemap, meta] = await Promise.all([
+    fetchJSON<GridData['stations']>(urls.stations),
+    fetchJSON<GridData['transmission']>(urls.transmission),
+    fetchJSON<GridData['interconnectors']>(urls.interconnectors),
+    basemapCache ? Promise.resolve(basemapCache) : fetchJSON<GridData['basemap']>(basemapUrl),
+    fetchJSON<GridData['meta']>(urls.meta),
+  ])
+  basemapCache = basemap
+  const data: GridData = { stations, transmission, interconnectors, basemap, meta }
+  cache.set(id, data)
+  return data
+}
+
+async function loadAll(): Promise<GridData> {
+  const cached = cache.get('all')
+  if (cached) return cached
+  const bundles = await Promise.all(REAL_COUNTRY_IDS.map((id) => loadCountry(id)))
+  const merged = mergeGridData(bundles)
+  cache.set('all', merged)
+  return merged
+}
+
+/** Loads a country's GeoJSON bundles ('all' merges every country, cached). */
 export function useGridData(country: CountryId): State {
   const [state, setState] = useState<State>({ data: cache.get(country) ?? null, error: null })
 
@@ -69,18 +97,8 @@ export function useGridData(country: CountryId): State {
       return
     }
     let cancelled = false
-    const urls = URLS[country]
-    Promise.all([
-      fetchJSON<GridData['stations']>(urls.stations),
-      fetchJSON<GridData['transmission']>(urls.transmission),
-      fetchJSON<GridData['interconnectors']>(urls.interconnectors),
-      basemapCache ? Promise.resolve(basemapCache) : fetchJSON<GridData['basemap']>(basemapUrl),
-      fetchJSON<GridData['meta']>(urls.meta),
-    ])
-      .then(([stations, transmission, interconnectors, basemap, meta]) => {
-        basemapCache = basemap
-        const data: GridData = { stations, transmission, interconnectors, basemap, meta }
-        cache.set(country, data)
+    ;(country === 'all' ? loadAll() : loadCountry(country))
+      .then((data) => {
         if (!cancelled) setState({ data, error: null })
       })
       .catch((err: unknown) => {
