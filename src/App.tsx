@@ -5,6 +5,7 @@ import MixStrip from './components/MixStrip'
 import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
 import { allGroupIds, computeStats, totalsFor } from './lib/filter'
+import { computeMixRows, fleetCapacity, interconnectorCapacity } from './lib/fleet'
 import { fmtCount, fmtGW } from './lib/format'
 import type { GroupId, NetworkToggles } from './lib/types'
 import './App.css'
@@ -29,6 +30,14 @@ export default function App() {
 
   const stats = useMemo(() => (data ? computeStats(data.stations) : null), [data])
   const totals = useMemo(() => (stats ? totalsFor(stats, enabled) : null), [stats, enabled])
+  const mixRows = useMemo(() => {
+    if (!data || !bmuMap || !live?.mix) return []
+    return computeMixRows(
+      live.mix,
+      fleetCapacity(bmuMap, data.stations),
+      interconnectorCapacity(data.interconnectors),
+    )
+  }, [data, bmuMap, live])
 
   if (error) {
     return (
@@ -122,7 +131,7 @@ export default function App() {
         />
         {live?.mix && (
           <div className="mixstrip-dock">
-            <MixStrip mix={live.mix} isSnapshot={live.source === 'snapshot'} />
+            <MixStrip mix={live.mix} rows={mixRows} isSnapshot={live.source === 'snapshot'} />
           </div>
         )}
       </main>
