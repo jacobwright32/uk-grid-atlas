@@ -1,5 +1,11 @@
 # ⚡ UK Grid Atlas
 
+**Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
+[![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
+[![Deploy](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/deploy.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/deploy.yml)
+
+[![UK Grid Atlas — interactive dark map of UK generation, transmission and live output](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
+
 An interactive, dark-mode map of the United Kingdom's electricity system: every
 utility-scale generation site, the 400/275 kV transmission backbone (plus
 Scotland's 132 kV network), and the HVDC interconnectors that tie GB to its
