@@ -45,6 +45,26 @@ export interface CountryConfig {
 }
 
 export const COUNTRIES: Record<CountryId, CountryConfig> = {
+  all: {
+    id: 'all',
+    region: 'eu',
+    name: 'All countries',
+    flag: '🌍',
+    bounds: [
+      [-126.0, 24.0],
+      [31.5, 71.0],
+    ],
+    tiers: [
+      { kvs: [765, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },
+      { kvs: [345, 300, 275, 230, 225, 220], label: '220–345 kV' },
+      { kvs: [150, 132, 130, 110], label: '110–150 kV' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote:
+      'Thirteen grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Thirteen grids · two continents · every HVDC link',
+  },
   gb: {
     id: 'gb',
     region: 'eu',
@@ -298,29 +318,9 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       'Live output for the US would come from the EIA hourly API (regional, not per-plant) — on the roadmap. Alaska, Hawaii and Puerto Rico are omitted in v1.',
     tagline: 'Every utility-scale plant · the bulk transmission grid · HVDC ties',
   },
-  all: {
-    id: 'all',
-    region: 'eu',
-    name: 'All countries',
-    flag: '🌍',
-    bounds: [
-      [-126.0, 24.0],
-      [31.5, 71.0],
-    ],
-    tiers: [
-      { kvs: [765, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },
-      { kvs: [345, 300, 275, 230, 225, 220], label: '220–345 kV' },
-      { kvs: [150, 132, 130, 110], label: '110–150 kV' },
-    ],
-    hasLive: false,
-    liveKind: 'none',
-    liveNote:
-      'Thirteen grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Thirteen grids · two continents · every HVDC link',
-  },
 }
 
-export const DEFAULT_COUNTRY: CountryId = 'gb'
+export const DEFAULT_COUNTRY: CountryId = 'all'
 
 export function countryFromHash(): CountryId {
   const h = window.location.hash.replace('#', '').toLowerCase()

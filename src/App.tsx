@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar'
 import MixStrip from './components/MixStrip'
 import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
-import { COUNTRIES, countryFromHash } from './lib/countries'
+import { COUNTRIES, countryFromHash, DEFAULT_COUNTRY } from './lib/countries'
 import type { CountryId } from './lib/countries'
 import { allGroupIds, computeStats, totalsFor } from './lib/filter'
 import { computeMixRows, fleetCapacity, interconnectorCapacity } from './lib/fleet'
@@ -41,7 +41,7 @@ export default function App() {
   }, [])
 
   const switchCountry = (id: CountryId) => {
-    window.location.hash = id === 'gb' ? '' : id
+    window.location.hash = id === DEFAULT_COUNTRY ? '' : id
     setCountryId(id)
   }
 
