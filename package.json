@@ -42,5 +42,5 @@
     "vitest": "^4.1.10",
     "world-atlas": "^2.0.2"
   },
-  "description": "Interactive dark-mode map of UK electricity generation and transmission infrastructure"
+  "description": "Interactive dark-mode atlas of GB, European and US power grids: generation sites, transmission networks, HVDC links and live output."
 }

@@ -168,7 +168,9 @@ for (const cc of countryIds) {
     let unmappedMW = 0
     let registryDirty = false
     for (const s of unitSeries) {
-      let stationId = registry.byUnit[s.unitEic] ?? overrides[s.unitEic] ?? null
+      // Overrides outrank the cached registry, so a hand-mapping added after
+      // a wrong fuzzy match takes effect immediately (not at the 30d rebuild).
+      let stationId = overrides[s.unitEic] ?? registry.byUnit[s.unitEic] ?? null
       if (!stationId && s.unitName) {
         stationId = matchByName(index, s.unitName, s.psrType)
       }

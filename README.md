@@ -1,22 +1,23 @@
-# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪
+# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇺🇸 🌍
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
 [![Deploy](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/deploy.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/deploy.yml)
 
-[![UK Grid Atlas — interactive dark map of UK generation, transmission and live output](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
+[![Grid Atlas — interactive dark map of generation, transmission and live output across GB, Europe and the US](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
 
-An interactive, dark-mode map of the United Kingdom's electricity system: every
-utility-scale generation site, the 400/275 kV transmission backbone (plus
-Scotland's 132 kV network), and the HVDC interconnectors that tie GB to its
-neighbours.
+An interactive, dark-mode atlas of power grids — Great Britain in full detail,
+six European neighbours, the United States, and a transatlantic ALL view:
+~34,000 utility-scale generation sites, each country's high-voltage
+transmission backbone, and the HVDC interconnectors that tie the grids
+together.
 
 Built with **React 19 + TypeScript (strict) + Vite + MapLibre GL JS** — WebGL
 rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **~4,000 generation sites** — nuclear, gas, offshore/onshore wind, solar,
+- **~34,000 generation sites across eight grids** — nuclear, gas, offshore/onshore wind, solar,
   hydro, pumped storage, bioenergy, battery storage and more — each sized by
   installed capacity and coloured by fuel. Hover for a card with capacity,
   operator and commissioning date; click to pin it.
@@ -29,14 +30,16 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
   (Eastern Green Links, NeuConnect) shown dashed/faded.
 - **Legend-as-filter** — toggle any fuel group or network class; headline
   counts and GW totals track what's visible.
-- **Live output layer (Elexon)** — per-station figures from the free,
-  key-less Elexon Insights API, fetched directly by the browser (the API is
+- **Live output layer** — GB: per-station figures from the free, key-less
+  Elexon Insights API, fetched directly by the browser (the API is
   CORS-open): scheduled output _right now_ (PN), the latest fully-metered
   day (B1610: average/peak/energy + a half-hourly sparkline and load factor
   in every hover card), live interconnector flows on the HVDC lines, and a
   national transmission-mix strip (collapsible to a compact chip — it starts
-  collapsed on phones). Dots resize by live output (bright) over capacity
-  (ghost); toggle it off in the sidebar.
+  collapsed on phones). EU: the six European grids show the latest ENTSO-E
+  metered day per station plus the daily generation mix, refreshed every
+  6 hours by a scheduled workflow. Dots resize by live output (bright) over
+  capacity (ghost); toggle it off in the sidebar.
 - **Self-contained dark basemap** (Natural Earth coastline) with an optional
   online CARTO raster underlay for street-level context.
 
@@ -94,15 +97,17 @@ node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via O
 ```
 
 The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
-`#fr`, `#de` in the URL) swaps data bundles, map bounds and voltage tiers per
-country. Seven grids ship today: Great Britain (400/275/132 kV), the
-Netherlands (380/220/150/110), Belgium (380/220/150), the island of Ireland
-(400/275/220/110 — the SEM is mapped as one grid), Denmark (400/150/132),
-France (400/225; the huge 90/63 kV layer is omitted) and Germany (380/220;
-110 kV omitted). Each country is ~30 lines of config in
-`scripts/build-data.mjs` + `src/lib/countries.ts` plus its raw extracts —
-adding another is an afternoon, not a project. The live Elexon layer is
-GB-only; European countries would use ENTSO-E (roadmap).
+`#fr`, `#de`, `#us`, `#all` in the URL) swaps data bundles, map bounds and
+voltage tiers per country. Eight grids ship today: Great Britain
+(400/275/132 kV), the Netherlands (380/220/150/110), Belgium (380/220/150),
+the island of Ireland (400/275/220/110 — the SEM is mapped as one grid),
+Denmark (400/150/132), France (400/225; the huge 90/63 kV layer is omitted),
+Germany (380/220; 110 kV omitted) and the United States (765/500/345/230 kV,
+CONUS) — plus a transatlantic ALL view that merges the lot. Each country is
+~30 lines of config in `scripts/build-data.mjs` + `src/lib/countries.ts`
+plus its raw extracts — adding another is an afternoon, not a project. Live
+output: GB via Elexon (browser-side), the six EU grids via ENTSO-E
+snapshots; a US live layer (EIA hourly API) is the remaining roadmap item.
 
 | Layer                  | Source                                                       | Notes                                                                                                                                                                                   |
 | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,8 +142,8 @@ public domain. Keep the attribution control visible if you deploy this.
 
 ### European live layer (ENTSO-E) — one-time setup
 
-The EU countries' live layer refreshes itself via GitHub Actions once you add
-a free ENTSO-E token:
+The EU live layer is up and refreshing 6-hourly in this repo. For forks (or
+if the token is ever rotated), the one-time setup:
 
 1. Register at [transparency.entsoe.eu](https://transparency.entsoe.eu) (free).
 2. In _My Account Settings_, generate a **Web API Security Token** (if the
@@ -150,10 +155,11 @@ a free ENTSO-E token:
    itself every 6 hours from then on).
 
 Each run finds the latest metered day per country, maps generation units to
-map stations (`data/entsoe-maps/`, fuzzy-matched — check `unmatchedTop` there
-and add overrides in `<cc>-overrides.json` if a big plant is missed), and
-commits fresh snapshots that the site picks up on its next deploy. Until the
-token exists the sidebar simply says the snapshot is awaited; nothing breaks.
+map stations (`data/entsoe-maps/`, matched by a multilingual name tokeniser —
+check `unmatchedTop` there and add overrides in `<cc>-overrides.json` if a
+big plant is missed; overrides win over cached matches), commits fresh
+snapshots, and dispatches a site deploy so they go live. Without a token the
+script exits cleanly and the sidebar says the snapshot is awaited.
 
 ## Architecture
 
@@ -178,6 +184,12 @@ scripts/
   fetch-overpass.mjs    reproducible raw-data download (mirrors, retries, cache)
   build-data.mjs        raw → app GeoJSON (dedupe, classify, simplify)
   interconnectors.mjs   curated HVDC link registry
+  basemap.mjs           region coastline builder (antimeridian-safe clipping)
+  live-matching.mjs     multilingual unit/station name matching (unit-tested)
+  entsoe.mjs            ENTSO-E API client + document parsing
+  fetch-entsoe-snapshot.mjs   bake EU live snapshots (Actions, 6-hourly)
+  fetch-live-snapshot.mjs     bake the offline GB snapshot
+  build-bmu-map.mjs     GB BMU → station map
   pipeline-utils.mjs    pure helpers (unit-tested)
 ```
 
@@ -202,16 +214,19 @@ Design decisions worth knowing:
 
 ## Scripts
 
-| Command                             | What it does                                          |
-| ----------------------------------- | ----------------------------------------------------- |
-| `npm run dev`                       | Vite dev server with HMR                              |
-| `npm run build`                     | Type-check + production build                         |
-| `npm run build:single`              | Self-contained single-file build                      |
-| `npm run test`                      | Vitest unit tests (lib + pipeline)                    |
-| `npm run lint`                      | oxlint                                                |
-| `npm run format`                    | Prettier                                              |
-| `npm run data:fetch` / `data:build` | Refresh the dataset                                   |
-| `npm run data:basemap`              | Rebuild just the coastline bundles from Natural Earth |
+| Command                             | What it does                                                        |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `npm run dev`                       | Vite dev server with HMR                                            |
+| `npm run build`                     | Type-check + production build                                       |
+| `npm run build:single`              | Self-contained single-file build                                    |
+| `npm run test`                      | Vitest unit tests (lib + pipeline)                                  |
+| `npm run lint`                      | oxlint                                                              |
+| `npm run format`                    | Prettier                                                            |
+| `npm run data:fetch` / `data:build` | Refresh the dataset                                                 |
+| `npm run data:basemap`              | Rebuild just the coastline bundles from Natural Earth               |
+| `npm run data:bmumap`               | Rebuild the GB BMU → station map (Elexon registry)                  |
+| `npm run data:snapshot`             | Bake the offline GB live snapshot                                   |
+| `npm run live:snapshots`            | Fetch ENTSO-E snapshots for all EU countries (needs `ENTSOE_TOKEN`) |
 
 ## Environment
 
