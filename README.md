@@ -1,4 +1,4 @@
-# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇺🇸 🌍
+# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇳🇴 🇸🇪 🇵🇱 🇪🇸 🇮🇹 🇺🇸 🌍
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
@@ -7,17 +7,17 @@
 [![Grid Atlas — interactive dark map of generation, transmission and live output across GB, Europe and the US](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
 
 An interactive, dark-mode atlas of power grids — Great Britain in full detail,
-six European neighbours, the United States, and a transatlantic ALL view:
-~34,000 utility-scale generation sites, each country's high-voltage
-transmission backbone, and the HVDC interconnectors that tie the grids
-together.
+eleven European countries, the United States, and a transatlantic ALL view:
+tens of thousands of utility-scale generation sites, each country's
+high-voltage transmission backbone, and the HVDC interconnectors that tie
+the grids together.
 
 Built with **React 19 + TypeScript (strict) + Vite + MapLibre GL JS** — WebGL
 rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **~34,000 generation sites across eight grids** — nuclear, gas, offshore/onshore wind, solar,
+- **Tens of thousands of generation sites across thirteen grids** — nuclear, gas, offshore/onshore wind, solar,
   hydro, pumped storage, bioenergy, battery storage and more — each sized by
   installed capacity and coloured by fuel. Hover for a card with capacity,
   operator and commissioning date; click to pin it.
@@ -90,24 +90,29 @@ Pre-built GeoJSON ships in `src/data/`, so the app builds without network
 access. To refresh from source:
 
 ```bash
-npm run data:fetch          # download GB raw extracts from Overpass (mirrors, retried)
+npm run data:fetch -- gb    # download raw extracts from Overpass (mirrors, retried; gb | no | se | pl | es | it)
 node scripts/build-data.mjs gb   # → src/data/gb/*.json
 node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via Overpass or
                                  #   scripts/pbf-extract-lines.py on a Geofabrik .osm.pbf)
 ```
 
 The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
-`#fr`, `#de`, `#us`, `#all` in the URL) swaps data bundles, map bounds and
-voltage tiers per country. Eight grids ship today: Great Britain
-(400/275/132 kV), the Netherlands (380/220/150/110), Belgium (380/220/150),
-the island of Ireland (400/275/220/110 — the SEM is mapped as one grid),
-Denmark (400/150/132), France (400/225; the huge 90/63 kV layer is omitted),
-Germany (380/220; 110 kV omitted) and the United States (765/500/345/230 kV,
-CONUS) — plus a transatlantic ALL view that merges the lot. Each country is
-~30 lines of config in `scripts/build-data.mjs` + `src/lib/countries.ts`
-plus its raw extracts — adding another is an afternoon, not a project. Live
-output: GB via Elexon (browser-side), the six EU grids via ENTSO-E
-snapshots; a US live layer (EIA hourly API) is the remaining roadmap item.
+`#fr`, `#de`, `#no`, `#se`, `#pl`, `#es`, `#it`, `#us`, `#all` in the URL)
+swaps data bundles, map bounds and voltage tiers per country. Thirteen grids
+ship today: Great Britain (400/275/132 kV), the Netherlands
+(380/220/150/110), Belgium (380/220/150), the island of Ireland
+(400/275/220/110 — the SEM is mapped as one grid), Denmark (400/150/132),
+France (400/225; the huge 90/63 kV layer is omitted), Germany (380/220;
+110 kV omitted), Norway (420/300/132), Sweden (400/220/130), Poland
+(400/220; 110 kV omitted), Spain (400/220; regional networks omitted),
+Italy (380/220; the vast 150 kV layer is omitted) and the United States
+(765/500/345/230 kV, CONUS) — plus a transatlantic ALL view that merges the
+lot. Each country is ~30 lines of config in `scripts/build-data.mjs` +
+`src/lib/countries.ts` plus its raw extracts — adding another is an
+afternoon, not a project. Live output: GB via Elexon (browser-side), the
+six original EU grids via ENTSO-E snapshots; NO/SE/PL/ES/IT are
+infrastructure-only for now (ENTSO-E config entries away from live), and a
+US live layer (EIA hourly API) is on the roadmap.
 
 | Layer                  | Source                                                       | Notes                                                                                                                                                                                   |
 | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

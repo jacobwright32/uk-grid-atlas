@@ -1,9 +1,24 @@
 /** Per-country configuration: bounds, voltage tiers, live-data support. */
 
-export type CountryId = 'gb' | 'nl' | 'be' | 'ie' | 'dk' | 'fr' | 'de' | 'us' | 'all'
+export type CountryId =
+  'gb' | 'nl' | 'be' | 'ie' | 'dk' | 'fr' | 'de' | 'no' | 'se' | 'pl' | 'es' | 'it' | 'us' | 'all'
 
 /** Countries with their own data bundles ('all' merges these at runtime). */
-export const REAL_COUNTRY_IDS = ['gb', 'nl', 'be', 'ie', 'dk', 'fr', 'de', 'us'] as const
+export const REAL_COUNTRY_IDS = [
+  'gb',
+  'nl',
+  'be',
+  'ie',
+  'dk',
+  'fr',
+  'de',
+  'no',
+  'se',
+  'pl',
+  'es',
+  'it',
+  'us',
+] as const
 export type RealCountryId = (typeof REAL_COUNTRY_IDS)[number]
 
 export interface VoltageTier {
@@ -65,8 +80,7 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     ],
     hasLive: true,
     liveKind: 'entsoe',
-    liveNote:
-      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'Elke grote centrale · het hoogspanningsnet · HVDC-verbindingen',
   },
   be: {
@@ -85,8 +99,7 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     ],
     hasLive: true,
     liveKind: 'entsoe',
-    liveNote:
-      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'Elke centrale · chaque centrale · le réseau THT · HVDC',
   },
   ie: {
@@ -105,8 +118,7 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     ],
     hasLive: true,
     liveKind: 'entsoe',
-    liveNote:
-      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'The all-island grid · every generator · HVDC links',
   },
   dk: {
@@ -125,8 +137,7 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     ],
     hasLive: true,
     liveKind: 'entsoe',
-    liveNote:
-      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'Alle kraftværker · transmissionsnettet · HVDC-forbindelser',
   },
   fr: {
@@ -169,6 +180,104 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. The vast 110 kV network is omitted to keep the map fast.',
     tagline: 'Jedes Kraftwerk · das Höchstspannungsnetz · HGÜ-Verbindungen',
   },
+  no: {
+    id: 'no',
+    region: 'eu',
+    name: 'Norway',
+    flag: '🇳🇴',
+    bounds: [
+      [4.0, 57.7],
+      [31.5, 71.4],
+    ],
+    tiers: [
+      { kvs: [420], label: '420 kV lines' },
+      { kvs: [300], label: '300 kV lines' },
+      { kvs: [132], label: '132 kV lines' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote: 'Infrastructure view for now — the ENTSO-E live layer for Norway is on the roadmap.',
+    tagline: 'Hvert kraftverk · sentralnettet · HVDC-forbindelser',
+  },
+  se: {
+    id: 'se',
+    region: 'eu',
+    name: 'Sweden',
+    flag: '🇸🇪',
+    bounds: [
+      [10.5, 55.0],
+      [24.4, 69.2],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [130], label: '130 kV lines' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote: 'Infrastructure view for now — the ENTSO-E live layer for Sweden is on the roadmap.',
+    tagline: 'Varje kraftverk · stamnätet · HVDC-länkar',
+  },
+  pl: {
+    id: 'pl',
+    region: 'eu',
+    name: 'Poland',
+    flag: '🇵🇱',
+    bounds: [
+      [14.0, 48.9],
+      [24.2, 55.0],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote:
+      'Infrastructure view for now — the ENTSO-E live layer for Poland is on the roadmap. The dense 110 kV network is omitted to keep the map fast.',
+    tagline: 'Każda elektrownia · sieć przesyłowa · połączenia HVDC',
+  },
+  es: {
+    id: 'es',
+    region: 'eu',
+    name: 'Spain',
+    flag: '🇪🇸',
+    bounds: [
+      [-9.9, 35.7],
+      [4.6, 43.9],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote:
+      'Infrastructure view for now — the ENTSO-E live layer for Spain is on the roadmap. The 132/110 kV regional networks are omitted to keep the map fast; the Canaries sit outside the default frame (pan south-west).',
+    tagline: 'Cada central · la red de transporte · enlaces HVDC',
+  },
+  it: {
+    id: 'it',
+    region: 'eu',
+    name: 'Italy',
+    flag: '🇮🇹',
+    bounds: [
+      [6.5, 36.4],
+      [18.7, 47.2],
+    ],
+    tiers: [
+      { kvs: [380], label: '380 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote:
+      'Infrastructure view for now — the ENTSO-E live layer for Italy is on the roadmap. The vast 150 kV network is omitted to keep the map fast.',
+    tagline: 'Ogni centrale · la rete di trasmissione · collegamenti HVDC',
+  },
   us: {
     id: 'us',
     region: 'na',
@@ -196,18 +305,18 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     flag: '🌍',
     bounds: [
       [-126.0, 24.0],
-      [15.5, 61.5],
+      [31.5, 71.0],
     ],
     tiers: [
-      { kvs: [765, 500, 400, 380], label: 'Backbone (≥380 kV)' },
-      { kvs: [345, 275, 230, 225, 220], label: '220–345 kV' },
-      { kvs: [150, 132, 110], label: '110–150 kV' },
+      { kvs: [765, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },
+      { kvs: [345, 300, 275, 230, 225, 220], label: '220–345 kV' },
+      { kvs: [150, 132, 130, 110], label: '110–150 kV' },
     ],
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Eight grids, one map. Switch to a single country for its details — the live output layer runs on the GB view.',
-    tagline: 'Eight grids · two continents · every HVDC link',
+      'Thirteen grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Thirteen grids · two continents · every HVDC link',
   },
 }
 

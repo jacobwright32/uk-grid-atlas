@@ -32,6 +32,26 @@ import deStations from '../data/de/stations.json?url'
 import deTransmission from '../data/de/transmission.json?url'
 import deInterconnectors from '../data/de/interconnectors.json?url'
 import deMeta from '../data/de/meta.json?url'
+import noStations from '../data/no/stations.json?url'
+import noTransmission from '../data/no/transmission.json?url'
+import noInterconnectors from '../data/no/interconnectors.json?url'
+import noMeta from '../data/no/meta.json?url'
+import seStations from '../data/se/stations.json?url'
+import seTransmission from '../data/se/transmission.json?url'
+import seInterconnectors from '../data/se/interconnectors.json?url'
+import seMeta from '../data/se/meta.json?url'
+import plStations from '../data/pl/stations.json?url'
+import plTransmission from '../data/pl/transmission.json?url'
+import plInterconnectors from '../data/pl/interconnectors.json?url'
+import plMeta from '../data/pl/meta.json?url'
+import esStations from '../data/es/stations.json?url'
+import esTransmission from '../data/es/transmission.json?url'
+import esInterconnectors from '../data/es/interconnectors.json?url'
+import esMeta from '../data/es/meta.json?url'
+import itStations from '../data/it/stations.json?url'
+import itTransmission from '../data/it/transmission.json?url'
+import itInterconnectors from '../data/it/interconnectors.json?url'
+import itMeta from '../data/it/meta.json?url'
 import usStations from '../data/us/stations.json?url'
 import usTransmission from '../data/us/transmission.json?url'
 import usInterconnectors from '../data/us/interconnectors.json?url'
@@ -44,14 +64,84 @@ const BASEMAP_URLS = { eu: basemapEuUrl, na: basemapNaUrl } as const
 type Bundle = { stations: string; transmission: string; interconnectors: string; meta: string }
 
 const URLS: Record<RealCountryId, Bundle> = {
-  gb: { stations: gbStations, transmission: gbTransmission, interconnectors: gbInterconnectors, meta: gbMeta },
-  nl: { stations: nlStations, transmission: nlTransmission, interconnectors: nlInterconnectors, meta: nlMeta },
-  be: { stations: beStations, transmission: beTransmission, interconnectors: beInterconnectors, meta: beMeta },
-  ie: { stations: ieStations, transmission: ieTransmission, interconnectors: ieInterconnectors, meta: ieMeta },
-  dk: { stations: dkStations, transmission: dkTransmission, interconnectors: dkInterconnectors, meta: dkMeta },
-  fr: { stations: frStations, transmission: frTransmission, interconnectors: frInterconnectors, meta: frMeta },
-  de: { stations: deStations, transmission: deTransmission, interconnectors: deInterconnectors, meta: deMeta },
-  us: { stations: usStations, transmission: usTransmission, interconnectors: usInterconnectors, meta: usMeta },
+  gb: {
+    stations: gbStations,
+    transmission: gbTransmission,
+    interconnectors: gbInterconnectors,
+    meta: gbMeta,
+  },
+  nl: {
+    stations: nlStations,
+    transmission: nlTransmission,
+    interconnectors: nlInterconnectors,
+    meta: nlMeta,
+  },
+  be: {
+    stations: beStations,
+    transmission: beTransmission,
+    interconnectors: beInterconnectors,
+    meta: beMeta,
+  },
+  ie: {
+    stations: ieStations,
+    transmission: ieTransmission,
+    interconnectors: ieInterconnectors,
+    meta: ieMeta,
+  },
+  dk: {
+    stations: dkStations,
+    transmission: dkTransmission,
+    interconnectors: dkInterconnectors,
+    meta: dkMeta,
+  },
+  fr: {
+    stations: frStations,
+    transmission: frTransmission,
+    interconnectors: frInterconnectors,
+    meta: frMeta,
+  },
+  de: {
+    stations: deStations,
+    transmission: deTransmission,
+    interconnectors: deInterconnectors,
+    meta: deMeta,
+  },
+  no: {
+    stations: noStations,
+    transmission: noTransmission,
+    interconnectors: noInterconnectors,
+    meta: noMeta,
+  },
+  se: {
+    stations: seStations,
+    transmission: seTransmission,
+    interconnectors: seInterconnectors,
+    meta: seMeta,
+  },
+  pl: {
+    stations: plStations,
+    transmission: plTransmission,
+    interconnectors: plInterconnectors,
+    meta: plMeta,
+  },
+  es: {
+    stations: esStations,
+    transmission: esTransmission,
+    interconnectors: esInterconnectors,
+    meta: esMeta,
+  },
+  it: {
+    stations: itStations,
+    transmission: itTransmission,
+    interconnectors: itInterconnectors,
+    meta: itMeta,
+  },
+  us: {
+    stations: usStations,
+    transmission: usTransmission,
+    interconnectors: usInterconnectors,
+    meta: usMeta,
+  },
 }
 
 async function fetchJSON<T>(url: string): Promise<T> {

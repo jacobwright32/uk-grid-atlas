@@ -59,6 +59,11 @@
   border: 1px solid var(--hairline);
   border-radius: 8px;
   padding: 2px;
+  /* Thirteen grids + ALL no longer fit every width — let the row scroll. */
+  overflow-x: auto;
+  scrollbar-width: thin;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .country-btn {

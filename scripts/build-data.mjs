@@ -124,6 +124,55 @@ const COUNTRIES = {
     isForeignLine: () => false,
     classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
   },
+  no: {
+    decimalComma: true,
+    plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
+    seaFiles: ['sea_no.json'],
+    lineFile: /^no_lines.*\.json$/,
+    // Sea box brushes the GB and Danish North Sea sectors.
+    isForeignSea: ([lon, lat]) => lon < 1.9 || lat < 56.6,
+    isForeignLine: () => false, // admin-area query already clips
+    classify: (volts) =>
+      volts >= 380000 ? 420 : volts >= 264000 ? 300 : volts >= 110000 ? 132 : null,
+  },
+  se: {
+    decimalComma: true,
+    plantFiles: ['plants_se_s.json', 'plants_se_n.json', 'plants_se_pbf.json'],
+    seaFiles: ['sea_se.json'],
+    lineFile: /^se_lines.*\.json$/,
+    // Öresund/Baltic boxes brush Danish and German farms.
+    isForeignSea: ([lon, lat]) => lat < 55.25 || (lat < 55.6 && lon < 13.0),
+    isForeignLine: () => false,
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 110000 ? 130 : null,
+  },
+  pl: {
+    decimalComma: true,
+    plantFiles: ['plants_pl_w.json', 'plants_pl_e.json', 'plants_pl_pbf.json'],
+    seaFiles: ['sea_pl.json'],
+    lineFile: /^pl_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) => (volts >= 380000 ? 400 : volts >= 200000 ? 220 : null),
+  },
+  es: {
+    decimalComma: true,
+    plantFiles: ['plants_es.json', 'plants_es_pbf.json'],
+    seaFiles: [],
+    lineFile: /^es_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) => (volts >= 380000 ? 400 : volts >= 200000 ? 220 : null),
+  },
+  it: {
+    decimalComma: true,
+    plantFiles: ['plants_it_n.json', 'plants_it_m.json', 'plants_it_s.json', 'plants_it_pbf.json'],
+    seaFiles: [],
+    lineFile: /^it_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
+  },
   us: {
     region: 'na',
     simplifyEps: 0.0005,

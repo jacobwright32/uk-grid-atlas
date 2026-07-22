@@ -17,10 +17,11 @@ export const REGIONS = {
   eu: {
     file: 'basemap.json',
     eps: 0.004,
-    // Iceland, the Baltic islands, Corsica/Sardinia/Sicily, the Canaries and
-    // Madagascar are separate Natural Earth polygons — the select box is
-    // sized so they ship alongside the Eurasia/Africa mainland.
-    select: [-25, -27, 51, 67],
+    // Iceland, the Baltic islands, Corsica/Sardinia/Sicily, the Canaries,
+    // Madagascar and (above 67°N) Lofoten/Vesterålen are separate Natural
+    // Earth polygons — the select box is sized so they ship alongside the
+    // Eurasia/Africa mainland. Svalbard (74°N+) stays out.
+    select: [-25, -27, 51, 71.6],
     box: [-35, -36, 180, 84.5],
   },
   na: {

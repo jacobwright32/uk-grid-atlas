@@ -1,0 +1,261 @@
+{
+ "labels": [
+  {
+   "name": "data-pipeline",
+   "color": "8250df",
+   "description": "Overpass/PBF extraction and bundle building"
+  },
+  {
+   "name": "live-layer",
+   "color": "0ea5e9",
+   "description": "Elexon / ENTSO-E live output"
+  },
+  {
+   "name": "frontend",
+   "color": "1f883d",
+   "description": "React app, MapLibre, UI"
+  },
+  {
+   "name": "performance",
+   "color": "d4a72c",
+   "description": "Payload size, parse and render speed"
+  },
+  {
+   "name": "accessibility",
+   "color": "7057ff",
+   "description": "Keyboard, screen reader, motion"
+  },
+  {
+   "name": "country",
+   "color": "0e8a16",
+   "description": "Adding a new grid"
+  }
+ ],
+ "issues": [
+  {
+   "title": "Pipeline divides large offshore wind capacity by 1000",
+   "labels": [
+    "bug",
+    "data-pipeline"
+   ],
+   "body": "In `scripts/build-data.mjs` (~line 297) the \"value >1500 in a small-fuel group must be kW\" guard runs **before** wind is split into on/offshore (~line 307), so a legitimate multi-GW offshore farm tagged in MW is silently divided by 1000.\n\n**Fix:** run the guard after the offshore reassignment, or exempt `wind` from it.\n*Found in the 22 Jul code review.*"
+  },
+  {
+   "title": "Hover-card line swatches use EU voltage thresholds in every country",
+   "labels": [
+    "bug",
+    "frontend"
+   ],
+   "body": "`src/map/popup.ts` (~line 164) hard-codes `v >= 340` → backbone swatch, `>= 200` → secondary. A US 345 kV line therefore gets the backbone (white) swatch while the legend classes it tier 2.\n\n**Fix:** derive the swatch from the active `country.tiers` instead of fixed numbers."
+  },
+  {
+   "title": "ALL view fails entirely if one country bundle fails to load",
+   "labels": [
+    "bug",
+    "frontend"
+   ],
+   "body": "`loadAll` in `src/hooks/useGridData.ts` `Promise.all`s eight bundles — a single 404/network failure rejects the whole merged view.\n\n**Fix:** `allSettled`, merge what loaded, and surface a small \"X's data failed to load\" notice."
+  },
+  {
+   "title": "Live data is cached for the whole session — failures never retried, GB 'now' never refreshes",
+   "labels": [
+    "bug",
+    "live-layer"
+   ],
+   "body": "`src/hooks/useLiveData.ts` caches results (including `null`/`unavailable`) in module-level Maps with no TTL:\n- a transient Elexon/snapshot failure marks the country unavailable until reload;\n- the GB mix/PN figures are fetched once and go stale during long sessions.\n\n**Fix:** TTL on the caches, retry failures, and refresh the GB mix every ~5 minutes."
+  },
+  {
+   "title": "Clock-change days drop settlement periods 49/50 from GB day series",
+   "labels": [
+    "bug",
+    "live-layer"
+   ],
+   "body": "`aggregateDay` in `src/lib/live-core.mjs` only emits 48 half-hour slots; on the autumn clock change GB days have 50 settlement periods, so the last hour of metered data is silently dropped (and the spring day has a hole)."
+  },
+  {
+   "title": "Station de-dup misses phase variants — offshore farms double-count",
+   "labels": [
+    "bug",
+    "data-pipeline"
+   ],
+   "body": "Dedupe in `scripts/build-data.mjs` (~line 326) is OSM id + **exact** normalised name, so \"Walney\" and \"Walney Extension\" (umbrella site + phases) both survive — the README's known caveat. Diacritic/punctuation variants also don't merge, and unnamed sites skip name-dedupe entirely.\n\n**Idea:** token-subset match within a small distance radius collapses phases without merging genuinely distinct plants."
+  },
+  {
+   "title": "window.__ukgridMap debug handle leaks after unmount",
+   "labels": [
+    "bug",
+    "frontend",
+    "good first issue"
+   ],
+   "body": "`GridMap.tsx` sets `window.__ukgridMap` on init but the effect cleanup never deletes it, leaving a reference to a removed map instance."
+  },
+  {
+   "title": "Payload diet: US bundle is ~13 MB and parsed on the main thread",
+   "labels": [
+    "performance"
+   ],
+   "body": "`src/data/us/transmission.json` is 9.1 MB + 4.2 MB stations (14,994 sites / 36,710 lines); DE adds 9,711 stations. All are un-tiled GeoJSON parsed with `res.json()` on the main thread — noticeable jank entering US/ALL.\n\n**Steps:** quantise coordinates further, prune sub-100 kV US spurs, parse in a worker. **Longer term:** PMTiles/vector tiles for stations + lines."
+  },
+  {
+   "title": "Tame the Elexon request burst (~30 concurrent) and 16-day metered probe",
+   "labels": [
+    "performance",
+    "live-layer"
+   ],
+   "body": "Per GB page load: 16 parallel day-probes + 13 PN batches + mix (+13 B1610 batches once the day is found). Keyless API → 429 risk for popular deployments, and the probe only needs the newest day.\n\n**Fix:** binary-search (or walk back from yesterday) for the metered day; cap concurrency; reuse probes' responses."
+  },
+  {
+   "title": "Surface the ~1-week B1610 settlement lag in the UI",
+   "labels": [
+    "live-layer"
+   ],
+   "body": "GB per-station day data lags ~8 days (settlement). The hover card shows only the date — users read it as broken rather than lagged. Add a small \"metered data settles ~a week behind\" hint next to the metered-day date (sidebar + hover cards)."
+  },
+  {
+   "title": "Matcher hardening: stricter B20/OTHER fuel compatibility + per-run match report",
+   "labels": [
+    "live-layer"
+   ],
+   "body": "`PSR_COMPAT.B20` / `COMPAT.OTHER` match nearly any fuel and the EU threshold is 0.5, so single-token overlaps can bind the wrong station (co-located or same-town plants). Emit a per-country match report (unit, station, score) from `fetch-entsoe-snapshot.mjs` so bad binds are visible, and consider 0.6+ for B20."
+  },
+  {
+   "title": "Accessibility pass: keyboard access to stations, country-aware labels, reduced motion",
+   "labels": [
+    "accessibility"
+   ],
+   "body": "From the 22 Jul review:\n- Station/line cards are mouse-only — no keyboard or screen-reader path to any data (`GridMap.tsx` handlers).\n- `aria-label`s are hard-coded \"UK\"/\"GB\" on every country (`GridMap.tsx` map label, `MixStrip.tsx` figure label).\n- `fitBounds({duration: 900})` always animates — no `prefers-reduced-motion` handling.\n- Header `role=\"tablist\"` has no `aria-controls`/tabpanel; headline `aria-live` re-announces on every filter toggle.\n\nA roving-focus station list (or search-driven focus) would cover the keyboard path."
+  },
+  {
+   "title": "Mobile: sidebar opens covering the map, with no scrim or Escape",
+   "labels": [
+    "accessibility",
+    "frontend"
+   ],
+   "body": "On phones the sidebar is a fixed overlay and `sidebarOpen` defaults to `true`, so first paint is a covered map; there's no scrim, focus trap, or Escape-to-close. Default it closed under 640 px and add scrim + Escape."
+  },
+  {
+   "title": "Multi-country raw-data fetch: fetch-overpass.mjs is GB-only and the PBF path is undocumented",
+   "labels": [
+    "data-pipeline"
+   ],
+   "body": "`scripts/fetch-overpass.mjs` has hard-coded GB queries; every other country was built from manual `pbf-extract-*.py` runs with no npm script or docs, and raw extracts live outside the repo — a clean clone cannot rebuild bundles.\n\n**Fix:** per-country query/extract registry + a documented `npm run data:fetch -- <cc>` path."
+  },
+  {
+   "title": "Pipeline robustness: empty Overpass responses cached as success; corrupt line files silently skipped",
+   "labels": [
+    "data-pipeline",
+    "good first issue"
+   ],
+   "body": "`fetch-overpass.mjs` `cached()` treats `{elements: []}` as a valid cache hit (bakes empty extracts); `build-data.mjs` wraps line files in try/`continue` so a corrupt file just drops its lines. Both should fail loudly."
+  },
+  {
+   "title": "Regenerate og.png social card for the 8-grid branding",
+   "labels": [
+    "documentation",
+    "good first issue"
+   ],
+   "body": "`public/og.png` still shows the UK-only art/title. README + meta tags now say GB + EU + US; the card should match."
+  },
+  {
+   "title": "Time slider: scrub the day from series already shipped in snapshots",
+   "labels": [
+    "enhancement"
+   ],
+   "body": "GB snapshots carry 48 half-hourly points per station, EU snapshots 24 hourly — a slider can scrub the whole day client-side with zero new fetching. Bake a per-interval mix array into snapshots so the mix strip scrubs too (today `mix` is a single instant)."
+  },
+  {
+   "title": "ENTSO-E intraday: show the latest interval as 'now' instead of a day-average at fake noon",
+   "labels": [
+    "enhancement",
+    "live-layer"
+   ],
+   "body": "`fetch-entsoe-snapshot.mjs` averages A73/A75 into a daily mean with `mix.time` hard-coded to 12:00Z. Fetch the latest published interval and expose it as `nowMW` (like GB's outturn), keeping the daily series for the slider."
+  },
+  {
+   "title": "Station search: type a name, fly to it, pin its card",
+   "labels": [
+    "enhancement",
+    "good first issue"
+   ],
+   "body": "Small search box over the loaded stations (they're all in memory) → `map.flyTo` + pinned popup. Biggest usability win per line of code."
+  },
+  {
+   "title": "US live layer via the EIA hourly API",
+   "labels": [
+    "enhancement",
+    "live-layer"
+   ],
+   "body": "`country.liveKind` already switches live sources; EIA is keyed, so mirror the ENTSO-E baked-snapshot pattern: `liveKind: 'eia'`, a `fetch-eia-snapshot.mjs` + workflow step with an `EIA_TOKEN` secret, snapshots to `public/live/us.json`. Regional (balancing-authority) figures feed the mix strip first; per-plant later if the data supports it."
+  },
+  {
+   "title": "Carbon intensity layer",
+   "labels": [
+    "enhancement"
+   ],
+   "body": "GB: carbonintensity.org.uk is free, keyless and regional — could colour a regional overlay or the mix strip. EU: derivable from the ENTSO-E mix with standard emission factors. Good storytelling layer on top of data we already have."
+  },
+  {
+   "title": "Permalinks: #gb/station/<id> deep links and shareable pinned cards",
+   "labels": [
+    "enhancement"
+   ],
+   "body": "Hash routing already exists for countries; extend it to a pinned station so links open the map zoomed with the card up."
+  },
+  {
+   "title": "History playback from the snapshot archive the workflow already builds",
+   "labels": [
+    "enhancement"
+   ],
+   "body": "`live-snapshots.yml` commits dated snapshots every 6 h — keeping the last N days per country (tiny files) gives a free archive to animate: watch a week of wind fronts cross the North Sea."
+  },
+  {
+   "title": "Demand and price overlays",
+   "labels": [
+    "enhancement"
+   ],
+   "body": "ENTSO-E A65 (load) and A44 (day-ahead prices) documents; Elexon MID for GB prices. Fits the existing snapshot pipeline; render as a strip or per-zone tint."
+  },
+  {
+   "title": "Add Norway (420/300/132 kV) — completes the North Sea picture",
+   "labels": [
+    "country"
+   ],
+   "body": "Highest-value expansion: NSL and NordLink already exist in the HVDC registry, and the hydro fleet + fjord grid is the best-looking data in Europe.\n- Tiers 420/300/132 fit the 3-tier model cleanly.\n- One config change now unblocked: widen the `eu` basemap `select` box above 67°N in `scripts/basemap.mjs` so Lofoten/coastal islands ship (mainland already rides the Eurasia polygon).\n- ENTSO-E: NO bidding zones (NO1-5) for the live layer.\n- Watch basemap size — fjord coastline is heavy at eps 0.004."
+  },
+  {
+   "title": "Add Poland (400/220/110 kV) — the cleanest next grid",
+   "labels": [
+    "country"
+   ],
+   "body": "DE-like classify, no islands, no offshore complexity (one Baltic zone), well inside the eu basemap boxes. Best warm-up for the expansion recipe; ENTSO-E PL domain for live."
+  },
+  {
+   "title": "Add Sweden (400/220/130 kV)",
+   "labels": [
+    "country"
+   ],
+   "body": "Pairs with Norway for the full Nordic view + Baltic links (SwePol, NordBalt, Baltic Cable). Gotland/Öland are already inside the eu select box. Large extent → expect a chunky transmission bundle; ENTSO-E SE1-4."
+  },
+  {
+   "title": "Add Spain — mainland (400/220/132 kV)",
+   "labels": [
+    "country"
+   ],
+   "body": "Iberia rounds out the ALL view's south-west. Scope to the peninsula (like FR): the Balearics/Canaries are separate lower-voltage grids the 3-tier model can't express. ENTSO-E ES domain."
+  },
+  {
+   "title": "Add Italy (380/220 kV; decide the 150 kV strategy)",
+   "labels": [
+    "country"
+   ],
+   "body": "The 150 kV layer is enormous — either omit it (as FR omits 90/63) or ship it with US-style `simplifyEps`/`coordDp` overrides. Sicily/Sardinia are already in the eu basemap. ENTSO-E IT zones are many (IT-North etc.) — mix per zone needs summing."
+  },
+  {
+   "title": "Add Austria + Switzerland (380/220/110 kV), possibly as one combined view",
+   "labels": [
+    "country"
+   ],
+   "body": "Alpine pumped storage is a great story. Landlocked → all the clip work is `isForeignLine` lambdas. Could ship as one combined `CountryId` the way Ireland maps the all-island SEM, or as two entries. ENTSO-E AT + CH domains."
+  }
+ ]
+}
