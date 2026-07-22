@@ -48,37 +48,40 @@ const isoDaysAgo = (n) => {
 }
 
 // --------------------------------------------------- unit → station mapping
-function buildUnitMap(cc, units) {
+function stationIndexFor(cc) {
   const stations = JSON.parse(
     readFileSync(join(ROOT, 'src', 'data', cc, 'stations.json'), 'utf8'),
   ).features
-  const index = stations
+  return stations
     .filter((f) => f.properties.name !== 'Unnamed site')
     .map((f) => ({ id: f.properties.id, fuel: f.properties.fuel, toks: tokens(f.properties.name) }))
+}
 
+function overridesFor(cc) {
   const overridesPath = join(MAP_DIR, `${cc}-overrides.json`)
-  const overrides = existsSync(overridesPath)
-    ? JSON.parse(readFileSync(overridesPath, 'utf8'))
-    : {}
+  return existsSync(overridesPath) ? JSON.parse(readFileSync(overridesPath, 'utf8')) : {}
+}
 
+function matchByName(index, name, psrType) {
+  const compat = PSR_COMPAT[psrType] ?? PSR_COMPAT.B20
+  const unitToks = tokens(name)
+  const stem = stemTokens(unitToks)
+  let best = null
+  for (const st of index) {
+    if (!compat.includes(st.fuel)) continue
+    const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
+    if (score >= 0.5 && (!best || score > best.score)) best = { id: st.id, score }
+  }
+  return best?.id ?? null
+}
+
+function buildUnitMap(index, overrides, units) {
   const byUnit = {}
   const unmatched = []
   for (const u of units) {
     if (!u.unitEic || !u.unitName) continue
-    if (overrides[u.unitEic]) {
-      byUnit[u.unitEic] = overrides[u.unitEic]
-      continue
-    }
-    const compat = PSR_COMPAT[u.psrType] ?? PSR_COMPAT.B20
-    const unitToks = tokens(u.unitName)
-    const stem = stemTokens(unitToks)
-    let best = null
-    for (const st of index) {
-      if (!compat.includes(st.fuel)) continue
-      const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
-      if (score >= 0.5 && (!best || score > best.score)) best = { id: st.id, score }
-    }
-    if (best) byUnit[u.unitEic] = best.id
+    const id = overrides[u.unitEic] ?? matchByName(index, u.unitName, u.psrType)
+    if (id) byUnit[u.unitEic] = id
     else unmatched.push(u)
   }
   unmatched.sort((a, b) => (b.nominalP ?? 0) - (a.nominalP ?? 0))
@@ -94,12 +97,14 @@ for (const cc of countryIds) {
   }
   console.log(`\n=== ${cc.toUpperCase()} ===`)
   try {
+    const index = stationIndexFor(cc)
+    const overrides = overridesFor(cc)
+
     // 1. Unit registry (A71) — cached, refreshed when older than ~30 days.
     const mapPath = join(MAP_DIR, `${cc}.json`)
     let registry = existsSync(mapPath) ? JSON.parse(readFileSync(mapPath, 'utf8')) : null
     const stale =
-      !registry ||
-      Date.now() - Date.parse(registry.builtAt ?? 0) > 30 * 24 * 3600 * 1000
+      !registry || Date.now() - Date.parse(registry.builtAt ?? 0) > 30 * 24 * 3600 * 1000
     if (stale) {
       const units = []
       for (const domain of cfg.unitDomains) {
@@ -113,7 +118,7 @@ for (const cc of countryIds) {
           if (s.unitEic) units.push(s)
         }
       }
-      const { byUnit, unmatched } = buildUnitMap(cc, units)
+      const { byUnit, unmatched } = buildUnitMap(index, overrides, units)
       registry = {
         builtAt: new Date().toISOString(),
         unitCount: units.length,
@@ -156,11 +161,21 @@ for (const cc of countryIds) {
       continue
     }
 
-    // 3. Aggregate unit series → stations.
+    // 3. Aggregate unit series → stations. Units missing from the A71
+    // registry (common for hydro fleets) are matched here by their A73
+    // name; hits are persisted into the registry for future runs.
     const byStation = new Map()
     let unmappedMW = 0
+    let registryDirty = false
     for (const s of unitSeries) {
-      const stationId = registry.byUnit[s.unitEic]
+      let stationId = registry.byUnit[s.unitEic] ?? overrides[s.unitEic] ?? null
+      if (!stationId && s.unitName) {
+        stationId = matchByName(index, s.unitName, s.psrType)
+      }
+      if (stationId && registry.byUnit[s.unitEic] !== stationId) {
+        registry.byUnit[s.unitEic] = stationId
+        registryDirty = true
+      }
       if (!stationId) {
         unmappedMW += Math.max(...s.points.map((p) => p.mw), 0)
         continue
@@ -168,6 +183,7 @@ for (const cc of countryIds) {
       if (!byStation.has(stationId)) byStation.set(stationId, [])
       byStation.get(stationId).push(s)
     }
+    if (registryDirty) writeFileSync(mapPath, JSON.stringify(registry, null, 1))
     const perStation = {}
     for (const [stationId, list] of byStation) {
       const d = stationDayFromSeries(list)
@@ -277,9 +293,9 @@ for (const cc of countryIds) {
     }
     writeFileSync(join(OUT_DIR, `${cc}.json`), JSON.stringify(snapshot))
     console.log(
-      `${cc}: day ${day} · ${Object.keys(perStation).length} stations · mix ${Math.round(
-        totalMW / 100,
-      ) / 10} GW avg · ${Object.keys(flows).length} link flows · unmapped peak ${Math.round(unmappedMW)} MW`,
+      `${cc}: day ${day} · ${Object.keys(perStation).length} stations · mix ${
+        Math.round(totalMW / 100) / 10
+      } GW avg · ${Object.keys(flows).length} link flows · unmapped peak ${Math.round(unmappedMW)} MW`,
     )
   } catch (err) {
     console.error(`${cc} failed:`, err.message)

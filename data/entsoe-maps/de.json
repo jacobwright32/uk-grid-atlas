@@ -1,0 +1,120 @@
+{
+ "builtAt": "2026-07-22T06:59:02.966Z",
+ "unitCount": 52,
+ "byUnit": {
+  "11W0-0000-0044-W": "way/109504648",
+  "11W0-0000-0245-J": "way/1276215595",
+  "11W0-0000-0006-5": "way/152506744",
+  "11WD7BERG1S--A-X": "way/4670340",
+  "11WD7BRAU5G-GUDH": "way/905510572",
+  "11WD7GERS-G-BLIY": "way/33883956",
+  "11WD7HERN2S--4-X": "way/25649285",
+  "11WD7KOEP2P--5-G": "way/131986820",
+  "11WD7STUM1SBL10G": "way/109505608",
+  "11WD7KWKN-KW-EEN": "relation/15606359",
+  "11WD7KWKN-20-EEW": "way/239364386",
+  "11WD7MITB1C---A1": "way/28051874",
+  "11W0-0000-0467-W": "way/22943608",
+  "11WD7WALS1S--10A": "relation/8941141",
+  "11WD7WEIH2S--C-A": "way/30425117",
+  "11W0-0000-0163-M": "way/326473494",
+  "11W0-0000-0494-T": "way/947016167",
+  "11WD2BRE4000115K": "way/296448089",
+  "11WD2FFW4000020J": "way/118066005",
+  "11WD2GKBK000335V": "way/296448089",
+  "11WD2HUNT0000644": "way/42872353",
+  "11WD2WILH0001255": "way/33290357",
+  "11W0-0000-0104-6": "way/140441854",
+  "11WD8LEIP5X----6": "way/905992548",
+  "11WD8DRES5X----D": "way/10212613",
+  "11W0-0000-0859-A": "way/70603360",
+  "11W0-0000-0858-D": "way/136848865",
+  "11WD8KLIN5G--13E": "way/25056842",
+  "11W0-0000-0103-9": "way/187916423",
+  "11WD8MITT5GGUD-8": "way/238025902",
+  "11WD8ROST1C----K": "way/26389159",
+  "11WD4AL1U1C2---O": "way/25973419",
+  "11WD4RDK81C8---3": "way/152261126",
+  "11W0-0000-0005-8": "way/152506744",
+  "11WD4IFFE5H----T": "way/111490597",
+  "11WD4KWLFB5M1107": "relation/15567742",
+  "11WD4KWRHF5M1-4I": "way/612374698",
+  "11WD4SAEK2HD4--9": "way/129989100",
+  "11WD4WITZ5H-SD4C": "relation/15087484",
+  "11WD4WEHR1HD4--Y": "way/129886741"
+ },
+ "unmatchedTop": [
+  {
+   "eic": "11WD7HERD2G-H6-X",
+   "name": "HERDECKE_H6",
+   "psr": "B04",
+   "mw": 424
+  },
+  {
+   "eic": "11WD2NOR20001055",
+   "name": "Nord 2 T20",
+   "psr": "B05",
+   "mw": 333
+  },
+  {
+   "eic": "11WD7RHAU5GKW3B5",
+   "name": "HKW IIIB",
+   "psr": "B04",
+   "mw": 234
+  },
+  {
+   "eic": "11WD4WALK5OGTD-F",
+   "name": "Kraftwerk Wahlheim GT D",
+   "psr": "B06",
+   "mw": 136
+  },
+  {
+   "eic": "11WD7UCHT5XROEMT",
+   "name": "DESBR____CHP____",
+   "psr": "B04",
+   "mw": 125
+  },
+  {
+   "eic": "11WD2BURG000145R",
+   "name": "GuD-Block",
+   "psr": "B04",
+   "mw": 120
+  },
+  {
+   "eic": "11W0-0000-0146-L",
+   "name": "Radag",
+   "psr": "B11",
+   "mw": 112.3
+  },
+  {
+   "eic": "11W0-0000-0004-B",
+   "name": "GKM AG DBEnergie",
+   "psr": "B05",
+   "mw": 111.2
+  },
+  {
+   "eic": "11WD7FUEH5GMERKA",
+   "name": "GuD-Anlage-HKW-Merkenich",
+   "psr": "B04",
+   "mw": 110
+  },
+  {
+   "eic": "11WD4MUST5X-DT-M",
+   "name": "Stuttgart-Münster DT",
+   "psr": "B17",
+   "mw": 109
+  },
+  {
+   "eic": "11W0-0000-0669-G",
+   "name": "Gasturbine 40",
+   "psr": "B04",
+   "mw": 101
+  },
+  {
+   "eic": "11W0-0000-0670-2",
+   "name": "Gasturbine 50",
+   "psr": "B04",
+   "mw": 101
+  }
+ ]
+}

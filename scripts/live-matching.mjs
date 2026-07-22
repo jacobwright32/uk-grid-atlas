@@ -7,27 +7,153 @@ const WORD_NUMBERS = {
   four: '4',
   five: '5',
   six: '6',
+  // Roman numerals and "St" — ENTSO-E writes "ROEDSAND 2" / "ST ALBAN"
+  // where OSM has "Rødsand II" / "Saint-Alban".
+  ii: '2',
+  iii: '3',
+  iv: '4',
+  st: 'saint',
 }
 
 // Note: 'battery'/'storage' stay meaningful — they distinguish co-located
 // BESS units from the wind farm they share a name with.
 const STOPWORDS = new Set([
-  'wind', 'farm', 'windfarm', 'offshore', 'onshore', 'power', 'station', 'plant',
-  'generator', 'generating', 'generation', 'unit', 'module', 'gt', 'ccgt', 'ocgt',
-  'no', 'ltd', 'limited', 'project', 'energy', 'park',
-  'psh', 'scheme', 'the', 'bmu', 'export', 'osp', 'ospe', 'ospw',
+  'wind',
+  'farm',
+  'windfarm',
+  'offshore',
+  'onshore',
+  'power',
+  'station',
+  'plant',
+  'plants',
+  'generator',
+  'generating',
+  'generation',
+  'unit',
+  'module',
+  'gt',
+  'ccgt',
+  'ocgt',
+  'no',
+  'ltd',
+  'limited',
+  'project',
+  'energy',
+  'park',
+  'psh',
+  'scheme',
+  'the',
+  'bmu',
+  'export',
+  'osp',
+  'ospe',
+  'ospw',
+  'and',
+  // French — "Centre Nucléaire de Production d'Electricité de Paluel" → "paluel"
+  'centre',
+  'centrale',
+  'nucleaire',
+  'production',
+  'electricite',
+  'd',
+  'l',
+  'de',
+  'du',
+  'des',
+  'en',
+  'sur',
+  'la',
+  'le',
+  'les',
+  'tranche',
+  'groupe',
+  'thermique',
+  'electrique',
+  'photovoltaique',
+  'eolien',
+  'parc',
+  'barrage',
+  'usine',
+  'turbine',
+  'combustion',
+  'tac',
+  'ccg',
+  // German — "Kraftwerk Duisburg-Walsum" → "duisburg walsum"
+  'kraftwerk',
+  'grosskraftwerk',
+  'heizkraftwerk',
+  'blockheizkraftwerk',
+  'kernkraftwerk',
+  'dampfkraftwerk',
+  'kohlekraftwerk',
+  'steinkohlekraftwerk',
+  'braunkohlekraftwerk',
+  'wasserkraftwerk',
+  'gasturbinenkraftwerk',
+  'pumpspeicherkraftwerk',
+  'pumpspeicherwerk',
+  'kavernenkraftwerk',
+  'kw',
+  'hkw',
+  'gthkw',
+  'psw',
+  'pss',
+  'gud',
+  'block',
+  'gesamt',
+  'und',
+  'am',
+  'im',
+  'an',
+  // Dutch / Belgian — "Kerncentrale Borssele", "Centrale TGV Seraing", "RINGVAART STEG"
+  'kerncentrale',
+  'elektriciteitscentrale',
+  'steg',
+  'tgv',
+  'blok',
+  'van',
+  'der',
+  'den',
+  'het',
+  // Danish — "Anholt Havmøllepark", "Kassø Solcellepark"
+  'havmoellepark',
+  'solcellepark',
+  'solarpark',
+  // Corporate suffixes that ENTSO-E unit names sometimes carry
+  'sa',
+  'ag',
+  'gmbh',
+  'bv',
+  'nv',
 ])
+
+// ENTSO-E spells Germanic/Nordic letters out ("Luenen", "Roedsand",
+// "Skaerbaekvaerket"); OSM uses the native forms. Fold both sides the same.
+const TRANSLIT = { ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss', æ: 'ae', ø: 'oe', å: 'aa' }
+
+function fold(s) {
+  return s
+    .replace(/[äöüßæøå]/g, (c) => TRANSLIT[c])
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remaining accents: é è ç î …
+}
 
 /** Normalise a free-text unit/station name into a token set. */
 export function tokens(name) {
   if (!name) return []
-  return name
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .map((t) => WORD_NUMBERS[t] ?? t)
-    .filter((t) => t && !STOPWORDS.has(t))
+  return (
+    fold(name.toLowerCase())
+      .replace(/&/g, ' and ')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .map((t) => WORD_NUMBERS[t] ?? t)
+      // Dutch glues the generic suffix on: Clauscentrale / Amercentrale → claus / amer
+      .map((t) =>
+        t.length > 'centrale'.length && t.endsWith('centrale') ? t.slice(0, -'centrale'.length) : t,
+      )
+      .filter((t) => t && !STOPWORDS.has(t))
+  )
 }
 
 /** Drop trailing unit designators like "2", "gt51", "a" from BMU name tokens. */
@@ -35,7 +161,8 @@ export function stemTokens(toks) {
   const out = [...toks]
   while (out.length > 1) {
     const last = out[out.length - 1]
-    if (/^\d{1,2}$/.test(last) || /^[a-z]$/.test(last) || /^(gt|st)?\d+[a-z]?$/.test(last)) out.pop()
+    if (/^\d{1,2}$/.test(last) || /^[a-z]$/.test(last) || /^(gt|st)?\d+[a-z]?$/.test(last))
+      out.pop()
     else break
   }
   return out
@@ -64,8 +191,18 @@ export const COMPAT = {
   // OTHER / null covers batteries, new offshore wind registrations (e.g.
   // Sofia pre-classification), tidal, CHP oddities — allow broadly.
   OTHER: [
-    'storage', 'gas', 'bioenergy', 'waste', 'oil', 'other', 'marine', 'hydro',
-    'solar', 'wind_offshore', 'wind_onshore', 'pumped',
+    'storage',
+    'gas',
+    'bioenergy',
+    'waste',
+    'oil',
+    'other',
+    'marine',
+    'hydro',
+    'solar',
+    'wind_offshore',
+    'wind_onshore',
+    'pumped',
   ],
 }
 
