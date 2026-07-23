@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import GridMap from './components/GridMap'
 import SearchBox from './components/SearchBox'
+import TimeSlider from './components/TimeSlider'
 import type { SearchTarget } from './components/SearchBox'
 import Sidebar from './components/Sidebar'
 import MixStrip from './components/MixStrip'
@@ -39,6 +40,9 @@ export default function App() {
   const [mixOpen, setMixOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const [resizeSignal, setResizeSignal] = useState(0)
   const [searchTarget, setSearchTarget] = useState<SearchTarget | null>(null)
+  // Metered-day scrub (#17): null = live/day-average as before.
+  const [timeIndex, setTimeIndex] = useState<number | null>(null)
+  const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
     const onHash = () => setCountryId(countryFromHash())
@@ -61,7 +65,15 @@ export default function App() {
   const switchCountry = (id: CountryId) => {
     window.location.hash = id === DEFAULT_COUNTRY ? '' : id
     setCountryId(id)
+    setTimeIndex(null)
+    setPlaying(false)
   }
+
+  const seriesLen = useMemo(() => {
+    if (!live?.perStationDay.size) return 0
+    for (const day of live.perStationDay.values()) return day.series.length
+    return 0
+  }, [live])
 
   const stats = useMemo(() => (data ? computeStats(data.stations) : null), [data])
   const totals = useMemo(() => (stats ? totalsFor(stats, enabled) : null), [stats, enabled])
@@ -190,10 +202,30 @@ export default function App() {
           liveMode={liveMode}
           resizeSignal={resizeSignal}
           searchTarget={searchTarget}
+          timeIndex={timeIndex}
         />
         <div className="search-dock">
           <SearchBox data={data} onSelect={setSearchTarget} />
         </div>
+        {country.hasLive && liveMode && seriesLen > 0 && (
+          <div className="timeslider-dock">
+            <TimeSlider
+              len={seriesLen}
+              index={timeIndex}
+              playing={playing}
+              meteredDate={live?.meteredDate ?? null}
+              onChange={setTimeIndex}
+              onPlayToggle={() => {
+                setPlaying((p) => !p)
+                if (timeIndex == null) setTimeIndex(0)
+              }}
+              onReset={() => {
+                setPlaying(false)
+                setTimeIndex(null)
+              }}
+            />
+          </div>
+        )}
         {country.hasLive && live?.mix && mixRows.length > 0 && (
           <div className="mixstrip-dock">
             {mixOpen ? (

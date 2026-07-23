@@ -31,6 +31,8 @@ interface Props {
   resizeSignal: number
   /** Fly to + pin a station picked in the search box (#19). */
   searchTarget: SearchTarget | null
+  /** Metered-day interval to display, or null for live/day-average (#17). */
+  timeIndex: number | null
 }
 
 export default function GridMap({
@@ -44,6 +46,7 @@ export default function GridMap({
   liveMode,
   resizeSignal,
   searchTarget,
+  timeIndex,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -254,8 +257,14 @@ export default function GridMap({
     // Feature ids from generateId are the feature's index in source order.
     data.stations.features.forEach((f, index) => {
       const id = f.properties.id
-      const nowMW = live.perStationNow?.get(id) ?? live.perStationDay.get(id)?.avgMW ?? 0
-      map.setFeatureState({ source: 'stations', id: index }, { liveMW: Math.max(0, nowMW) })
+      let mw: number
+      if (timeIndex != null) {
+        // Scrub mode (#17): show the selected interval of the metered day.
+        mw = live.perStationDay.get(id)?.series[timeIndex] ?? 0
+      } else {
+        mw = live.perStationNow?.get(id) ?? live.perStationDay.get(id)?.avgMW ?? 0
+      }
+      map.setFeatureState({ source: 'stations', id: index }, { liveMW: Math.max(0, mw) })
     })
   }
 
@@ -269,7 +278,7 @@ export default function GridMap({
     const map = mapRef.current
     if (map && readyRef.current) applyLiveState(map)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, liveMode, country])
+  }, [live, liveMode, country, timeIndex])
 
   // ----------------------------------------------------- country data swap
   useEffect(() => {
