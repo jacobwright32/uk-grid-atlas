@@ -37,20 +37,20 @@ export interface StationProps {
   id: string
   name: string
   fuel: FuelId
-  source: string | null
-  method: string | null
-  capacityMW: number | null
-  operator: string | null
-  start: string | null
-  osmType: 'node' | 'way' | 'relation'
+  /** Absent keys were nulls — bundles are slimmed (scripts/slim-bundles.mjs). */
+  source?: string | null
+  method?: string | null
+  capacityMW?: number | null
+  operator?: string | null
+  start?: string | null
 }
 
 export interface LineProps {
   /** Voltage class in kV (country-specific: 400/275/132 GB, 380/220/150/110 NL). */
   v: number
-  name: string | null
-  operator: string | null
-  circuits: number | null
+  name?: string | null
+  operator?: string | null
+  circuits?: number | null
 }
 
 export interface InterconnectorProps {

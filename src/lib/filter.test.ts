@@ -14,7 +14,6 @@ const station = (fuel: string, capacityMW: number | null): StationsFC['features'
     capacityMW,
     operator: null,
     start: null,
-    osmType: 'way',
   },
 })
 

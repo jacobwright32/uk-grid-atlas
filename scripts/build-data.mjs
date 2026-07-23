@@ -546,6 +546,16 @@ const write = (dir, name, obj) => {
   console.log(`${country}/${name}: ${(s.length / 1024).toFixed(0)} kB`)
 }
 
+// Slim at write time: absent and null mean the same to the app, and
+// `osmType` (needed above for dedupe ranking) is already encoded in `id`.
+for (const f of stationFeatures) {
+  const slim = {}
+  for (const [k, v] of Object.entries(f.properties)) {
+    if (v === null || v === undefined || k === 'osmType') continue
+    slim[k] = v
+  }
+  f.properties = slim
+}
 write(OUT_DIR, 'stations.json', { type: 'FeatureCollection', features: stationFeatures })
 write(OUT_DIR, 'transmission.json', { type: 'FeatureCollection', features: mergedLineFeatures })
 write(OUT_DIR, 'interconnectors.json', { type: 'FeatureCollection', features: icFeatures })

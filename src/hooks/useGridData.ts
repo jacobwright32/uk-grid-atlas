@@ -182,25 +182,44 @@ async function loadCountry(id: RealCountryId): Promise<GridData> {
   return data
 }
 
-async function loadAll(): Promise<GridData> {
+/**
+ * Progressive ALL loader (#8): every country renders the moment its bundle
+ * arrives instead of blocking on the slowest of thirteen. Degrades
+ * gracefully — a failed bundle is skipped (#3) and only complete merges are
+ * cached, so transient failures heal on the next visit.
+ */
+async function loadAllProgressive(
+  onUpdate: (data: GridData) => void,
+  onError: (err: unknown) => void,
+): Promise<void> {
   const cached = cache.get('all')
-  if (cached) return cached
-  // Degrade gracefully: one failed bundle shouldn't sink the other twelve (#3).
-  const settled = await Promise.allSettled(REAL_COUNTRY_IDS.map((id) => loadCountry(id)))
-  const bundles = settled
-    .filter((r): r is PromiseFulfilledResult<GridData> => r.status === 'fulfilled')
-    .map((r) => r.value)
-  const failed = REAL_COUNTRY_IDS.filter((_, i) => settled[i]?.status === 'rejected')
-  if (!bundles.length) {
-    throw (settled[0] as PromiseRejectedResult).reason
+  if (cached) {
+    onUpdate(cached)
+    return
   }
-  if (failed.length) {
-    console.warn(`ALL view: failed to load ${failed.join(', ')} — showing the rest`)
+  const arrived: GridData[] = []
+  let failures = 0
+  let firstError: unknown = null
+  await Promise.all(
+    REAL_COUNTRY_IDS.map(async (id) => {
+      try {
+        const bundle = await loadCountry(id)
+        arrived.push(bundle)
+        onUpdate(mergeGridData(arrived))
+      } catch (err) {
+        failures++
+        firstError ??= err
+        console.warn(`ALL view: failed to load ${id} — showing the rest`)
+      }
+    }),
+  )
+  if (!arrived.length) {
+    onError(firstError)
+    return
   }
-  const merged = mergeGridData(bundles)
-  // Only cache complete merges, so a transient failure heals on next visit.
-  if (!failed.length) cache.set('all', merged)
-  return merged
+  if (failures === 0) {
+    cache.set('all', mergeGridData(arrived))
+  }
 }
 
 /** Loads a country's GeoJSON bundles ('all' merges every country, cached). */
@@ -214,14 +233,21 @@ export function useGridData(country: CountryId): State {
       return
     }
     let cancelled = false
-    ;(country === 'all' ? loadAll() : loadCountry(country))
-      .then((data) => {
+    const fail = (err: unknown) => {
+      if (!cancelled)
+        setState({ data: null, error: err instanceof Error ? err.message : String(err) })
+    }
+    if (country === 'all') {
+      loadAllProgressive((data) => {
         if (!cancelled) setState({ data, error: null })
-      })
-      .catch((err: unknown) => {
-        if (!cancelled)
-          setState({ data: null, error: err instanceof Error ? err.message : String(err) })
-      })
+      }, fail).catch(fail)
+    } else {
+      loadCountry(country)
+        .then((data) => {
+          if (!cancelled) setState({ data, error: null })
+        })
+        .catch(fail)
+    }
     return () => {
       cancelled = true
     }

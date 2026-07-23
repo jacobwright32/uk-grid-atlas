@@ -23,7 +23,7 @@ function el(tag: string, cls?: string, text?: string): HTMLElement {
   return node
 }
 
-function row(label: string, value: string | null): HTMLElement | null {
+function row(label: string, value: string | null | undefined): HTMLElement | null {
   if (!value) return null
   const r = el('div', 'card-row')
   r.appendChild(el('span', 'card-key', label))
