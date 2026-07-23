@@ -705,3 +705,35 @@
     display: none;
   }
 }
+
+/* ------------------------------------------------- mobile sidebar scrim */
+.sidebar-scrim {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 7; /* above the map, below the sidebar */
+    background: rgba(0, 0, 0, 0.45);
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+}
+
+/* ------------------------------------------------- OSM edit link in cards */
+.card-osm {
+  display: block;
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.card-osm:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}

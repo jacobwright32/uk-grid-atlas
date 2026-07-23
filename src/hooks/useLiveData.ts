@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { loadEntsoeSnapshot, loadLive } from '../lib/live'
+import { fetchMixNow, loadEntsoeSnapshot, loadLive } from '../lib/live'
 import type { BmuMap, LiveData, SnapshotFile } from '../lib/live'
 import type { CountryConfig } from '../lib/countries'
 
@@ -15,8 +15,12 @@ interface State {
 }
 
 const IDLE: State = { status: 'unavailable', live: null, bmuMap: null }
-const entsoeCache = new Map<string, LiveData | null>()
-let elexonCache: State | null = null
+// Failures are cached only briefly so a transient blip retries instead of
+// wedging the whole session (#4).
+const FAIL_TTL = 60_000
+const MIX_REFRESH = 5 * 60_000
+const entsoeCache = new Map<string, { live: LiveData | null; at: number }>()
+let elexonCache: { state: State; at: number } | null = null
 
 /**
  * Country-aware live data:
@@ -39,13 +43,14 @@ export function useLiveData(country: CountryConfig): State {
 
     if (kind === 'entsoe') {
       const cached = entsoeCache.get(country.id)
-      if (cached !== undefined) {
-        setState(cached ? { status: 'live', live: cached, bmuMap: null } : IDLE)
+      const fresh = cached && (cached.live !== null || Date.now() - cached.at < FAIL_TTL)
+      if (cached && fresh) {
+        setState(cached.live ? { status: 'live', live: cached.live, bmuMap: null } : IDLE)
         return
       }
       setState({ status: 'loading', live: null, bmuMap: null })
       loadEntsoeSnapshot(country.id).then((live) => {
-        entsoeCache.set(country.id, live)
+        entsoeCache.set(country.id, { live, at: Date.now() })
         if (!cancelled) setState(live ? { status: 'live', live, bmuMap: null } : IDLE)
       })
       return () => {
@@ -54,9 +59,34 @@ export function useLiveData(country: CountryConfig): State {
     }
 
     // ---- elexon (GB)
-    if (elexonCache) {
-      setState(elexonCache)
-      return
+    // Refresh the near-real-time mix periodically while GB stays mounted, so
+    // long sessions don't show stale "now" figures (#4).
+    let mixTimer: ReturnType<typeof setInterval> | undefined
+    const startMixRefresh = () => {
+      mixTimer = setInterval(async () => {
+        const mix = await fetchMixNow()
+        if (!mix) return
+        setState((prev) => {
+          if (!prev.live) return prev
+          const next = { ...prev, live: { ...prev.live, mix } }
+          if (elexonCache?.state.live) elexonCache = { state: next, at: Date.now() }
+          return next
+        })
+      }, MIX_REFRESH)
+    }
+
+    const cachedElexon =
+      elexonCache &&
+      (elexonCache.state.status !== 'unavailable' || Date.now() - elexonCache.at < FAIL_TTL)
+        ? elexonCache.state
+        : null
+    if (cachedElexon) {
+      setState(cachedElexon)
+      if (cachedElexon.live) startMixRefresh()
+      return () => {
+        if (mixTimer) clearInterval(mixTimer)
+        cancelled = true
+      }
     }
     setState({ status: 'loading', live: null, bmuMap: null })
     ;(async () => {
@@ -73,24 +103,27 @@ export function useLiveData(country: CountryConfig): State {
         /* snapshot optional */
       }
       if (!bmuMap) {
-        elexonCache = IDLE
+        elexonCache = { state: IDLE, at: Date.now() }
         if (!cancelled) setState(IDLE)
         return
       }
       try {
         const live = await loadLive(bmuMap, snapshot)
         elexonCache = {
-          status: live.source === 'live' ? 'live' : 'snapshot',
-          live,
-          bmuMap,
+          state: { status: live.source === 'live' ? 'live' : 'snapshot', live, bmuMap },
+          at: Date.now(),
         }
-        if (!cancelled) setState(elexonCache)
+        if (!cancelled) {
+          setState(elexonCache.state)
+          startMixRefresh()
+        }
       } catch {
-        elexonCache = { status: 'unavailable', live: null, bmuMap }
-        if (!cancelled) setState(elexonCache)
+        elexonCache = { state: { status: 'unavailable', live: null, bmuMap }, at: Date.now() }
+        if (!cancelled) setState(elexonCache.state)
       }
     })()
     return () => {
+      if (mixTimer) clearInterval(mixTimer)
       cancelled = true
     }
   }, [country.id, country.liveKind])

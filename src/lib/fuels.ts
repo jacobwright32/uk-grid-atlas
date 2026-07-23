@@ -23,9 +23,15 @@ export const GROUPS: {
   { id: 'solar', label: 'Solar', color: '#c98500', fuels: ['solar'] },
   { id: 'gas', label: 'Gas', color: '#3987e5', fuels: ['gas'] },
   { id: 'nuclear', label: 'Nuclear', color: '#9085e9', fuels: ['nuclear'] },
-  { id: 'hydro', label: 'Hydro · pumped · tidal', color: '#1899ac', fuels: ['hydro', 'pumped', 'marine'] },
+  {
+    id: 'hydro',
+    label: 'Hydro · pumped · tidal',
+    color: '#1899ac',
+    fuels: ['hydro', 'pumped', 'marine'],
+  },
   { id: 'bioenergy', label: 'Bioenergy & waste', color: '#d95926', fuels: ['bioenergy', 'waste'] },
-  { id: 'coal', label: 'Coal', color: '#8a8a85', fuels: ['coal'] },
+  { id: 'geothermal', label: 'Geothermal', color: '#bd5fd1', fuels: ['geothermal'] },
+  { id: 'coal', label: 'Coal', color: '#ad7a45', fuels: ['coal'] },
   { id: 'storage', label: 'Battery storage', color: '#d55181', fuels: ['storage'] },
   { id: 'oil', label: 'Oil & diesel', color: '#e66767', fuels: ['oil'] },
   { id: 'other', label: 'Other / unknown', color: '#6f6d66', fuels: ['other'] },
@@ -58,6 +64,7 @@ export const FUEL_LABEL: Record<FuelId, string> = {
   storage: 'Battery / storage',
   oil: 'Oil & diesel',
   coal: 'Coal',
+  geothermal: 'Geothermal',
   other: 'Other',
 }
 

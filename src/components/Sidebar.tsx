@@ -26,7 +26,8 @@ interface Props {
 }
 
 function liveStatusLine(status: LiveStatus, live: LiveData | null, kind: string): string {
-  if (status === 'loading') return kind === 'entsoe' ? 'Loading ENTSO-E snapshot…' : 'Connecting to Elexon…'
+  if (status === 'loading')
+    return kind === 'entsoe' ? 'Loading ENTSO-E snapshot…' : 'Connecting to Elexon…'
   if (status === 'unavailable')
     return kind === 'entsoe'
       ? 'No snapshot yet — add the ENTSOE_TOKEN repo secret and run the "Refresh European live snapshots" workflow.'
@@ -39,9 +40,8 @@ function liveStatusLine(status: LiveStatus, live: LiveData | null, kind: string)
       })
     : null
   if (status === 'snapshot') return `Offline — bundled snapshot${date ? ` of ${date}` : ''}.`
-  if (live?.basis === 'entsoe')
-    return `ENTSO-E metered day: ${date ?? '—'} · refreshed every 6 h`
-  return `Latest metered day: ${date ?? '—'}${live?.perStationNow ? ' · schedules live' : ''}`
+  if (live?.basis === 'entsoe') return `ENTSO-E metered day: ${date ?? '—'} · refreshed every 6 h`
+  return `Latest metered day: ${date ?? '—'} (settles ~a week behind)${live?.perStationNow ? ' · schedules live' : ''}`
 }
 
 export default function Sidebar({
@@ -66,7 +66,9 @@ export default function Sidebar({
       <section>
         <div className="section-head">
           <h2>Live output</h2>
-          {country.hasLive && liveStatus === 'live' && <span className="live-dot" aria-label="live" />}
+          {country.hasLive && liveStatus === 'live' && (
+            <span className="live-dot" aria-label="live" />
+          )}
         </div>
         {country.hasLive ? (
           <>
@@ -127,7 +129,9 @@ export default function Sidebar({
                   <span className="fuel-label">{g.label}</span>
                   <span className="fuel-nums">
                     <span className="fuel-count">{s ? fmtCount(s.count) : '0'}</span>
-                    <span className="fuel-gw">{s && s.capacityMW > 0 ? fmtGW(s.capacityMW) : '·'}</span>
+                    <span className="fuel-gw">
+                      {s && s.capacityMW > 0 ? fmtGW(s.capacityMW) : '·'}
+                    </span>
                   </span>
                 </button>
               </li>

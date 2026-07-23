@@ -10,6 +10,8 @@ export interface CardContext {
   live: LiveData | null
   bmuMap: BmuMap | null
   countryName?: string
+  /** Active country's voltage tiers — drives the line-card swatch (#2). */
+  tierKvs?: [number[], number[], number[]]
 }
 
 /** All popup content is built with DOM APIs + textContent — never innerHTML —
@@ -108,7 +110,10 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
     const block = el('div', 'card-live')
     const nowMW = live.perStationNow?.get(p.id)
     if (nowMW != null) {
-      const r = row('Now (scheduled)', `${fmtMW(Math.max(0, nowMW))}${nowMW < -1 ? ' (pumping/charging)' : ''}`)
+      const r = row(
+        'Now (scheduled)',
+        `${fmtMW(Math.max(0, nowMW))}${nowMW < -1 ? ' (pumping/charging)' : ''}`,
+      )
       if (r) {
         r.classList.add('card-live-now')
         block.appendChild(r)
@@ -129,7 +134,7 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
         el(
           'div',
           'card-live-head',
-          `Metered ${dateLabel}${live.basis === 'entsoe' ? ' (ENTSO-E)' : live.source === 'snapshot' ? ' (snapshot)' : ''}`,
+          `Metered ${dateLabel}${live.basis === 'entsoe' ? ' (ENTSO-E)' : live.source === 'snapshot' ? ' (snapshot)' : ' · settlement data lags ~a week'}`,
         ),
       )
       const statRows = [
@@ -138,7 +143,14 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
         row('Energy', `${day.energyGWh} GWh`),
       ]
       for (const r of statRows) if (r) block.appendChild(r)
-      if (lf) block.appendChild(el('div', 'card-live-lf', `Ran at ${Math.round((100 * day.avgMW) / (p.capacityMW || 1))}% of capacity on average`))
+      if (lf)
+        block.appendChild(
+          el(
+            'div',
+            'card-live-lf',
+            `Ran at ${Math.round((100 * day.avgMW) / (p.capacityMW || 1))}% of capacity on average`,
+          ),
+        )
       block.appendChild(sparkline(day, color))
     }
     if (block.childNodes.length) root.appendChild(block)
@@ -153,15 +165,30 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
       ),
     )
   }
+
+  // Every station is an OSM element — invite fixes at the source (#41).
+  if (/^(node|way|relation)\//.test(p.id)) {
+    const a = document.createElement('a')
+    a.className = 'card-osm'
+    a.href = `https://www.openstreetmap.org/${p.id}`
+    a.target = '_blank'
+    a.rel = 'noopener'
+    a.textContent = 'View / improve in OpenStreetMap ↗'
+    root.appendChild(a)
+  }
   return root
 }
 
-export function lineCard(f: MapGeoJSONFeature): HTMLElement {
+export function lineCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
   const p = f.properties as unknown as LineProps
   const root = card()
   const head = el('div', 'card-head')
   const swatch = el('span', 'card-line')
-  swatch.style.background = p.v >= 340 ? TIER_COLORS[0] : p.v >= 200 ? TIER_COLORS[1] : TIER_COLORS[2]
+  // Swatch follows the active country's tier definition, not fixed EU
+  // thresholds (a US 345 kV line is tier 2 there, not backbone).
+  const tierIdx = ctx?.tierKvs ? ctx.tierKvs.findIndex((kvs) => kvs.includes(p.v)) : -1
+  swatch.style.background =
+    TIER_COLORS[(tierIdx >= 0 ? tierIdx : p.v >= 340 ? 0 : p.v >= 200 ? 1 : 2) as 0 | 1 | 2]
   head.appendChild(swatch)
   head.appendChild(el('strong', 'card-title', `${p.v} kV transmission line`))
   root.appendChild(head)
@@ -189,7 +216,9 @@ export function hvdcCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
     el(
       'div',
       'card-sub',
-      p.kind === 'interconnector' ? `HVDC interconnector · ${p.to}` : `HVDC reinforcement · ${p.to}`,
+      p.kind === 'interconnector'
+        ? `HVDC interconnector · ${p.to}`
+        : `HVDC reinforcement · ${p.to}`,
     ),
   )
   if (p.status === 'construction') {
@@ -200,7 +229,10 @@ export function hvdcCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
   if (flow != null && p.status === 'operational') {
     const home = ctx?.countryName ?? 'GB'
     const dir = flow >= 0 ? `importing to ${home}` : `exporting from ${home}`
-    const r = row(ctx?.live?.basis === 'entsoe' ? 'Flow (day avg)' : 'Flow now', `${fmtMW(Math.abs(flow))} — ${dir}`)
+    const r = row(
+      ctx?.live?.basis === 'entsoe' ? 'Flow (day avg)' : 'Flow now',
+      `${fmtMW(Math.abs(flow))} — ${dir}`,
+    )
     if (r) {
       r.classList.add('card-live-now')
       root.appendChild(r)
@@ -219,5 +251,5 @@ export function hvdcCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
 export function cardFor(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
   if (f.layer.id === 'stations' || f.layer.id === 'stations-live') return stationCard(f, ctx)
   if (f.layer.id === 'hvdc') return hvdcCard(f, ctx)
-  return lineCard(f)
+  return lineCard(f, ctx)
 }

@@ -48,9 +48,10 @@ export default function GridMap({
   const pinnedRef = useRef(false)
   const popupRef = useRef<Popup | null>(null)
   const cardCtxRef = useRef<CardContext>({ live: null, bmuMap: null })
+  const tierKvs = country.tiers.map((t) => t.kvs) as [number[], number[], number[]]
   cardCtxRef.current = country.hasLive
-    ? { live, bmuMap, countryName: country.name }
-    : { live: null, bmuMap: null }
+    ? { live, bmuMap, countryName: country.name, tierKvs }
+    : { live: null, bmuMap: null, tierKvs }
 
   // ------------------------------------------------------------------ init
   useEffect(() => {
@@ -187,6 +188,7 @@ export default function GridMap({
       map.remove()
       mapRef.current = null
       readyRef.current = false
+      delete (window as unknown as Record<string, unknown>).__ukgridMap
     }
     // The dataset is immutable for the lifetime of the app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -282,7 +284,8 @@ export default function GridMap({
   }, [data])
 
   useEffect(() => {
-    mapRef.current?.fitBounds(country.bounds, { padding: 24, duration: 900 })
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    mapRef.current?.fitBounds(country.bounds, { padding: 24, duration: reduceMotion ? 0 : 900 })
   }, [country.id, country.bounds])
 
   useEffect(() => {
@@ -296,7 +299,7 @@ export default function GridMap({
       ref={containerRef}
       className="map-container"
       role="application"
-      aria-label="Map of UK energy infrastructure"
+      aria-label={`Map of ${country.name} energy infrastructure`}
     />
   )
 }

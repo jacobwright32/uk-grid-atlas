@@ -185,9 +185,21 @@ async function loadCountry(id: RealCountryId): Promise<GridData> {
 async function loadAll(): Promise<GridData> {
   const cached = cache.get('all')
   if (cached) return cached
-  const bundles = await Promise.all(REAL_COUNTRY_IDS.map((id) => loadCountry(id)))
+  // Degrade gracefully: one failed bundle shouldn't sink the other twelve (#3).
+  const settled = await Promise.allSettled(REAL_COUNTRY_IDS.map((id) => loadCountry(id)))
+  const bundles = settled
+    .filter((r): r is PromiseFulfilledResult<GridData> => r.status === 'fulfilled')
+    .map((r) => r.value)
+  const failed = REAL_COUNTRY_IDS.filter((_, i) => settled[i]?.status === 'rejected')
+  if (!bundles.length) {
+    throw (settled[0] as PromiseRejectedResult).reason
+  }
+  if (failed.length) {
+    console.warn(`ALL view: failed to load ${failed.join(', ')} — showing the rest`)
+  }
   const merged = mergeGridData(bundles)
-  cache.set('all', merged)
+  // Only cache complete merges, so a transient failure heals on next visit.
+  if (!failed.length) cache.set('all', merged)
   return merged
 }
 

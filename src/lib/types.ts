@@ -15,6 +15,7 @@ export type FuelId =
   | 'storage'
   | 'oil'
   | 'coal'
+  | 'geothermal'
   | 'other'
 
 /** Display groups — what the legend/filters operate on. */
@@ -27,6 +28,7 @@ export type GroupId =
   | 'hydro'
   | 'bioenergy'
   | 'coal'
+  | 'geothermal'
   | 'storage'
   | 'oil'
   | 'other'

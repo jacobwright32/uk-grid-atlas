@@ -277,6 +277,7 @@ const FUEL_GROUPS = {
   kerosene: 'oil',
   tidal: 'marine',
   wave: 'marine',
+  geothermal: 'geothermal',
 }
 
 const PUMPED_NAMES = /dinorwig|ffestiniog|cruachan|foyers|coire glas/i
@@ -291,6 +292,7 @@ function fuelGroup(tags, name) {
     else if (/hydro/i.test(name)) group = 'hydro'
     else if (/battery|storage/i.test(name)) group = 'storage'
     else if (/biomass|biogas/i.test(name)) group = 'bioenergy'
+    else if (/geotherm|geotermic|geotermia|jarðvarma/i.test(name)) group = 'geothermal'
   }
   if (!group) group = 'other'
   if (group === 'hydro') {
@@ -340,13 +342,6 @@ for (const el of merged) {
   const name = tags.name ?? tags['name:en'] ?? null
   let group = fuelGroup(tags, name)
   let capacityMW = parseCapacityMW(tags['plant:output:electricity'], cfg.decimalComma ?? false)
-  // Physical-plausibility guard: no single solar park / onshore wind farm /
-  // bio site / battery on Earth exceeds ~1.5 GW — values above that are
-  // almost certainly kW(p) tags without units.
-  const SMALL_FUELS = new Set(['solar', 'wind', 'bioenergy', 'waste', 'storage', 'marine'])
-  if (capacityMW != null && capacityMW > 1500 && SMALL_FUELS.has(group)) {
-    capacityMW = capacityMW / 1000 >= 0.05 ? Math.round(capacityMW) / 1000 : null
-  }
   if (cfg.keep && !cfg.keep(coords)) continue
   const land = onLand(coords)
   // Offshore foreign-zone guard applies to every source: PBF extracts carry
@@ -354,6 +349,14 @@ for (const el of merged) {
   // safe — the coastline test exempts them).
   if (!land && cfg.isForeignSea(coords)) continue
   if (group === 'wind') group = land ? 'wind_onshore' : 'wind_offshore'
+  // Physical-plausibility guard: no single solar park / onshore wind farm /
+  // bio site / battery on Earth exceeds ~1.5 GW — values above that are
+  // almost certainly kW(p) tags without units. Runs AFTER the on/offshore
+  // split: multi-GW offshore farms (Dogger Bank…) are real. (#1)
+  const SMALL_FUELS = new Set(['solar', 'wind_onshore', 'bioenergy', 'waste', 'storage', 'marine'])
+  if (capacityMW != null && capacityMW > 1500 && SMALL_FUELS.has(group)) {
+    capacityMW = capacityMW / 1000 >= 0.05 ? Math.round(capacityMW) / 1000 : null
+  }
 
   const feature = {
     type: 'Feature',

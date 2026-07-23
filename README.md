@@ -128,6 +128,31 @@ US live layer (EIA hourly API) is on the roadmap.
 **Licences:** power data © OpenStreetMap contributors, ODbL; Natural Earth is
 public domain. Keep the attribution control visible if you deploy this.
 
+### Improving the data (a note for OSM mappers)
+
+Everything on this map is OpenStreetMap data — improving OSM improves the
+atlas directly (bundles are rebuilt from fresh extracts periodically). The
+tags the pipeline reads, in order of how much they help:
+
+1. **`plant:output:electricity`** on `power=plant` — capacity, the single
+   most valuable tag. Use explicit units (`460 MW`, `12.5 MW`); unrecorded
+   capacity understates national GW totals and shrinks the site's dot.
+2. **`name`** — unnamed plants can't be matched to live output feeds, so
+   they never light up. Official names beat descriptions.
+3. **`plant:source`** — drives the fuel colour/filters (`wind`, `solar`,
+   `hydro`, `gas`, `coal`, `nuclear`, `geothermal`, `biomass`, `waste`,
+   `battery`, `oil`, `tidal`…).
+4. **`plant:method`** — `pumped-storage` gives hydro sites the white-ring
+   pumped marker; `photovoltaic` vs `thermal` disambiguates solar.
+5. **`operator`** and **`start_date`** — shown on every hover card.
+6. **`voltage`** on `power=line` — the transmission layer keys entirely off
+   this (semicolon-separated lists are handled).
+
+Every station's hover card links back to its OSM element, so fixing a wrong
+capacity is two clicks away. The [MapYourGrid](https://mapyourgrid.org)
+initiative and [Open Infrastructure Map](https://openinframap.org) are good
+companions for grid-mapping conventions.
+
 ### Known data caveats
 
 - OSM capacity tags (`plant:output:electricity`) are missing for some sites —

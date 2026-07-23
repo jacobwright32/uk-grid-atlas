@@ -56,12 +56,7 @@ export const ENTSOE_COUNTRIES = {
   },
   fr: { unitDomains: ['10YFR-RTE------C'], mixDomains: ['10YFR-RTE------C'] },
   de: {
-    unitDomains: [
-      '10YDE-RWENET---I',
-      '10YDE-EON------1',
-      '10YDE-VE-------2',
-      '10YDE-ENBW-----N',
-    ],
+    unitDomains: ['10YDE-RWENET---I', '10YDE-EON------1', '10YDE-VE-------2', '10YDE-ENBW-----N'],
     mixDomains: ['10Y1001A1001A82H'],
   },
 }
@@ -72,10 +67,18 @@ export const ENTSOE_COUNTRIES = {
  * border carries several links).
  */
 export const FLOW_BORDERS = [
-  { pair: ['10YFR-RTE------C', '10YGB----------A'], links: ['ifa', 'ifa2', 'eleclink'], countries: ['fr'] },
+  {
+    pair: ['10YFR-RTE------C', '10YGB----------A'],
+    links: ['ifa', 'ifa2', 'eleclink'],
+    countries: ['fr'],
+  },
   { pair: ['10YNL----------L', '10YGB----------A'], links: ['britned'], countries: ['nl'] },
   { pair: ['10YBE----------2', '10YGB----------A'], links: ['nemo'], countries: ['be'] },
-  { pair: ['10Y1001A1001A59C', '10YGB----------A'], links: ['moyle', 'ewic', 'greenlink'], countries: ['ie'] },
+  {
+    pair: ['10Y1001A1001A59C', '10YGB----------A'],
+    links: ['moyle', 'ewic', 'greenlink'],
+    countries: ['ie'],
+  },
   { pair: ['10YDK-1--------W', '10YGB----------A'], links: ['viking'], countries: ['dk'] },
   { pair: ['10YNL----------L', '10YNO-2--------T'], links: ['norned'], countries: ['nl'] },
   { pair: ['10YNL----------L', '10YDK-1--------W'], links: ['cobra'], countries: ['nl', 'dk'] },
@@ -105,7 +108,7 @@ export const PSR_BUCKETS = {
   B06: ['other', 'Oil & other'],
   B07: ['other', 'Oil & other'],
   B08: ['other', 'Oil & other'],
-  B09: ['other', 'Oil & other'],
+  B09: ['geothermal', 'Geothermal'],
   B13: ['other', 'Oil & other'],
   B15: ['hydro', 'Hydro & pumped'],
   B20: ['other', 'Oil & other'],
@@ -114,6 +117,7 @@ export const PSR_BUCKETS = {
 /** psrType → station fuel groups it may match (for unit→station mapping). */
 export const PSR_COMPAT = {
   B14: ['nuclear'],
+  B09: ['geothermal', 'other'],
   B04: ['gas'],
   B03: ['gas'],
   B02: ['coal'],
@@ -171,8 +175,10 @@ export function parseSeries(doc) {
         unitEic: unit.mRID?.['#text'] ?? unit.mRID ?? null,
         unitName: unit.name ?? null,
         nominalP: unit.nominalP ? parseFloat(unit.nominalP['#text'] ?? unit.nominalP) : null,
-        inDomain: ts['inBiddingZone_Domain.mRID']?.['#text'] ?? ts['inBiddingZone_Domain.mRID'] ?? null,
-        outDomain: ts['outBiddingZone_Domain.mRID']?.['#text'] ?? ts['outBiddingZone_Domain.mRID'] ?? null,
+        inDomain:
+          ts['inBiddingZone_Domain.mRID']?.['#text'] ?? ts['inBiddingZone_Domain.mRID'] ?? null,
+        outDomain:
+          ts['outBiddingZone_Domain.mRID']?.['#text'] ?? ts['outBiddingZone_Domain.mRID'] ?? null,
         stepMin,
         points,
       })

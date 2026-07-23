@@ -29,7 +29,10 @@ export default function App() {
   })
   const [tiles, setTiles] = useState(DEFAULT_TILES)
   const [liveMode, setLiveMode] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // Phones get the map first; the burger opens the legend over a scrim (#13).
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => window.matchMedia('(min-width: 640px)').matches,
+  )
   // The mix panel crowds small screens — start it collapsed on phones.
   const [mixOpen, setMixOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const [resizeSignal, setResizeSignal] = useState(0)
@@ -39,6 +42,18 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  // Escape closes the sidebar when it overlays the map on small screens.
+  useEffect(() => {
+    if (!sidebarOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !window.matchMedia('(min-width: 640px)').matches) {
+        setSidebarOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sidebarOpen])
 
   const switchCountry = (id: CountryId) => {
     window.location.hash = id === DEFAULT_COUNTRY ? '' : id
@@ -150,6 +165,15 @@ export default function App() {
         liveMode={liveMode}
         onLiveMode={setLiveMode}
       />
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="sidebar-scrim"
+          aria-label="Close the legend"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       <main className="map-pane">
         <GridMap
