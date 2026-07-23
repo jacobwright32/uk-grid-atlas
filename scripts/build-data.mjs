@@ -173,6 +173,19 @@ const COUNTRIES = {
     isForeignLine: () => false,
     classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
   },
+  pt: {
+    decimalComma: true,
+    plantFiles: ['plants_pt.json', 'plants_pt_pbf.json'],
+    seaFiles: [],
+    lineFile: /^pt_lines.*\.json$/,
+    // Mainland + Madeira (the eu basemap covers both); the Azores sit west
+    // of the shipped coastline, so their handful of plants are excluded.
+    keep: ([lon]) => lon >= -18.5,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : null,
+  },
   us: {
     region: 'na',
     simplifyEps: 0.0005,

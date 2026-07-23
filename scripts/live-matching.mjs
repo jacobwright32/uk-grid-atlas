@@ -146,6 +146,14 @@ const STOPWORDS = new Set([
   'hidroelectrica',
   'ciclo',
   'combinado',
+  // Portuguese — "Central termoeléctrica", "Barragem do Alqueva", "Aproveitamento Hidroeléctrico"
+  'termoelectrica',
+  'barragem',
+  'aproveitamento',
+  'do',
+  'da',
+  'dos',
+  'das',
   // Italian — "Centrale termoelettrica di Torrevaldaliga Nord"
   'termoelettrica',
   'idroelettrica',

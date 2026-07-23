@@ -81,6 +81,7 @@ export const ENTSOE_COUNTRIES = {
     mixDomains: ['10Y1001A1001A44P', '10Y1001A1001A45N', '10Y1001A1001A46L', '10Y1001A1001A47J'],
   },
   pl: { unitDomains: ['10YPL-AREA-----S'], mixDomains: ['10YPL-AREA-----S'] },
+  pt: { unitDomains: ['10YPT-REN------W'], mixDomains: ['10YPT-REN------W'] },
   es: { unitDomains: ['10YES-REE------0'], mixDomains: ['10YES-REE------0'] },
   it: {
     // Terna publishes per-unit data per bidding zone; the CTA domain carries the mix.

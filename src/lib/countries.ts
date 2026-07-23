@@ -1,7 +1,21 @@
 /** Per-country configuration: bounds, voltage tiers, live-data support. */
 
 export type CountryId =
-  'gb' | 'nl' | 'be' | 'ie' | 'dk' | 'fr' | 'de' | 'no' | 'se' | 'pl' | 'es' | 'it' | 'us' | 'all'
+  | 'gb'
+  | 'nl'
+  | 'be'
+  | 'ie'
+  | 'dk'
+  | 'fr'
+  | 'de'
+  | 'no'
+  | 'se'
+  | 'pl'
+  | 'es'
+  | 'pt'
+  | 'it'
+  | 'us'
+  | 'all'
 
 /** Countries with their own data bundles ('all' merges these at runtime). */
 export const REAL_COUNTRY_IDS = [
@@ -16,6 +30,7 @@ export const REAL_COUNTRY_IDS = [
   'se',
   'pl',
   'es',
+  'pt',
   'it',
   'us',
 ] as const
@@ -62,8 +77,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Thirteen grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Thirteen grids · two continents · every HVDC link',
+      'Fourteen grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Fourteen grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -277,6 +292,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Regional 132/110 kV networks are omitted; the Canaries sit outside the default frame.',
     tagline: 'Cada central · la red de transporte · enlaces HVDC',
+  },
+  pt: {
+    id: 'pt',
+    region: 'eu',
+    name: 'Portugal',
+    flag: '🇵🇹',
+    bounds: [
+      [-9.9, 36.8],
+      [-6.0, 42.2],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [150], label: '150 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Madeira is shown; the Azores are outside the mapped frame.',
+    tagline: 'Cada central · a rede de transporte · ligações HVDC',
   },
   it: {
     id: 'it',

@@ -112,6 +112,10 @@ out tags geom;`,
     'pl_lines_hv_w.json': linesArea('PL', '400000|380000|220000', '48.9,14.0,55.0,19.2'),
     'pl_lines_hv_e.json': linesArea('PL', '400000|380000|220000', '48.9,19.2,55.0,24.2'),
   },
+  pt: {
+    'plants_pt.json': plantsArea('PT'),
+    'pt_lines_hv.json': linesArea('PT', '400000|380000|220000|150000'),
+  },
   es: {
     'plants_es.json': plantsArea('ES'),
     'es_lines_hv_n.json': linesArea('ES', '400000|380000|220000', '39.5,-9.9,43.9,4.6'),
