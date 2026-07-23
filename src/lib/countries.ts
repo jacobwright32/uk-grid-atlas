@@ -214,9 +214,9 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [300], label: '300 kV lines' },
       { kvs: [132], label: '132 kV lines' },
     ],
-    hasLive: false,
-    liveKind: 'none',
-    liveNote: 'Infrastructure view for now — the ENTSO-E live layer for Norway is on the roadmap.',
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'Hvert kraftverk · sentralnettet · HVDC-forbindelser',
   },
   se: {
@@ -233,9 +233,9 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [220], label: '220 kV lines' },
       { kvs: [130], label: '130 kV lines' },
     ],
-    hasLive: false,
-    liveKind: 'none',
-    liveNote: 'Infrastructure view for now — the ENTSO-E live layer for Sweden is on the roadmap.',
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'Varje kraftverk · stamnätet · HVDC-länkar',
   },
   pl: {
@@ -252,10 +252,10 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [220], label: '220 kV lines' },
       { kvs: [], label: '' },
     ],
-    hasLive: false,
-    liveKind: 'none',
+    hasLive: true,
+    liveKind: 'entsoe',
     liveNote:
-      'Infrastructure view for now — the ENTSO-E live layer for Poland is on the roadmap. The dense 110 kV network is omitted to keep the map fast.',
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. The dense 110 kV network is omitted to keep the map fast.',
     tagline: 'Każda elektrownia · sieć przesyłowa · połączenia HVDC',
   },
   es: {
@@ -272,10 +272,10 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [220], label: '220 kV lines' },
       { kvs: [], label: '' },
     ],
-    hasLive: false,
-    liveKind: 'none',
+    hasLive: true,
+    liveKind: 'entsoe',
     liveNote:
-      'Infrastructure view for now — the ENTSO-E live layer for Spain is on the roadmap. The 132/110 kV regional networks are omitted to keep the map fast; the Canaries sit outside the default frame (pan south-west).',
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Regional 132/110 kV networks are omitted; the Canaries sit outside the default frame.',
     tagline: 'Cada central · la red de transporte · enlaces HVDC',
   },
   it: {
@@ -292,10 +292,10 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [220], label: '220 kV lines' },
       { kvs: [], label: '' },
     ],
-    hasLive: false,
-    liveKind: 'none',
+    hasLive: true,
+    liveKind: 'entsoe',
     liveNote:
-      'Infrastructure view for now — the ENTSO-E live layer for Italy is on the roadmap. The vast 150 kV network is omitted to keep the map fast.',
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. The vast 150 kV network is omitted to keep the map fast.',
     tagline: 'Ogni centrale · la rete di trasmissione · collegamenti HVDC',
   },
   us: {

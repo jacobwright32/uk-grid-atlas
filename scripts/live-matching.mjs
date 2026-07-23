@@ -120,6 +120,40 @@ const STOPWORDS = new Set([
   'havmoellepark',
   'solcellepark',
   'solarpark',
+  // Norwegian / Swedish — "Kvilldal kraftverk", "Forsmarks Kärnkraftverk"
+  'kraftverk',
+  'kraftstasjon',
+  'pumpekraftverk',
+  'vannkraftverk',
+  'vindkraftverk',
+  'vindpark',
+  'kraftvaerk',
+  'kaernkraftverk',
+  'vattenkraftverk',
+  'kraftvaermeverk',
+  'vindkraftpark',
+  // Polish — "Elektrownia Bełchatów", "EC Żerań" (CHP), "BGP Włocławek" (CCGT block)
+  'elektrownia',
+  'elektrocieplownia',
+  'ec',
+  'bgp',
+  'farma',
+  'wiatrowa',
+  // Spanish — "Central nuclear de Almaraz", "Central Térmica de Castellón"
+  'central',
+  'nuclear',
+  'termica',
+  'hidroelectrica',
+  'ciclo',
+  'combinado',
+  // Italian — "Centrale termoelettrica di Torrevaldaliga Nord"
+  'termoelettrica',
+  'idroelettrica',
+  'nucleare',
+  'elettrica',
+  'impianto',
+  'diga',
+  'di',
   // Corporate suffixes that ENTSO-E unit names sometimes carry
   'sa',
   'ag',
@@ -130,11 +164,11 @@ const STOPWORDS = new Set([
 
 // ENTSO-E spells Germanic/Nordic letters out ("Luenen", "Roedsand",
 // "Skaerbaekvaerket"); OSM uses the native forms. Fold both sides the same.
-const TRANSLIT = { ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss', æ: 'ae', ø: 'oe', å: 'aa' }
+const TRANSLIT = { ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss', æ: 'ae', ø: 'oe', å: 'aa', ł: 'l' }
 
 function fold(s) {
   return s
-    .replace(/[äöüßæøå]/g, (c) => TRANSLIT[c])
+    .replace(/[äöüßæøåł]/g, (c) => TRANSLIT[c])
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // remaining accents: é è ç î …
 }
@@ -161,7 +195,7 @@ export function stemTokens(toks) {
   const out = [...toks]
   while (out.length > 1) {
     const last = out[out.length - 1]
-    if (/^\d{1,2}$/.test(last) || /^[a-z]$/.test(last) || /^(gt|st)?\d+[a-z]?$/.test(last))
+    if (/^\d{1,2}$/.test(last) || /^[a-z]$/.test(last) || /^(gt|st|g|b)?\d+[a-z]?$/.test(last))
       out.pop()
     else break
   }

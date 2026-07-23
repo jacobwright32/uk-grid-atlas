@@ -1,0 +1,137 @@
+{
+ "builtAt": "2026-07-23T08:28:44.118Z",
+ "unitCount": 48,
+ "byUnit": {
+  "26WUUUUUVENAUS10": "way/401799924",
+  "26WUUUUFADALTO1G": "way/893805657",
+  "26WUUUOSTIGLIA33": "way/82104200",
+  "26WUUUCHIVASSO1V": "way/95099552",
+  "26WUUUUTURBIGO4K": "way/51601405",
+  "26WUUUUUUROSEN1B": "way/941164388",
+  "26WUUUUCANDELA1R": "way/92433464",
+  "26WUUANAPO-C-L1O": "relation/6010414",
+  "26WUUALTOMONTE1Z": "way/110330926"
+ },
+ "unmatchedTop": [
+  {
+   "eic": "26WUETQCHIOTAS1O",
+   "name": "UP_ETQCHIOTAS_1",
+   "psr": "B10",
+   "mw": 1064
+  },
+  {
+   "eic": "26WUURONCOVALG13",
+   "name": "UP_RONCOVALG_1",
+   "psr": "B10",
+   "mw": 1000
+  },
+  {
+   "eic": "26WUUPRESENZAN11",
+   "name": "UP_PRESENZAN_1",
+   "psr": "B10",
+   "mw": 985
+  },
+  {
+   "eic": "26WUUUUUUEDOLO19",
+   "name": "UP_EDOLO_1",
+   "psr": "B10",
+   "mw": 950
+  },
+  {
+   "eic": "26WUSMRICRICHI16",
+   "name": "UP_SMRICRICHI_1",
+   "psr": "B04",
+   "mw": 885
+  },
+  {
+   "eic": "26WOEAEMAE31922V",
+   "name": "UP_OEAEMAE_31922",
+   "psr": "B04",
+   "mw": 855
+  },
+  {
+   "eic": "26WOEAEMAE31918M",
+   "name": "UP_OEAEMAE_31918",
+   "psr": "B04",
+   "mw": 855
+  },
+  {
+   "eic": "26WOEEPSNL31611K",
+   "name": "UP_OEEPSNL_31611",
+   "psr": "B20",
+   "mw": 840
+  },
+  {
+   "eic": "26WOEESDSN318807",
+   "name": "UP_OEESDSN_31880",
+   "psr": "B04",
+   "mw": 837
+  },
+  {
+   "eic": "26WUUUULEVANTE51",
+   "name": "UP_LEVANTE_5",
+   "psr": "B04",
+   "mw": 817
+  },
+  {
+   "eic": "26WOEAEMAE31919K",
+   "name": "UP_OEAEMAE_31919",
+   "psr": "B04",
+   "mw": 794
+  },
+  {
+   "eic": "26WUCCGTPRILIA15",
+   "name": "UP_CCGTPRILIA_1",
+   "psr": "B04",
+   "mw": 787
+  },
+  {
+   "eic": "26WUUTERMINI-I6D",
+   "name": "UP_TERMINI_I_6",
+   "psr": "B04",
+   "mw": 756
+  },
+  {
+   "eic": "26WUUS-MASS-CL10",
+   "name": "UP_S.MASS.CL_1",
+   "psr": "B10",
+   "mw": 497
+  },
+  {
+   "eic": "26WUUUSGIACOMO3I",
+   "name": "UP_SGIACOMO_3",
+   "psr": "B10",
+   "mw": 490
+  },
+  {
+   "eic": "26WUNPWRMNTOVA3L",
+   "name": "UP_NPWRMNTOVA_3",
+   "psr": "B04",
+   "mw": 395
+  },
+  {
+   "eic": "26WUNPWRMNTOVA2N",
+   "name": "UP_NPWRMNTOVA_2",
+   "psr": "B04",
+   "mw": 380
+  },
+  {
+   "eic": "26WUVALMALENCO17",
+   "name": "003014036",
+   "psr": "B11",
+   "mw": 350
+  },
+  {
+   "eic": "26WUUUUUCHIESE16",
+   "name": "UP_CHIESE_1",
+   "psr": "B11",
+   "mw": 335
+  },
+  {
+   "eic": "26WUUUALTOADDA15",
+   "name": "UP_ALTOADDA_1",
+   "psr": "B10",
+   "mw": 327
+  }
+ ]
+}

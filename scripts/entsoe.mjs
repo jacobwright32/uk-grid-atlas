@@ -59,6 +59,42 @@ export const ENTSOE_COUNTRIES = {
     unitDomains: ['10YDE-RWENET---I', '10YDE-EON------1', '10YDE-VE-------2', '10YDE-ENBW-----N'],
     mixDomains: ['10Y1001A1001A82H'],
   },
+  no: {
+    // Five bidding zones; per-unit and mix data both publish per zone.
+    unitDomains: [
+      '10YNO-1--------2',
+      '10YNO-2--------T',
+      '10YNO-3--------J',
+      '10YNO-4--------9',
+      '10Y1001A1001A48H',
+    ],
+    mixDomains: [
+      '10YNO-1--------2',
+      '10YNO-2--------T',
+      '10YNO-3--------J',
+      '10YNO-4--------9',
+      '10Y1001A1001A48H',
+    ],
+  },
+  se: {
+    unitDomains: ['10Y1001A1001A44P', '10Y1001A1001A45N', '10Y1001A1001A46L', '10Y1001A1001A47J'],
+    mixDomains: ['10Y1001A1001A44P', '10Y1001A1001A45N', '10Y1001A1001A46L', '10Y1001A1001A47J'],
+  },
+  pl: { unitDomains: ['10YPL-AREA-----S'], mixDomains: ['10YPL-AREA-----S'] },
+  es: { unitDomains: ['10YES-REE------0'], mixDomains: ['10YES-REE------0'] },
+  it: {
+    // Terna publishes per-unit data per bidding zone; the CTA domain carries the mix.
+    unitDomains: [
+      '10Y1001A1001A73I',
+      '10Y1001A1001A70O',
+      '10Y1001A1001A71M',
+      '10Y1001A1001A788',
+      '10Y1001A1001A75E',
+      '10Y1001A1001A74G',
+      '10Y1001C--00096J',
+    ],
+    mixDomains: ['10YIT-GRTN-----B'],
+  },
 }
 
 /**
@@ -80,14 +116,42 @@ export const FLOW_BORDERS = [
     countries: ['ie'],
   },
   { pair: ['10YDK-1--------W', '10YGB----------A'], links: ['viking'], countries: ['dk'] },
-  { pair: ['10YNL----------L', '10YNO-2--------T'], links: ['norned'], countries: ['nl'] },
+  { pair: ['10YNL----------L', '10YNO-2--------T'], links: ['norned'], countries: ['nl', 'no'] },
   { pair: ['10YNL----------L', '10YDK-1--------W'], links: ['cobra'], countries: ['nl', 'dk'] },
   { pair: ['10YBE----------2', '10Y1001A1001A82H'], links: ['alegro'], countries: ['be', 'de'] },
-  { pair: ['10YDK-1--------W', '10YNO-2--------T'], links: ['skagerrak'], countries: ['dk'] },
-  { pair: ['10YDK-1--------W', '10Y1001A1001A46L'], links: ['konti-skan'], countries: ['dk'] },
+  { pair: ['10YDK-1--------W', '10YNO-2--------T'], links: ['skagerrak'], countries: ['dk', 'no'] },
+  {
+    pair: ['10YDK-1--------W', '10Y1001A1001A46L'],
+    links: ['konti-skan'],
+    countries: ['dk', 'se'],
+  },
   { pair: ['10YDK-2--------M', '10Y1001A1001A82H'], links: ['kontek'], countries: ['dk', 'de'] },
-  { pair: ['10Y1001A1001A82H', '10Y1001A1001A47J'], links: ['baltic-cable'], countries: ['de'] },
-  { pair: ['10Y1001A1001A82H', '10YNO-2--------T'], links: ['nordlink'], countries: ['de'] },
+  {
+    pair: ['10Y1001A1001A82H', '10Y1001A1001A47J'],
+    links: ['baltic-cable'],
+    countries: ['de', 'se'],
+  },
+  { pair: ['10Y1001A1001A82H', '10YNO-2--------T'], links: ['nordlink'], countries: ['de', 'no'] },
+  { pair: ['10YGB----------A', '10YNO-2--------T'], links: ['nsl'], countries: ['no'] },
+  { pair: ['10Y1001A1001A47J', '10YPL-AREA-----S'], links: ['swepol'], countries: ['se', 'pl'] },
+  {
+    pair: ['10Y1001A1001A46L', '10Y1001A1001A39I'],
+    links: ['fenno-skan'],
+    countries: ['se'],
+  },
+  { pair: ['10Y1001A1001A47J', '10Y1001A1001A50U'], links: ['nordbalt'], countries: ['se'] },
+  {
+    pair: ['10YFR-RTE------C', '10YES-REE------0'],
+    links: ['inelfe'],
+    countries: ['es', 'fr'],
+  },
+  {
+    pair: ['10YFR-RTE------C', '10Y1001A1001A73I'],
+    links: ['savoie-piemont'],
+    countries: ['it', 'fr'],
+  },
+  { pair: ['10Y1001A1001A788', '10YGR-HTSO-----Y'], links: ['grita'], countries: ['it'] },
+  { pair: ['10Y1001A1001A788', '10YCS-CG-TSO---S'], links: ['monita'], countries: ['it'] },
 ]
 
 /** ENTSO-E psrType → Grid Atlas mix bucket. */

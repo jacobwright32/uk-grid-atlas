@@ -229,7 +229,11 @@ export default function GridMap({
   // ------------------------------------------------------ live → map state
   const applyLiveState = (map: MLMap) => {
     if (!readyRef.current) return
-    const showLive = liveMode && live != null && country.hasLive
+    // Mix-only snapshots (Nordics: no per-unit ENTSO-E feed) must not ghost
+    // the station dots — live sizing needs actual per-station figures.
+    const hasStationData =
+      live != null && ((live.perStationNow?.size ?? 0) > 0 || live.perStationDay.size > 0)
+    const showLive = liveMode && country.hasLive && hasStationData
     if (map.getLayer('stations-live')) {
       map.setLayoutProperty('stations-live', 'visibility', showLive ? 'visible' : 'none')
     }

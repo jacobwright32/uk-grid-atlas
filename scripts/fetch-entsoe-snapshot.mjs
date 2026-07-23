@@ -139,7 +139,7 @@ for (const cc of countryIds) {
     // 2. Latest day with per-unit actuals (A73), walking back up to 6 days.
     let day = null
     let unitSeries = []
-    for (let back = 1; back <= 6 && !day; back++) {
+    for (let back = 1; back <= 14 && !day; back++) {
       const candidate = isoDaysAgo(back)
       const collected = []
       for (const domain of cfg.unitDomains) {
@@ -157,8 +157,11 @@ for (const cc of countryIds) {
       }
     }
     if (!day) {
-      console.warn(`${cc}: no A73 data in lookback window`)
-      continue
+      // Nordic TSOs publish little/no per-unit A73 — fall back to a
+      // mix-only snapshot so the country still gets its generation mix.
+      console.warn(`${cc}: no A73 data in lookback window — writing mix-only snapshot`)
+      day = isoDaysAgo(1)
+      unitSeries = []
     }
 
     // 3. Aggregate unit series → stations. Units missing from the A71
