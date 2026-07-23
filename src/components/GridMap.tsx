@@ -15,6 +15,7 @@ import {
 } from '../map/layers'
 import { cardFor } from '../map/popup'
 import type { CardContext } from '../map/popup'
+import type { SearchTarget } from './SearchBox'
 
 interface Props {
   data: GridData
@@ -28,6 +29,8 @@ interface Props {
   liveMode: boolean
   /** Bump to force a map.resize() (sidebar collapse etc.). */
   resizeSignal: number
+  /** Fly to + pin a station picked in the search box (#19). */
+  searchTarget: SearchTarget | null
 }
 
 export default function GridMap({
@@ -40,6 +43,7 @@ export default function GridMap({
   bmuMap,
   liveMode,
   resizeSignal,
+  searchTarget,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -297,6 +301,30 @@ export default function GridMap({
     const t = setTimeout(() => mapRef.current?.resize(), 220)
     return () => clearTimeout(t)
   }, [resizeSignal])
+
+  // ------------------------------------------------------- search → fly+pin
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !searchTarget) return
+    const feature = data.stations.features.find((f) => f.properties.id === searchTarget.id)
+    if (!feature) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    map.flyTo({
+      center: searchTarget.coords,
+      zoom: Math.max(map.getZoom(), 9.5),
+      duration: reduceMotion ? 0 : 1200,
+    })
+    const fake = {
+      properties: feature.properties,
+      layer: { id: 'stations' },
+    } as unknown as maplibregl.MapGeoJSONFeature
+    pinnedRef.current = true
+    popupRef.current
+      ?.setLngLat(searchTarget.coords)
+      .setDOMContent(cardFor(fake, cardCtxRef.current))
+      .addTo(map)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTarget])
 
   return (
     <div

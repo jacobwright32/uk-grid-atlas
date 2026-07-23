@@ -737,3 +737,81 @@
   color: var(--ink);
   text-decoration: underline;
 }
+
+/* -------------------------------------------------------- station search */
+.search-dock {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 6;
+  width: min(300px, calc(100% - 110px));
+}
+
+.searchbox-input {
+  width: 100%;
+  background: rgba(26, 26, 25, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 7px 11px;
+  font-size: 13px;
+  color: var(--ink);
+  backdrop-filter: blur(4px);
+}
+
+.searchbox-input::placeholder {
+  color: var(--ink-muted);
+}
+
+.searchbox-input:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+
+.searchbox-results {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.searchbox-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  text-align: left;
+}
+
+.searchbox-item--on {
+  background: var(--surface-2);
+}
+
+.searchbox-item i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.searchbox-name {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchbox-meta {
+  font-size: 11px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}

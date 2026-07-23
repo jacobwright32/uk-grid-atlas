@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import GridMap from './components/GridMap'
+import SearchBox from './components/SearchBox'
+import type { SearchTarget } from './components/SearchBox'
 import Sidebar from './components/Sidebar'
 import MixStrip from './components/MixStrip'
 import { useGridData } from './hooks/useGridData'
@@ -36,6 +38,7 @@ export default function App() {
   // The mix panel crowds small screens — start it collapsed on phones.
   const [mixOpen, setMixOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const [resizeSignal, setResizeSignal] = useState(0)
+  const [searchTarget, setSearchTarget] = useState<SearchTarget | null>(null)
 
   useEffect(() => {
     const onHash = () => setCountryId(countryFromHash())
@@ -186,7 +189,11 @@ export default function App() {
           bmuMap={bmuMap}
           liveMode={liveMode}
           resizeSignal={resizeSignal}
+          searchTarget={searchTarget}
         />
+        <div className="search-dock">
+          <SearchBox data={data} onSelect={setSearchTarget} />
+        </div>
         {country.hasLive && live?.mix && mixRows.length > 0 && (
           <div className="mixstrip-dock">
             {mixOpen ? (
