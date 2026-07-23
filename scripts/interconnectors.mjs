@@ -506,7 +506,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
-    countries: ['se'],
+    countries: ['se', 'fi'],
     id: 'fenno-skan',
     name: 'Fenno-Skan 1+2',
     to: 'Finland',
@@ -520,6 +520,22 @@ export const INTERCONNECTORS = [
       [19.3, 60.8],
       [20.6, 61.0],
       [21.44, 61.12],
+    ],
+  },
+  {
+    countries: ['fi'],
+    id: 'estlink',
+    name: 'Estlink 1+2',
+    to: 'Estonia',
+    capMW: 1016,
+    year: 2014,
+    kv: 450,
+    kind: 'interconnector',
+    status: 'operational',
+    waypoints: [
+      [24.55, 60.19],
+      [24.6, 59.9],
+      [24.66, 59.52],
     ],
   },
   {

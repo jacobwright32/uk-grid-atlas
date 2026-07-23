@@ -146,6 +146,13 @@ const STOPWORDS = new Set([
   'hidroelectrica',
   'ciclo',
   'combinado',
+  // Finnish — "Olkiluodon ydinvoimalaitos", "Imatran vesivoimalaitos"
+  'voimalaitos',
+  'voimala',
+  'vesivoimalaitos',
+  'ydinvoimalaitos',
+  'tuulipuisto',
+  'tuulivoimapuisto',
   // Portuguese — "Central termoeléctrica", "Barragem do Alqueva", "Aproveitamento Hidroeléctrico"
   'termoelectrica',
   'barragem',

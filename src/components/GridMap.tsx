@@ -51,6 +51,11 @@ export default function GridMap({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
   const readyRef = useRef(false)
+  // Latest data prop — progressive ALL loading can swap `data` several times
+  // before the map's `load` event; the swap effect below bails until ready,
+  // so `load` must replay the newest snapshot or those merges are lost.
+  const dataRef = useRef(data)
+  dataRef.current = data
   const hoverIdRef = useRef<number | string | null>(null)
   const pinnedRef = useRef(false)
   const popupRef = useRef<Popup | null>(null)
@@ -112,6 +117,14 @@ export default function GridMap({
       map.addLayer(liveStationLayer('stations'))
 
       readyRef.current = true
+      if (dataRef.current !== data) {
+        // Data advanced while the style was loading — push the latest merge.
+        const src = (id: string) => map.getSource(id) as maplibregl.GeoJSONSource | undefined
+        src('land')?.setData(dataRef.current.basemap as never)
+        src('stations')?.setData(dataRef.current.stations as never)
+        src('transmission')?.setData(dataRef.current.transmission as never)
+        src('interconnectors')?.setData(dataRef.current.interconnectors as never)
+      }
       applyState(map)
       applyLiveState(map)
     })

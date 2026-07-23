@@ -82,6 +82,7 @@ export const ENTSOE_COUNTRIES = {
   },
   pl: { unitDomains: ['10YPL-AREA-----S'], mixDomains: ['10YPL-AREA-----S'] },
   pt: { unitDomains: ['10YPT-REN------W'], mixDomains: ['10YPT-REN------W'] },
+  fi: { unitDomains: ['10YFI-1--------U'], mixDomains: ['10YFI-1--------U'] },
   es: { unitDomains: ['10YES-REE------0'], mixDomains: ['10YES-REE------0'] },
   it: {
     // Terna publishes per-unit data per bidding zone; the CTA domain carries the mix.
@@ -136,11 +137,16 @@ export const FLOW_BORDERS = [
   { pair: ['10YGB----------A', '10YNO-2--------T'], links: ['nsl'], countries: ['no'] },
   { pair: ['10Y1001A1001A47J', '10YPL-AREA-----S'], links: ['swepol'], countries: ['se', 'pl'] },
   {
-    pair: ['10Y1001A1001A46L', '10Y1001A1001A39I'],
+    pair: ['10Y1001A1001A46L', '10YFI-1--------U'],
     links: ['fenno-skan'],
-    countries: ['se'],
+    countries: ['se', 'fi'],
   },
-  { pair: ['10Y1001A1001A47J', '10Y1001A1001A50U'], links: ['nordbalt'], countries: ['se'] },
+  {
+    pair: ['10YFI-1--------U', '10Y1001A1001A39I'],
+    links: ['estlink'],
+    countries: ['fi'],
+  },
+  { pair: ['10Y1001A1001A47J', '10YLT-1001A0008Q'], links: ['nordbalt'], countries: ['se'] },
   {
     pair: ['10YFR-RTE------C', '10YES-REE------0'],
     links: ['inelfe'],

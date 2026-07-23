@@ -116,6 +116,11 @@ out tags geom;`,
     'plants_pt.json': plantsArea('PT'),
     'pt_lines_hv.json': linesArea('PT', '400000|380000|220000|150000'),
   },
+  fi: {
+    'plants_fi.json': plantsArea('FI'),
+    'fi_lines_hv.json': linesArea('FI', '400000|380000|220000'),
+    'fi_lines_110.json': linesArea('FI', '110000'),
+  },
   es: {
     'plants_es.json': plantsArea('ES'),
     'es_lines_hv_n.json': linesArea('ES', '400000|380000|220000', '39.5,-9.9,43.9,4.6'),

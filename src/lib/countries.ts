@@ -14,6 +14,7 @@ export type CountryId =
   | 'es'
   | 'pt'
   | 'it'
+  | 'fi'
   | 'us'
   | 'all'
 
@@ -32,6 +33,7 @@ export const REAL_COUNTRY_IDS = [
   'es',
   'pt',
   'it',
+  'fi',
   'us',
 ] as const
 export type RealCountryId = (typeof REAL_COUNTRY_IDS)[number]
@@ -77,8 +79,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Fourteen grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Fourteen grids · two continents · every HVDC link',
+      'Fifteen grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Fifteen grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -332,6 +334,25 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. The vast 150 kV network is omitted to keep the map fast.',
     tagline: 'Ogni centrale · la rete di trasmissione · collegamenti HVDC',
+  },
+  fi: {
+    id: 'fi',
+    region: 'eu',
+    name: 'Finland',
+    flag: '🇫🇮',
+    bounds: [
+      [19.0, 59.6],
+      [31.6, 70.1],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    tagline: 'Jokainen voimalaitos · kantaverkko · HVDC-yhteydet',
   },
   us: {
     id: 'us',

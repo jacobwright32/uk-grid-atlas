@@ -56,6 +56,10 @@ import itStations from '../data/it/stations.json?url'
 import itTransmission from '../data/it/transmission.json?url'
 import itInterconnectors from '../data/it/interconnectors.json?url'
 import itMeta from '../data/it/meta.json?url'
+import fiStations from '../data/fi/stations.json?url'
+import fiTransmission from '../data/fi/transmission.json?url'
+import fiInterconnectors from '../data/fi/interconnectors.json?url'
+import fiMeta from '../data/fi/meta.json?url'
 import usStations from '../data/us/stations.json?url'
 import usTransmission from '../data/us/transmission.json?url'
 import usInterconnectors from '../data/us/interconnectors.json?url'
@@ -145,6 +149,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: itTransmission,
     interconnectors: itInterconnectors,
     meta: itMeta,
+  },
+  fi: {
+    stations: fiStations,
+    transmission: fiTransmission,
+    interconnectors: fiInterconnectors,
+    meta: fiMeta,
   },
   us: {
     stations: usStations,

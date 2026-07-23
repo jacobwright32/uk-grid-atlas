@@ -186,6 +186,17 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : null,
   },
+  fi: {
+    decimalComma: true,
+    plantFiles: ['plants_fi.json', 'plants_fi_pbf.json'],
+    seaFiles: [],
+    lineFile: /^fi_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // 110 kV is transmission voltage in Finland (Fingrid), like Scotland's 132.
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   us: {
     region: 'na',
     simplifyEps: 0.0005,
