@@ -3,3 +3,6 @@ dist
 dist-single
 *.local
 .DS_Store
+
+# staged-for-deletion scratch (tooling drops files here; never commit)
+_to_delete/
