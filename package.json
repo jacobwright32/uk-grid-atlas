@@ -45,5 +45,6 @@
     "vitest": "^4.1.10",
     "world-atlas": "^2.0.2"
   },
-  "description": "Interactive dark-mode atlas of GB, European and US power grids: generation sites, transmission networks, HVDC links and live output."
+  "description": "Interactive dark-mode atlas of 22 power grids across Europe and North America — generation, transmission, HVDC flows, live output and wholesale prices.",
+  "license": "MIT"
 }

@@ -134,7 +134,7 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
         el(
           'div',
           'card-live-head',
-          `Metered ${dateLabel}${live.basis === 'entsoe' ? ' (ENTSO-E)' : live.source === 'snapshot' ? ' (snapshot)' : ' · settlement data lags ~a week'}`,
+          `Metered ${dateLabel}${live.basis === 'entsoe' ? ` (${live.sourceLabel ?? 'ENTSO-E'})` : live.source === 'snapshot' ? ' (snapshot)' : ' · settlement data lags ~a week'}`,
         ),
       )
       const statRows = [
@@ -160,7 +160,7 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
         'div',
         'card-live-none',
         live.basis === 'entsoe'
-          ? 'No unit-level feed — below the 100 MW ENTSO-E reporting threshold'
+          ? `No unit-level feed${live.sourceLabel ? '' : ' — below the 100 MW ENTSO-E reporting threshold'}`
           : 'No unit-level public feed — distribution-connected site',
       ),
     )
