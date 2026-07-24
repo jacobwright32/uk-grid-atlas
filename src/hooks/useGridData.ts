@@ -40,6 +40,10 @@ import atStations from '../data/at/stations.json?url'
 import atTransmission from '../data/at/transmission.json?url'
 import atInterconnectors from '../data/at/interconnectors.json?url'
 import atMeta from '../data/at/meta.json?url'
+import czStations from '../data/cz/stations.json?url'
+import czTransmission from '../data/cz/transmission.json?url'
+import czInterconnectors from '../data/cz/interconnectors.json?url'
+import czMeta from '../data/cz/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -133,6 +137,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: atTransmission,
     interconnectors: atInterconnectors,
     meta: atMeta,
+  },
+  cz: {
+    stations: czStations,
+    transmission: czTransmission,
+    interconnectors: czInterconnectors,
+    meta: czMeta,
   },
   no: {
     stations: noStations,

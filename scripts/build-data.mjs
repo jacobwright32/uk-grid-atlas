@@ -146,6 +146,16 @@ const COUNTRIES = {
     // traction grid are deliberately out (same rule as DE/CH).
     classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
   },
+  cz: {
+    decimalComma: true,
+    plantFiles: ['plants_cz.json', 'plants_cz_pbf.json'],
+    seaFiles: [],
+    lineFile: /^cz_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // ČEPS backbone is 400/220; the 110 kV distribution layer is out (DE rule).
+    classify: (volts) => (volts >= 380000 ? 400 : volts >= 200000 ? 220 : null),
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],

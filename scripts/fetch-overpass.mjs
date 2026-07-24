@@ -129,6 +129,10 @@ out tags geom;`,
     'plants_at.json': plantsArea('AT'),
     'at_lines_hv.json': linesArea('AT', '400000|380000|220000'),
   },
+  cz: {
+    'plants_cz.json': plantsArea('CZ'),
+    'cz_lines_hv.json': linesArea('CZ', '400000|380000|220000'),
+  },
   es: {
     'plants_es.json': plantsArea('ES'),
     'es_lines_hv_n.json': linesArea('ES', '400000|380000|220000', '39.5,-9.9,43.9,4.6'),

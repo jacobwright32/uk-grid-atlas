@@ -10,6 +10,7 @@ export type CountryId =
   | 'de'
   | 'ch'
   | 'at'
+  | 'cz'
   | 'no'
   | 'se'
   | 'pl'
@@ -31,6 +32,7 @@ export const REAL_COUNTRY_IDS = [
   'de',
   'ch',
   'at',
+  'cz',
   'no',
   'se',
   'pl',
@@ -83,8 +85,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Seventeen grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Seventeen grids · two continents · every HVDC link',
+      'Eighteen grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Eighteen grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -260,6 +262,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Regional 110 kV and the ÖBB 16.7 Hz railway grid are omitted.',
     tagline: 'Jedes Kraftwerk · das APG-Netz · Alpenwasserkraft',
+  },
+  cz: {
+    id: 'cz',
+    region: 'eu',
+    name: 'Czechia',
+    flag: '🇨🇿',
+    bounds: [
+      [12.0, 48.5],
+      [18.9, 51.1],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day from ENTSO-E, refreshed by a scheduled workflow. ČEPS publishes per-unit output for only a few fossil units — the mix is complete but station dots are sparse. The 110 kV distribution network is omitted.',
+    tagline: 'Každá elektrárna · přenosová soustava ČEPS · jádro i uhlí',
   },
   no: {
     id: 'no',

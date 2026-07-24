@@ -1,4 +1,4 @@
-# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇨🇭 🇦🇹 🇳🇴 🇸🇪 🇫🇮 🇵🇱 🇪🇸 🇵🇹 🇮🇹 🇺🇸 🌍
+# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇨🇭 🇦🇹 🇨🇿 🇳🇴 🇸🇪 🇫🇮 🇵🇱 🇪🇸 🇵🇹 🇮🇹 🇺🇸 🌍
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
@@ -7,7 +7,7 @@
 [![Grid Atlas — interactive dark map of generation, transmission and live output across GB, Europe and the US](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
 
 An interactive, dark-mode atlas of power grids — Great Britain in full detail,
-fifteen European countries, the United States, and a transatlantic ALL view:
+sixteen European countries, the United States, and a transatlantic ALL view:
 tens of thousands of utility-scale generation sites, each country's
 high-voltage transmission backbone, and the HVDC interconnectors that tie
 the grids together.
@@ -17,7 +17,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **Tens of thousands of generation sites across seventeen grids** — nuclear, gas, offshore/onshore wind, solar,
+- **Tens of thousands of generation sites across eighteen grids** — nuclear, gas, offshore/onshore wind, solar,
   hydro, pumped storage, bioenergy, battery storage and more — each sized by
   installed capacity and coloured by fuel. Hover for a card with capacity,
   operator and commissioning date; click to pin it.
@@ -97,15 +97,15 @@ node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via O
 ```
 
 The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
-`#fr`, `#de`, `#ch`, `#at`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#us`, `#all` in the URL)
-swaps data bundles, map bounds and voltage tiers per country. Seventeen grids
+`#fr`, `#de`, `#ch`, `#at`, `#cz`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#us`, `#all` in the URL)
+swaps data bundles, map bounds and voltage tiers per country. Eighteen grids
 ship today: Great Britain (400/275/132 kV), the Netherlands
 (380/220/150/110), Belgium (380/220/150), the island of Ireland
 (400/275/220/110 — the SEM is mapped as one grid), Denmark (400/150/132),
 France (400/225; the huge 90/63 kV layer is omitted), Germany (380/220;
 110 kV omitted), Switzerland (380/220; cantonal 110 kV and the SBB 16.7 Hz
 railway grid omitted), Austria (380/220; regional 110 kV and the ÖBB
-railway grid omitted), Norway (420/300/132), Sweden (400/220/130), Poland
+railway grid omitted), Czechia (400/220; 110 kV omitted), Norway (420/300/132), Sweden (400/220/130), Poland
 (400/220; 110 kV omitted), Spain (400/220; regional networks omitted),
 Portugal (400/220/150), Finland (400/220/110 — 110 kV is transmission
 voltage there), Italy (380/220; the vast 150 kV layer is omitted)
