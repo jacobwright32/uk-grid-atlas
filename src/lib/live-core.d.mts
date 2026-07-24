@@ -64,6 +64,15 @@ export interface MixDaySeries {
 
 export declare function parseOutturnDay(payload: unknown): MixDaySeries | null
 
+export interface PriceDay {
+  currency: string
+  /** Per-interval price series (48 GB half-hours or 24 EU hours). */
+  series: (number | null)[]
+  zones: number
+}
+
+export declare function aggregateMID(rows: unknown): PriceDay | null
+
 export declare function currentSettlement(now?: Date): {
   settlementDate: string
   settlementPeriod: number

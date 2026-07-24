@@ -4,6 +4,7 @@ import {
   aggregatePN,
   currentSettlement,
   daysBefore,
+  aggregateMID,
   parseOutturn,
   parseOutturnDay,
 } from './live-core.mjs'
@@ -144,6 +145,29 @@ describe('parseOutturnDay', () => {
   it('null on empty or junk payload', () => {
     expect(parseOutturnDay([])).toBeNull()
     expect(parseOutturnDay([{ startTime: 'garbage', data: [] }])).toBeNull()
+  })
+})
+
+describe('aggregateMID', () => {
+  it('volume-weights across providers per settlement period', () => {
+    const rows = [
+      { settlementPeriod: 1, price: 100, volume: 300, dataProvider: 'APXMIDP' },
+      { settlementPeriod: 1, price: 80, volume: 100, dataProvider: 'N2EXMIDP' },
+      { settlementPeriod: 10, price: 55.5, volume: 500, dataProvider: 'APXMIDP' },
+      { settlementPeriod: 10, price: 60, volume: 0, dataProvider: 'N2EXMIDP' }, // zero volume ignored
+      { settlementPeriod: 99, price: 1, volume: 1, dataProvider: 'APXMIDP' }, // bad period ignored
+    ]
+    const day = aggregateMID(rows)!
+    expect(day.currency).toBe('GBP')
+    expect(day.series[0]).toBe(95) // (100*300 + 80*100) / 400
+    expect(day.series[9]).toBe(55.5)
+    expect(day.series[1]).toBeNull()
+  })
+
+  it('null on empty or junk', () => {
+    expect(aggregateMID([])).toBeNull()
+    expect(aggregateMID(undefined)).toBeNull()
+    expect(aggregateMID([{ settlementPeriod: 1, price: 50, volume: 0 }])).toBeNull()
   })
 })
 

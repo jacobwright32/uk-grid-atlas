@@ -1,8 +1,21 @@
 import { useMemo } from 'react'
 import type { MixRow } from '../lib/fleet'
 import type { EntsoeToday } from '../lib/live'
-import type { MixSnapshot } from '../lib/live-core.mjs'
+import type { MixSnapshot, PriceDay } from '../lib/live-core.mjs'
 import { fmtGW } from '../lib/format'
+
+const CURRENCY_SIGNS: Record<string, string> = { EUR: '€', GBP: '£', PLN: 'zł' }
+
+function fmtPrice(v: number, currency: string): string {
+  const sign = CURRENCY_SIGNS[currency]
+  const n = Math.round(v)
+  return sign ? `${n} ${sign}/MWh` : `${n} ${currency}/MWh`
+}
+
+const priceAvg = (p: PriceDay): number | null => {
+  const vals = p.series.filter((v): v is number => v != null)
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+}
 
 interface Props {
   mix: MixSnapshot
@@ -17,6 +30,8 @@ interface Props {
   importSeries: (number | null)[] | null
   /** Today's partial ENTSO-E mix — shown as the default view when present (#18). */
   today: EntsoeToday | null
+  /** Wholesale prices over the metered day (scrub basis). */
+  prices: PriceDay | null
   /** When set, a close button collapses the strip (App renders the reopen chip). */
   onClose?: () => void
 }
@@ -36,6 +51,7 @@ export default function MixStrip({
   mixSeries,
   importSeries,
   today,
+  prices,
   onClose,
 }: Props) {
   const len = useMemo(() => {
@@ -87,6 +103,28 @@ export default function MixStrip({
               minute: '2-digit',
               timeZone: 'Europe/London',
             })
+
+  // Wholesale price line: scrubbing reads the metered day's series at the
+  // slider interval; the default view shows today's day-ahead average when
+  // available (EU) or the metered day's average (GB market index).
+  const priceSource = scrubbing ? prices : (today?.prices ?? prices)
+  let priceText: string | null = null
+  if (priceSource) {
+    const label = mode === 'live' || mode === 'snapshot' ? 'Market index' : 'Day-ahead'
+    if (scrubbing) {
+      const scale = priceSource.series.length === len ? 1 : priceSource.series.length / len
+      const v = priceSource.series[Math.floor(timeIndex * scale)]
+      if (v != null)
+        priceText = `${label} · ${fmtPrice(v, priceSource.currency)} at ${scrubHH}:${scrubMM}`
+    } else {
+      const avg = priceAvg(priceSource)
+      if (avg != null) {
+        const when = today?.prices && priceSource === today.prices ? 'today' : 'day avg'
+        const zones = priceSource.zones > 1 ? ` · avg of ${priceSource.zones} zones` : ''
+        priceText = `${label} · ${fmtPrice(avg, priceSource.currency)} ${when}${zones}`
+      }
+    }
+  }
 
   return (
     <div className="mixstrip" role="figure" aria-label="Current GB generation vs fleet capacity">
@@ -142,6 +180,7 @@ export default function MixStrip({
           )
         })}
       </div>
+      {priceText && <div className="mixstrip-price">{priceText}</div>}
       <div className="mixstrip-legend">
         <span className="mixstrip-item">
           {scrubbing

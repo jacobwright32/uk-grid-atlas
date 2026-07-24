@@ -91,7 +91,17 @@ export const ENTSOE_COUNTRIES = {
   lt: { unitDomains: ['10YLT-1001A0008Q'], mixDomains: ['10YLT-1001A0008Q'] },
   es: { unitDomains: ['10YES-REE------0'], mixDomains: ['10YES-REE------0'] },
   it: {
-    // Terna publishes per-unit data per bidding zone; the CTA domain carries the mix.
+    // Terna publishes per-unit data per bidding zone; the CTA domain carries
+    // the mix. Day-ahead prices (A44) exist per bidding zone only.
+    priceDomains: [
+      '10Y1001A1001A73I',
+      '10Y1001A1001A70O',
+      '10Y1001A1001A71M',
+      '10Y1001A1001A788',
+      '10Y1001A1001A75E',
+      '10Y1001A1001A74G',
+      '10Y1001C--00096J',
+    ],
     unitDomains: [
       '10Y1001A1001A73I',
       '10Y1001A1001A70O',
@@ -232,6 +242,29 @@ function resolutionMinutes(res) {
   if (res === 'PT30M') return 30
   if (res === 'PT60M' || res === 'P1D') return 60
   return 60
+}
+
+/**
+ * Parse an A44 day-ahead price document (Publication_MarketDocument whose
+ * points carry `price.amount` rather than `quantity`) into hourly series.
+ * Returns [{currency, stepMin, points: [{position, price}]}] per TimeSeries.
+ */
+export function parsePriceSeries(doc) {
+  const root = doc?.Publication_MarketDocument
+  if (!root) return []
+  const out = []
+  for (const ts of asArray(root.TimeSeries)) {
+    const currency = ts['currency_Unit.name'] ?? 'EUR'
+    for (const period of asArray(ts.Period)) {
+      const stepMin = resolutionMinutes(period.resolution)
+      const points = asArray(period.Point).map((p) => ({
+        position: parseInt(p.position, 10),
+        price: parseFloat(p['price.amount']),
+      }))
+      out.push({ currency, stepMin, points })
+    }
+  }
+  return out
 }
 
 /** Parse a GL_MarketDocument's TimeSeries into flat unit/type series. */

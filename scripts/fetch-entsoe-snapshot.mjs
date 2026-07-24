@@ -19,6 +19,7 @@ import {
   PSR_BUCKETS,
   PSR_COMPAT,
   dayWindow,
+  parsePriceSeries,
   parseSeries,
   stationDayFromSeries,
 } from './entsoe.mjs'
@@ -227,6 +228,59 @@ async function fetchMixAndFlows(cc, cfg, day) {
   return { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW, hoursCovered }
 }
 
+/**
+ * Day-ahead prices (A44) for one day, averaged across the country's bidding
+ * zones per hour. Multi-currency countries keep the majority currency's
+ * zones. Returns { currency, series[24], zones } or null when unpublished.
+ */
+async function fetchPrices(cfg, day) {
+  const domains = cfg.priceDomains ?? cfg.mixDomains
+  const perZone = []
+  for (const domain of domains) {
+    const doc = await client.get({
+      documentType: 'A44',
+      'contract_MarketAgreement.type': 'A01',
+      in_Domain: domain,
+      out_Domain: domain,
+      ...dayWindow(day),
+    })
+    const sums = new Array(24).fill(0)
+    const counts = new Array(24).fill(0)
+    let currency = null
+    for (const s of parsePriceSeries(doc ?? {})) {
+      currency ??= s.currency
+      for (const p of s.points) {
+        const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
+        if (hour < 0 || hour > 23 || !Number.isFinite(p.price)) continue
+        sums[hour] += p.price
+        counts[hour] += 1
+      }
+    }
+    if (!currency || !counts.some((c) => c > 0)) continue
+    perZone.push({
+      currency,
+      series: sums.map((v, h) => (counts[h] > 0 ? v / counts[h] : null)),
+    })
+  }
+  if (!perZone.length) return null
+  const byCurrency = new Map()
+  for (const z of perZone) byCurrency.set(z.currency, (byCurrency.get(z.currency) ?? 0) + 1)
+  const currency = [...byCurrency.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  const zones = perZone.filter((z) => z.currency === currency)
+  const series = new Array(24).fill(null).map((_, h) => {
+    let sum = 0
+    let n = 0
+    for (const z of zones) {
+      const v = z.series[h]
+      if (v == null) continue
+      sum += v
+      n++
+    }
+    return n ? Math.round((sum / n) * 100) / 100 : null
+  })
+  return { currency, series, zones: zones.length }
+}
+
 // --------------------------------------------------------------- main loop
 for (const cc of countryIds) {
   const cfg = ENTSOE_COUNTRIES[cc]
@@ -339,6 +393,7 @@ for (const cc of countryIds) {
     // again for today's partial day (#18 intraday, below).
     const { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW } =
       await fetchMixAndFlows(cc, cfg, day)
+    const prices = await fetchPrices(cfg, day).catch(() => null)
 
     // 6. Intraday (#18): today's partial mix, when the TSO has published
     // at least a few hours. Shown as the default strip; the metered day
@@ -349,8 +404,10 @@ for (const cc of countryIds) {
       try {
         const t = await fetchMixAndFlows(cc, cfg, todayDate)
         if (t.hoursCovered >= 3) {
+          const todayPrices = await fetchPrices(cfg, todayDate).catch(() => null)
           today = {
             date: todayDate,
+            prices: todayPrices,
             throughHour: Math.max(
               ...Object.values(t.mixSeries).map((s) =>
                 s.reduce((a, v, h) => (v != null ? h + 1 : a), 0),
@@ -379,6 +436,7 @@ for (const cc of countryIds) {
       mixSeries,
       flowSeries,
       importSeries,
+      prices,
       today,
       mix: {
         time: `${day}T12:00:00Z`,

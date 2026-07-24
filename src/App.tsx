@@ -292,6 +292,7 @@ export default function App() {
                 mixSeries={live.mixSeries}
                 importSeries={live.importSeries}
                 today={live.today}
+                prices={live.prices}
                 mode={
                   live.basis === 'entsoe'
                     ? 'daily'

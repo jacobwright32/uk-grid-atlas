@@ -9,10 +9,18 @@ import {
   chunk,
   currentSettlement,
   daysBefore,
+  aggregateMID,
   parseOutturn,
   parseOutturnDay,
 } from './live-core.mjs'
-import type { B1610Row, MixDaySeries, MixSnapshot, PNRow, StationDay } from './live-core.mjs'
+import type {
+  B1610Row,
+  MixDaySeries,
+  MixSnapshot,
+  PNRow,
+  PriceDay,
+  StationDay,
+} from './live-core.mjs'
 import { foldMixDay } from './fleet'
 
 const API = 'https://data.elexon.co.uk/bmrs/api/v1'
@@ -43,6 +51,8 @@ export interface LiveData {
   importSeries: (number | null)[] | null
   /** Per-link flow series over the metered day, + = import (#43). */
   flowSeries: Record<string, (number | null)[]> | null
+  /** Wholesale prices over the metered day (day-ahead EU, market index GB). */
+  prices: PriceDay | null
   /** Today's partial mix from ENTSO-E — fresher than the metered day (#18). */
   today: EntsoeToday | null
   /** 'live' = fetched now; 'snapshot' = bundled/committed fallback. */
@@ -52,6 +62,8 @@ export interface LiveData {
 /** Today-so-far mix baked into ENTSO-E snapshots (#18 intraday). */
 export interface EntsoeToday {
   date: string
+  /** Today's day-ahead prices (fully known from yesterday's auction). */
+  prices?: PriceDay | null
   /** Data runs through this hour (e.g. 14 = through 13:59). */
   throughHour: number
   mixRows: import('./fleet').MixRow[]
@@ -72,6 +84,7 @@ interface EntsoeSnapshotFile {
   mixSeries?: Record<string, (number | null)[]>
   importSeries?: (number | null)[]
   flowSeries?: Record<string, (number | null)[]>
+  prices?: PriceDay | null
   today?: EntsoeToday | null
   mix: MixSnapshot
 }
@@ -94,6 +107,7 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       mixSeries: snap.mixSeries ?? null,
       importSeries: snap.importSeries ?? null,
       flowSeries: snap.flowSeries ?? null,
+      prices: snap.prices ?? null,
       today: snap.today ?? null,
       source: 'live',
     }
@@ -189,6 +203,14 @@ export async function fetchScheduledNow(bmuMap: BmuMap): Promise<{
   }
 }
 
+/** Volume-weighted market-index prices for one settlement day (£/MWh). */
+export async function fetchPricesDay(date: string): Promise<PriceDay | null> {
+  const rows = await getJSON<unknown>(
+    `${API}/datasets/MID/stream?from=${date}T00:00:00Z&to=${date}T23:59:59Z`,
+  )
+  return aggregateMID(rows)
+}
+
 /** Half-hourly FUELINST series for one settlement day (#17 mix scrub). */
 export async function fetchMixDay(date: string): Promise<MixDaySeries | null> {
   const payload = await getJSON<unknown>(
@@ -221,11 +243,12 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     (async () => {
       const date = await findLatestMeteredDay(bmuMap.sentinels)
       if (!date) throw new Error('no metered day found')
-      const [per, mixDay] = await Promise.all([
+      const [per, mixDay, prices] = await Promise.all([
         fetchMeteredDay(date, bmuMap),
         fetchMixDay(date).catch(() => null),
+        fetchPricesDay(date).catch(() => null),
       ])
-      return { date, per, mixDay }
+      return { date, per, mixDay, prices }
     })(),
     fetchScheduledNow(bmuMap),
   ])
@@ -246,6 +269,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
       mixSeries: day?.mixDay ? foldMixDay(day.mixDay) : null,
       importSeries: day?.mixDay?.imports ?? null,
       flowSeries: day?.mixDay?.interconnectors ?? null,
+      prices: day?.prices ?? null,
       today: null, // GB's default view is already instantaneous (FUELINST)
       source: 'live',
     }
@@ -262,6 +286,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     mixSeries: null,
     importSeries: null,
     flowSeries: null,
+    prices: null,
     today: null,
     source: 'snapshot',
   }

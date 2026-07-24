@@ -190,6 +190,30 @@ export function parseOutturnDay(payload) {
   return Object.keys(fuels).length ? { fuels, imports, interconnectors } : null
 }
 
+/**
+ * Aggregate MID (market index) rows into a 48-slot half-hourly price series,
+ * volume-weighting across data providers (APX + N2EX) per period. £/MWh.
+ * @param rows [{settlementPeriod, price, volume}]
+ * @returns {{currency: 'GBP', series: (number|null)[], zones: 1} | null}
+ */
+export function aggregateMID(rows) {
+  if (!Array.isArray(rows) || !rows.length) return null
+  const weighted = new Array(48).fill(0)
+  const volumes = new Array(48).fill(0)
+  for (const r of rows) {
+    const p = r?.settlementPeriod
+    if (!Number.isInteger(p) || p < 1 || p > 48) continue
+    if (!Number.isFinite(r.price) || !Number.isFinite(r.volume) || r.volume <= 0) continue
+    weighted[p - 1] += r.price * r.volume
+    volumes[p - 1] += r.volume
+  }
+  if (!volumes.some((v) => v > 0)) return null
+  const series = weighted.map((w, i) =>
+    volumes[i] > 0 ? Math.round((w / volumes[i]) * 100) / 100 : null,
+  )
+  return { currency: 'GBP', series, zones: 1 }
+}
+
 /** Current GB settlement date + period (Europe/London local clock). */
 export function currentSettlement(now = new Date()) {
   const fmt = new Intl.DateTimeFormat('en-GB', {
