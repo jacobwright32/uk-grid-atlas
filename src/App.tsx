@@ -118,8 +118,12 @@ export default function App() {
   }
 
   const seriesLen = useMemo(() => {
-    if (!live?.perStationDay.size) return 0
-    for (const day of live.perStationDay.values()) return day.series.length
+    if (live?.perStationDay.size) {
+      for (const day of live.perStationDay.values()) return day.series.length
+    }
+    // Mix-only countries (NO/SE/IT) still scrub the mix strip (#17).
+    const ms = live?.mixSeries
+    if (ms) for (const k in ms) return ms[k]?.length ?? 0
     return 0
   }, [live])
 
@@ -284,6 +288,9 @@ export default function App() {
               <MixStrip
                 mix={live.mix}
                 rows={mixRows}
+                timeIndex={timeIndex}
+                mixSeries={live.mixSeries}
+                importSeries={live.importSeries}
                 mode={
                   live.basis === 'entsoe'
                     ? 'daily'

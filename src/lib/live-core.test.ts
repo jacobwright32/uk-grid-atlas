@@ -5,6 +5,7 @@ import {
   currentSettlement,
   daysBefore,
   parseOutturn,
+  parseOutturnDay,
 } from './live-core.mjs'
 
 const byUnit = { 'T_AAA-1': 'way/1', 'T_AAA-2': 'way/1', 'T_BBB-1': 'way/2' }
@@ -95,6 +96,50 @@ describe('parseOutturn', () => {
   it('null on empty payload', () => {
     expect(parseOutturn([])).toBeNull()
     expect(parseOutturn(undefined)).toBeNull()
+  })
+})
+
+describe('parseOutturnDay', () => {
+  it('buckets readings into London half-hours and folds interconnectors', () => {
+    const payload = [
+      {
+        // 00:10 BST on 21 Jul (23:10Z on the 20th) -> settlement period index 0
+        startTime: '2026-07-20T23:10:00Z',
+        data: [
+          { fuelType: 'WIND', generation: 5000 },
+          { fuelType: 'INTFR', generation: 1000 },
+        ],
+      },
+      {
+        // later reading inside the same half-hour wins
+        startTime: '2026-07-20T23:25:00Z',
+        data: [
+          { fuelType: 'WIND', generation: 5200 },
+          { fuelType: 'INTFR', generation: 900 },
+          { fuelType: 'INTNSL', generation: -400 },
+        ],
+      },
+      {
+        // 12:40 BST -> index 25
+        startTime: '2026-07-21T11:40:00Z',
+        data: [
+          { fuelType: 'CCGT', generation: 9000 },
+          { fuelType: 'NOTAFUEL', generation: 123 },
+        ],
+      },
+    ]
+    const day = parseOutturnDay(payload)!
+    expect(day.fuels.WIND![0]).toBe(5200)
+    expect(day.imports[0]).toBe(500)
+    expect(day.fuels.CCGT![25]).toBe(9000)
+    expect(day.fuels.NOTAFUEL).toBeUndefined()
+    expect(day.fuels.WIND![25]).toBeNull()
+    expect(day.imports[1]).toBeNull()
+  })
+
+  it('null on empty or junk payload', () => {
+    expect(parseOutturnDay([])).toBeNull()
+    expect(parseOutturnDay([{ startTime: 'garbage', data: [] }])).toBeNull()
   })
 })
 

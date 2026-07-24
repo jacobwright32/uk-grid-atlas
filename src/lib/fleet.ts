@@ -24,15 +24,60 @@ const BUCKETS: {
   elexon: string[]
   fuels: FuelId[]
 }[] = [
-  { key: 'wind', label: 'Wind', color: '#199e70', elexon: ['WIND'], fuels: ['wind_offshore', 'wind_onshore'] },
+  {
+    key: 'wind',
+    label: 'Wind',
+    color: '#199e70',
+    elexon: ['WIND'],
+    fuels: ['wind_offshore', 'wind_onshore'],
+  },
   { key: 'gas', label: 'Gas', color: '#3987e5', elexon: ['CCGT', 'OCGT'], fuels: ['gas'] },
   { key: 'nuclear', label: 'Nuclear', color: '#9085e9', elexon: ['NUCLEAR'], fuels: ['nuclear'] },
-  { key: 'biomass', label: 'Biomass & waste', color: '#d95926', elexon: ['BIOMASS'], fuels: ['bioenergy', 'waste'] },
-  { key: 'hydro', label: 'Hydro & pumped', color: '#1899ac', elexon: ['NPSHYD', 'PS'], fuels: ['hydro', 'pumped', 'marine'] },
-  { key: 'other', label: 'Storage & other', color: '#d55181', elexon: ['OTHER', 'OIL', 'COAL'], fuels: ['storage', 'oil', 'coal', 'other', 'solar'] },
+  {
+    key: 'biomass',
+    label: 'Biomass & waste',
+    color: '#d95926',
+    elexon: ['BIOMASS'],
+    fuels: ['bioenergy', 'waste'],
+  },
+  {
+    key: 'hydro',
+    label: 'Hydro & pumped',
+    color: '#1899ac',
+    elexon: ['NPSHYD', 'PS'],
+    fuels: ['hydro', 'pumped', 'marine'],
+  },
+  {
+    key: 'other',
+    label: 'Storage & other',
+    color: '#d55181',
+    elexon: ['OTHER', 'OIL', 'COAL'],
+    fuels: ['storage', 'oil', 'coal', 'other', 'solar'],
+  },
 ]
 
 export const IMPORTS_ROW = { key: 'imports', label: 'Imports', color: '#2dd4bf' }
+
+/**
+ * Fold a raw FUELINST day (fuelType-keyed) into bucket-keyed series matching
+ * computeMixRows' row keys, so the GB mix strip can scrub (#17).
+ */
+export function foldMixDay(
+  raw: import('./live-core.mjs').MixDaySeries,
+): Record<string, (number | null)[]> {
+  const out: Record<string, (number | null)[]> = {}
+  for (const [fuelType, series] of Object.entries(raw.fuels)) {
+    const bucket = BUCKETS.find((b) => b.elexon.includes(fuelType))
+    if (!bucket) continue
+    const acc = (out[bucket.key] ??= new Array(series.length).fill(null))
+    for (let i = 0; i < series.length; i++) {
+      const v = series[i]
+      if (v == null) continue
+      acc[i] = (acc[i] ?? 0) + v
+    }
+  }
+  return out
+}
 
 /** BM-registered capacity (MW) per bucket, from mapped stations. */
 export function fleetCapacity(bmuMap: BmuMap, stations: StationsFC): Map<string, number> {

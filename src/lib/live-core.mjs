@@ -147,6 +147,45 @@ export function parseOutturn(payload) {
   return { time: latest.startTime, fuels, interconnectors, totalMW, importMW }
 }
 
+/**
+ * Parse a whole day of /generation/outturn/summary snapshots into 48
+ * half-hourly series (#17 mix-strip scrub). Buckets by Europe/London clock
+ * to line up with B1610 settlement periods; the last reading inside each
+ * half-hour wins. Interconnector fuel types fold into one imports series.
+ * @returns {{fuels: Record<string,(number|null)[]>, imports: (number|null)[]} | null}
+ */
+export function parseOutturnDay(payload) {
+  if (!Array.isArray(payload) || !payload.length) return null
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const fuels = {}
+  const imports = new Array(48).fill(null)
+  for (const snap of payload) {
+    const t = new Date(snap?.startTime ?? NaN)
+    if (Number.isNaN(t.getTime())) continue
+    const parts = Object.fromEntries(fmt.formatToParts(t).map((p) => [p.type, p.value]))
+    const idx = (parseInt(parts.hour, 10) % 24) * 2 + (parseInt(parts.minute, 10) >= 30 ? 1 : 0)
+    if (idx < 0 || idx > 47) continue
+    let imp = null
+    for (const r of snap.data ?? []) {
+      if (!Number.isFinite(r?.generation)) continue
+      if (INT_TO_IC[r.fuelType]) {
+        imp = (imp ?? 0) + r.generation
+        continue
+      }
+      if (!MIX_FUELS.some(([key]) => key === r.fuelType)) continue
+      if (!fuels[r.fuelType]) fuels[r.fuelType] = new Array(48).fill(null)
+      fuels[r.fuelType][idx] = Math.max(0, r.generation)
+    }
+    if (imp != null) imports[idx] = Math.max(0, imp)
+  }
+  return Object.keys(fuels).length ? { fuels, imports } : null
+}
+
 /** Current GB settlement date + period (Europe/London local clock). */
 export function currentSettlement(now = new Date()) {
   const fmt = new Intl.DateTimeFormat('en-GB', {

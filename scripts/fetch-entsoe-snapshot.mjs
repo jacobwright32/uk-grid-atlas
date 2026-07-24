@@ -195,8 +195,10 @@ for (const cc of countryIds) {
       if (d) perStation[stationId] = d
     }
 
-    // 4. Daily mix (A75) → MixRow-shaped buckets (daily average MW).
+    // 4. Daily mix (A75) → MixRow-shaped buckets (daily average MW) plus the
+    // hourly per-fuel series the averages come from (#17 mix-strip scrub).
     const bucketMW = new Map()
+    const mixHourly = new Map() // bucket key → {sums:[24], counts:[24]}
     for (const domain of cfg.mixDomains) {
       const doc = await client.get({
         documentType: 'A75',
@@ -214,15 +216,34 @@ for (const cc of countryIds) {
           label: bucket[1],
           mw: (bucketMW.get(bucket[0])?.mw ?? 0) + mwh / 24,
         })
+        let hh = mixHourly.get(bucket[0])
+        if (!hh) {
+          hh = { sums: new Array(24).fill(0), counts: new Array(24).fill(0) }
+          mixHourly.set(bucket[0], hh)
+        }
+        for (const p of s.points) {
+          const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
+          if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
+          hh.sums[hour] += p.mw / perHour
+          hh.counts[hour] += 1 / perHour
+        }
       }
     }
+    const mixSeries = {}
+    for (const [key, hh] of mixHourly) {
+      mixSeries[key] = hh.sums.map((v, h) => (hh.counts[h] > 0 ? Math.round(Math.max(0, v)) : null))
+    }
 
-    // 5. Border flows (A11) for this country's HVDC links, net daily average.
+    // 5. Border flows (A11) for this country's HVDC links: net daily average
+    // plus the hourly series (#17 — the imports row scrubs too).
     const flows = {}
+    const flowSeries = {}
+    const importSeries = new Array(24).fill(null)
     let importMW = 0
     for (const border of FLOW_BORDERS.filter((b) => b.countries.includes(cc))) {
       const [home, away] = border.pair
       let net = 0
+      const netHours = new Array(24).fill(null)
       for (const [outD, inD, sign] of [
         [away, home, +1],
         [home, away, -1],
@@ -237,6 +258,11 @@ for (const cc of countryIds) {
           const perHour = 60 / s.stepMin
           const mwh = s.points.reduce((a, p) => a + (Number.isFinite(p.mw) ? p.mw / perHour : 0), 0)
           net += (sign * mwh) / 24
+          for (const p of s.points) {
+            const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
+            if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
+            netHours[hour] = (netHours[hour] ?? 0) + (sign * p.mw) / perHour
+          }
         }
       }
       const links = border.links
@@ -245,8 +271,17 @@ for (const cc of countryIds) {
       const capSum = links.reduce((a, l) => a + l.capMW, 0) || 1
       for (const link of links) {
         flows[link.id] = Math.round((net * link.capMW) / capSum)
+        flowSeries[link.id] = netHours.map((v) =>
+          v == null ? null : Math.round((v * link.capMW) / capSum),
+        )
+      }
+      for (let h = 0; h < 24; h++) {
+        if (netHours[h] != null) importSeries[h] = (importSeries[h] ?? 0) + Math.max(0, netHours[h])
       }
       importMW += Math.max(0, net)
+    }
+    for (let h = 0; h < 24; h++) {
+      if (importSeries[h] != null) importSeries[h] = Math.round(importSeries[h])
     }
 
     // 6. Write snapshot.
@@ -287,6 +322,9 @@ for (const cc of countryIds) {
       generatedAt: new Date().toISOString(),
       perStation,
       mixRows,
+      mixSeries,
+      flowSeries,
+      importSeries,
       mix: {
         time: `${day}T12:00:00Z`,
         fuels: mixRows

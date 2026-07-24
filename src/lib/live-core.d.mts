@@ -54,6 +54,14 @@ export declare function aggregatePN(
 
 export declare function parseOutturn(payload: unknown): MixSnapshot | null
 
+export interface MixDaySeries {
+  /** FUELINST fuelType → 48 half-hourly MW values (null = no reading). */
+  fuels: Record<string, (number | null)[]>
+  imports: (number | null)[]
+}
+
+export declare function parseOutturnDay(payload: unknown): MixDaySeries | null
+
 export declare function currentSettlement(now?: Date): {
   settlementDate: string
   settlementPeriod: number

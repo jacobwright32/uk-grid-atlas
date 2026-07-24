@@ -10,8 +10,10 @@ import {
   currentSettlement,
   daysBefore,
   parseOutturn,
+  parseOutturnDay,
 } from './live-core.mjs'
-import type { B1610Row, MixSnapshot, PNRow, StationDay } from './live-core.mjs'
+import type { B1610Row, MixDaySeries, MixSnapshot, PNRow, StationDay } from './live-core.mjs'
+import { foldMixDay } from './fleet'
 
 const API = 'https://data.elexon.co.uk/bmrs/api/v1'
 const UNIT_BATCH = 30
@@ -35,6 +37,10 @@ export interface LiveData {
   mix: MixSnapshot | null
   /** Pre-computed mix rows (ENTSO-E snapshots ship them ready-made). */
   mixRows: import('./fleet').MixRow[] | null
+  /** Per-fuel series over the metered day, keyed like the mix rows (#17). */
+  mixSeries: Record<string, (number | null)[]> | null
+  /** HVDC import total per interval, aligned with mixSeries (#17). */
+  importSeries: (number | null)[] | null
   /** 'live' = fetched now; 'snapshot' = bundled/committed fallback. */
   source: 'live' | 'snapshot'
 }
@@ -47,6 +53,8 @@ interface EntsoeSnapshotFile {
   generatedAt: string
   perStation: Record<string, StationDay>
   mixRows: import('./fleet').MixRow[]
+  mixSeries?: Record<string, (number | null)[]>
+  importSeries?: (number | null)[]
   mix: MixSnapshot
 }
 
@@ -65,6 +73,8 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       nowLabel: null,
       mix: snap.mix,
       mixRows: snap.mixRows,
+      mixSeries: snap.mixSeries ?? null,
+      importSeries: snap.importSeries ?? null,
       source: 'live',
     }
   } catch {
@@ -88,11 +98,14 @@ function b1610StreamUrl(date: string, units: string[]): string {
 /** Find the newest settlement day with metered data (probes run in parallel). */
 export async function findLatestMeteredDay(sentinels: string[]): Promise<string | null> {
   const { settlementDate } = currentSettlement()
-  const days = Array.from({ length: MAX_LOOKBACK_DAYS }, (_, i) => daysBefore(settlementDate, i + 1))
+  const days = Array.from({ length: MAX_LOOKBACK_DAYS }, (_, i) =>
+    daysBefore(settlementDate, i + 1),
+  )
   const probes = await Promise.allSettled(
     days.map(async (date) => {
       const rows = await getJSON<B1610Row[]>(b1610StreamUrl(date, sentinels), 15_000)
-      const hit = Array.isArray(rows) &&
+      const hit =
+        Array.isArray(rows) &&
         rows.some((r) => (r as { settlementDate?: string }).settlementDate === date)
       return hit ? date : null
     }),
@@ -111,7 +124,9 @@ export async function fetchMeteredDay(
   const units = Object.keys(bmuMap.byUnit)
   const batches = chunk(units, UNIT_BATCH)
   const settled = await Promise.allSettled(
-    batches.map((batch) => getJSON<(B1610Row & { settlementDate: string })[]>(b1610StreamUrl(date, batch))),
+    batches.map((batch) =>
+      getJSON<(B1610Row & { settlementDate: string })[]>(b1610StreamUrl(date, batch)),
+    ),
   )
   const rows: B1610Row[] = []
   let failures = 0
@@ -154,6 +169,14 @@ export async function fetchScheduledNow(bmuMap: BmuMap): Promise<{
   }
 }
 
+/** Half-hourly FUELINST series for one settlement day (#17 mix scrub). */
+export async function fetchMixDay(date: string): Promise<MixDaySeries | null> {
+  const payload = await getJSON<unknown>(
+    `${API}/generation/outturn/summary?startTime=${date}T00:00:00Z&endTime=${date}T23:59:59Z`,
+  )
+  return parseOutturnDay(payload)
+}
+
 export async function fetchMixNow(): Promise<MixSnapshot | null> {
   const now = new Date()
   const start = new Date(now.getTime() - 90 * 60_000).toISOString().slice(0, 19) + 'Z'
@@ -178,7 +201,11 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     (async () => {
       const date = await findLatestMeteredDay(bmuMap.sentinels)
       if (!date) throw new Error('no metered day found')
-      return { date, per: await fetchMeteredDay(date, bmuMap) }
+      const [per, mixDay] = await Promise.all([
+        fetchMeteredDay(date, bmuMap),
+        fetchMixDay(date).catch(() => null),
+      ])
+      return { date, per, mixDay }
     })(),
     fetchScheduledNow(bmuMap),
   ])
@@ -196,6 +223,8 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
       nowLabel: nowData?.label ?? null,
       mix,
       mixRows: null,
+      mixSeries: day?.mixDay ? foldMixDay(day.mixDay) : null,
+      importSeries: day?.mixDay?.imports ?? null,
       source: 'live',
     }
   }
@@ -208,6 +237,8 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     nowLabel: null,
     mix: snapshot?.mix ?? null,
     mixRows: null,
+    mixSeries: null,
+    importSeries: null,
     source: 'snapshot',
   }
 }
