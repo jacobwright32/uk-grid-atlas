@@ -111,7 +111,7 @@ export function stationLayers(source: string): LayerSpecification[] {
  * Three generic voltage-tier layers; each country assigns its kV classes to
  * tiers at runtime (GridMap sets the filters from the country config).
  */
-export function transmissionLayers(source: string): LayerSpecification[] {
+export function transmissionLayers(source: string, sourceLayer?: string): LayerSpecification[] {
   const width = (base: number): Expr => [
     'interpolate',
     ['exponential', 1.4],
@@ -127,6 +127,7 @@ export function transmissionLayers(source: string): LayerSpecification[] {
     id,
     type: 'line',
     source,
+    ...(sourceLayer ? { 'source-layer': sourceLayer } : {}),
     filter: ['in', ['get', 'v'], ['literal', []]] as never,
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: { 'line-color': color, 'line-width': width(w), 'line-opacity': opacity },

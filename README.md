@@ -94,7 +94,15 @@ npm run data:fetch -- gb    # download raw extracts from Overpass (mirrors, retr
 node scripts/build-data.mjs gb   # → src/data/gb/*.json
 node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via Overpass or
                                  #   scripts/pbf-extract-lines.py on a Geofabrik .osm.pbf)
+npm run data:tiles               # → public/tiles/transmission.pmtiles (needs tippecanoe;
+                                 #   re-run after any build-data refresh)
 ```
+
+Transmission lines render from a single committed [PMTiles](https://github.com/protomaps/PMTiles)
+archive — the browser range-requests only the tiles in view, so no client
+ever downloads the full 20 MB of line geometry. Stations stay GeoJSON
+(search, stats and the live layer need them in memory). The single-file
+build keeps the old GeoJSON line bundles so it stays truly self-contained.
 
 The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
 `#fr`, `#de`, `#ch`, `#at`, `#cz`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#ee`, `#lv`, `#lt`, `#us`, `#ca`, `#all` in the URL)

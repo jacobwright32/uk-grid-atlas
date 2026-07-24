@@ -18,10 +18,12 @@
     "data:snapshot": "node scripts/fetch-live-snapshot.mjs",
     "live:snapshots": "node scripts/fetch-entsoe-snapshot.mjs all",
     "data:basemap": "node scripts/build-basemap.mjs",
-    "data:slim": "node scripts/slim-bundles.mjs"
+    "data:slim": "node scripts/slim-bundles.mjs",
+    "data:tiles": "node scripts/build-tiles.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.24.0",
+    "pmtiles": "^4.4.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -256,13 +256,19 @@ async function loadBasemap(region: 'eu' | 'na'): Promise<GridData['basemap']> {
   return bm
 }
 
+const EMPTY_FC = { type: 'FeatureCollection', features: [] } as const
+
 async function loadCountry(id: RealCountryId): Promise<GridData> {
   const cached = cache.get(id)
   if (cached) return cached
   const urls = URLS[id]
   const [stations, transmission, interconnectors, basemap, meta] = await Promise.all([
     fetchJSON<GridData['stations']>(urls.stations),
-    fetchJSON<GridData['transmission']>(urls.transmission),
+    // Tiles mode (#8): lines render from the PMTiles archive — skip the
+    // 20 MB of transmission GeoJSON entirely. The single-file build keeps it.
+    __TILES__
+      ? Promise.resolve(EMPTY_FC as unknown as GridData['transmission'])
+      : fetchJSON<GridData['transmission']>(urls.transmission),
     fetchJSON<GridData['interconnectors']>(urls.interconnectors),
     loadBasemap(COUNTRIES[id].region),
     fetchJSON<GridData['meta']>(urls.meta),

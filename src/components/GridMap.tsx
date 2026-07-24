@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { Protocol } from 'pmtiles'
 import type { GridData, GroupId, NetworkToggles } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
 import type { CountryConfig } from '../lib/countries'
@@ -16,6 +17,15 @@ import {
 import { cardFor } from '../map/popup'
 import type { CardContext } from '../map/popup'
 import type { SearchTarget } from './SearchBox'
+
+// Transmission tiles (#8): one PMTiles archive for all countries, fetched
+// by HTTP range requests — only the tiles in view load. The single-file
+// build keeps GeoJSON bundles instead (__TILES__ is false there).
+if (__TILES__) {
+  const protocol = new Protocol()
+  maplibregl.addProtocol('pmtiles', protocol.tile)
+}
+const TILES_URL = () => `pmtiles://${new URL('tiles/transmission.pmtiles', document.baseURI).href}`
 
 interface Props {
   data: GridData
@@ -107,11 +117,24 @@ export default function GridMap({
         'land',
       )
 
-      map.addSource('transmission', { type: 'geojson', data: data.transmission })
+      if (__TILES__) {
+        map.addSource('transmission', {
+          type: 'vector',
+          url: TILES_URL(),
+          minzoom: 2,
+          maxzoom: 11, // tiles overzoom beyond their native maximum
+        })
+      } else {
+        map.addSource('transmission', { type: 'geojson', data: data.transmission })
+      }
       map.addSource('interconnectors', { type: 'geojson', data: data.interconnectors })
       map.addSource('stations', { type: 'geojson', data: data.stations, generateId: true })
 
-      for (const layer of transmissionLayers('transmission')) map.addLayer(layer)
+      for (const layer of transmissionLayers(
+        'transmission',
+        __TILES__ ? 'transmission' : undefined,
+      ))
+        map.addLayer(layer)
       for (const layer of interconnectorLayers('interconnectors')) map.addLayer(layer)
       for (const layer of stationLayers('stations')) map.addLayer(layer)
       map.addLayer(liveStationLayer('stations'))
@@ -122,7 +145,7 @@ export default function GridMap({
         const src = (id: string) => map.getSource(id) as maplibregl.GeoJSONSource | undefined
         src('land')?.setData(dataRef.current.basemap as never)
         src('stations')?.setData(dataRef.current.stations as never)
-        src('transmission')?.setData(dataRef.current.transmission as never)
+        if (!__TILES__) src('transmission')?.setData(dataRef.current.transmission as never)
         src('interconnectors')?.setData(dataRef.current.interconnectors as never)
       }
       applyState(map)
@@ -229,7 +252,14 @@ export default function GridMap({
     country.tiers.forEach((tier, i) => {
       const id = tierIds[i]!
       if (!map.getLayer(id)) return
-      map.setFilter(id, ['in', ['get', 'v'], ['literal', tier.kvs]] as never)
+      const kvFilter = ['in', ['get', 'v'], ['literal', tier.kvs]]
+      // One shared tile archive holds every country's lines — single-country
+      // pages filter to their own (the ALL view shows the lot).
+      const filter =
+        __TILES__ && country.id !== 'all'
+          ? ['all', kvFilter, ['==', ['get', 'cc'], country.id]]
+          : kvFilter
+      map.setFilter(id, filter as never)
       vis(id, tierOn[i]! && tier.kvs.length > 0)
     })
     vis('hvdc', network.hvdc)
@@ -336,7 +366,7 @@ export default function GridMap({
     // this, switching e.g. GB → ALL leaves the US floating on open sea.
     src('land')?.setData(data.basemap as never)
     src('stations')?.setData(data.stations as never)
-    src('transmission')?.setData(data.transmission as never)
+    if (!__TILES__) src('transmission')?.setData(data.transmission as never)
     src('interconnectors')?.setData(data.interconnectors as never)
     applyState(map)
     applyLiveState(map)

@@ -10,6 +10,9 @@ export default defineConfig({
   // Relative base → the build works at any URL depth (github.io/<repo>/,
   // a subfolder on shared hosting, or opened straight from disk).
   base: './',
+  // Transmission lines come from a PMTiles archive (#8) — except in the
+  // single-file build, which must stay self-contained (GeoJSON bundles).
+  define: { __TILES__: JSON.stringify(!single) },
   plugins: [react(), ...(single ? [viteSingleFile()] : [])],
   build: {
     outDir: single ? 'dist-single' : 'dist',
