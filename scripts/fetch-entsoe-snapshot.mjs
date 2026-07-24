@@ -25,6 +25,18 @@ import {
 } from './entsoe.mjs'
 import { INTERCONNECTORS } from './interconnectors.mjs'
 import { jaccard, stemTokens, tokens } from './live-matching.mjs'
+import {
+  accAdd,
+  accKeys,
+  accMeanSeries,
+  accSumSeries,
+  buildMixRows,
+  hourOfPosition,
+  isoDaysAgo,
+  makeHourlyAcc,
+  meanCovered,
+  throughHour,
+} from './snapshot-common.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -42,11 +54,6 @@ const client = new EntsoeClient(token)
 
 const target = process.argv[2] ?? 'all'
 const countryIds = target === 'all' ? Object.keys(ENTSOE_COUNTRIES) : [target]
-
-const isoDaysAgo = (n) => {
-  const d = new Date(Date.now() - n * 24 * 3600 * 1000)
-  return d.toISOString().slice(0, 10)
-}
 
 // --------------------------------------------------- unit → station mapping
 function stationIndexFor(cc) {
@@ -90,35 +97,14 @@ function buildUnitMap(index, overrides, units) {
 }
 
 // ------------------------------------------------------- mix + flows fetch
-const MIX_COLORS = {
-  wind: '#199e70',
-  solar: '#c98500',
-  gas: '#3987e5',
-  nuclear: '#9085e9',
-  coal: '#ad7a45',
-  geothermal: '#bd5fd1',
-  biomass: '#d95926',
-  hydro: '#1899ac',
-  other: '#e66767',
-}
-
-const meanCovered = (series) => {
-  let sum = 0
-  let n = 0
-  for (const v of series) {
-    if (v == null) continue
-    sum += v
-    n++
-  }
-  return n ? sum / n : 0
-}
-
 /**
  * One day's A75 mix + A11 flows as hourly series, with day averages taken
  * over the covered hours — so a partial (intraday) day averages correctly.
  */
 async function fetchMixAndFlows(cc, cfg, day) {
-  const mixHourly = new Map() // bucket key → {label, sums:[24], counts:[24]}
+  // Energy-weighted hourly accumulator: portion = stepMin/60, so four
+  // quarter-hour points average into one hourly MW figure.
+  const mixAcc = makeHourlyAcc()
   for (const domain of cfg.mixDomains) {
     const doc = await client.get({
       documentType: 'A75',
@@ -130,27 +116,21 @@ async function fetchMixAndFlows(cc, cfg, day) {
       if (s.outDomain && !s.inDomain) continue // consumption (pumping) series
       const bucket = PSR_BUCKETS[s.psrType]
       if (!bucket) continue
-      const perHour = 60 / s.stepMin
-      let hh = mixHourly.get(bucket[0])
-      if (!hh) {
-        hh = { label: bucket[1], sums: new Array(24).fill(0), counts: new Array(24).fill(0) }
-        mixHourly.set(bucket[0], hh)
-      }
+      const portion = s.stepMin / 60
       for (const p of s.points) {
-        const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
-        if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
-        hh.sums[hour] += p.mw / perHour
-        hh.counts[hour] += 1 / perHour
+        accAdd(mixAcc, bucket[0], hourOfPosition(p.position, s.stepMin), p.mw, portion)
       }
     }
   }
   const mixSeries = {}
   const bucketAvg = new Map()
   let hoursCovered = 0
-  for (const [key, hh] of mixHourly) {
-    const series = hh.sums.map((v, h) => (hh.counts[h] > 0 ? Math.round(Math.max(0, v)) : null))
+  for (const key of accKeys(mixAcc)) {
+    const series = accSumSeries(mixAcc, key).map((v) =>
+      v == null ? null : Math.round(Math.max(0, v)),
+    )
     mixSeries[key] = series
-    bucketAvg.set(key, { label: hh.label, mw: meanCovered(series) })
+    bucketAvg.set(key, meanCovered(series))
     hoursCovered = Math.max(hoursCovered, series.filter((v) => v != null).length)
   }
 
@@ -180,7 +160,7 @@ async function fetchMixAndFlows(cc, cfg, day) {
       for (const s of parseSeries(doc ?? {})) {
         const perHour = 60 / s.stepMin
         for (const p of s.points) {
-          const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
+          const hour = hourOfPosition(p.position, s.stepMin)
           if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
           netHours[hour] = (netHours[hour] ?? 0) + (sign * p.mw) / perHour
         }
@@ -205,25 +185,7 @@ async function fetchMixAndFlows(cc, cfg, day) {
     if (importSeries[h] != null) importSeries[h] = Math.round(importSeries[h])
   }
   const importMW = meanCovered(importSeries)
-
-  const mixRows = [...bucketAvg.entries()]
-    .map(([key, v]) => ({
-      key,
-      label: v.label,
-      color: MIX_COLORS[key] ?? '#898781',
-      nowMW: Math.round(v.mw),
-      capMW: 0, // registered-fleet capacity omitted in v1 for EU
-    }))
-    .filter((r) => r.nowMW > 0)
-    .sort((a, b) => b.nowMW - a.nowMW)
-  mixRows.push({
-    key: 'imports',
-    label: importMW >= 0 ? 'Imports (HVDC)' : 'Net export (HVDC)',
-    color: '#2dd4bf',
-    nowMW: Math.round(Math.abs(importMW)),
-    capMW: 0,
-  })
-  const totalMW = mixRows.filter((r) => r.key !== 'imports').reduce((a, r) => a + r.nowMW, 0)
+  const { rows: mixRows, totalMW } = buildMixRows(bucketAvg, importMW)
 
   return { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW, hoursCovered }
 }
@@ -244,23 +206,17 @@ async function fetchPrices(cfg, day) {
       out_Domain: domain,
       ...dayWindow(day),
     })
-    const sums = new Array(24).fill(0)
-    const counts = new Array(24).fill(0)
+    const acc = makeHourlyAcc()
     let currency = null
     for (const s of parsePriceSeries(doc ?? {})) {
       currency ??= s.currency
       for (const p of s.points) {
-        const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
-        if (hour < 0 || hour > 23 || !Number.isFinite(p.price)) continue
-        sums[hour] += p.price
-        counts[hour] += 1
+        accAdd(acc, 'price', hourOfPosition(p.position, s.stepMin), p.price)
       }
     }
-    if (!currency || !counts.some((c) => c > 0)) continue
-    perZone.push({
-      currency,
-      series: sums.map((v, h) => (counts[h] > 0 ? v / counts[h] : null)),
-    })
+    const series = accMeanSeries(acc, 'price')
+    if (!currency || !series) continue
+    perZone.push({ currency, series })
   }
   if (!perZone.length) return null
   const byCurrency = new Map()
@@ -329,7 +285,7 @@ for (const cc of countryIds) {
       )
     }
 
-    // 2. Latest day with per-unit actuals (A73), walking back up to 6 days.
+    // 2. Latest day with per-unit actuals (A73), walking back up to 14 days.
     let day = null
     let unitSeries = []
     for (let back = 1; back <= 14 && !day; back++) {
@@ -408,12 +364,7 @@ for (const cc of countryIds) {
           today = {
             date: todayDate,
             prices: todayPrices,
-            throughHour: Math.max(
-              ...Object.values(t.mixSeries).map((s) =>
-                s.reduce((a, v, h) => (v != null ? h + 1 : a), 0),
-              ),
-              0,
-            ),
+            throughHour: throughHour(t.mixSeries),
             mixRows: t.mixRows,
             mixSeries: t.mixSeries,
             importSeries: t.importSeries,

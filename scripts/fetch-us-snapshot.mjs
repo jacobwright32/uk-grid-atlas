@@ -12,114 +12,121 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import {
+  UA,
+  accAdd,
+  accKeys,
+  accMeanSeries,
+  buildMixRows,
+  compactDate,
+  isoDaysAgo,
+  makeHourlyAcc,
+  meanCovered,
+  throughHour,
+} from './snapshot-common.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = join(__dirname, '..', 'public', 'live')
-mkdirSync(OUT_DIR, { recursive: true })
 
-const UA = { 'User-Agent': 'grid-atlas/1.0 (open-data dashboard)' }
-
-/** ISO fuel label → Grid Atlas mix bucket. */
-const BUCKETS = {
+/** ISO fuel label → snapshot bucket (labels/colours come from BUCKET_META). */
+export const FUEL_KEY = {
   // ERCOT
-  'Coal and Lignite': ['coal', 'Coal & lignite'],
-  'Natural Gas': ['gas', 'Gas'],
-  Nuclear: ['nuclear', 'Nuclear'],
-  Hydro: ['hydro', 'Hydro & pumped'],
-  Solar: ['solar', 'Solar'],
-  Wind: ['wind', 'Wind'],
-  'Power Storage': ['other', 'Oil & other'],
-  Other: ['other', 'Oil & other'],
+  'Coal and Lignite': 'coal',
+  'Natural Gas': 'gas',
+  Nuclear: 'nuclear',
+  Hydro: 'hydro',
+  Solar: 'solar',
+  Wind: 'wind',
+  'Power Storage': 'other',
+  Other: 'other',
   // NYISO
-  'Dual Fuel': ['gas', 'Gas'],
-  'Other Fossil Fuels': ['other', 'Oil & other'],
-  'Other Renewables': ['biomass', 'Biomass & waste'],
-}
-const MIX_COLORS = {
-  wind: '#199e70',
-  solar: '#c98500',
-  gas: '#3987e5',
-  nuclear: '#9085e9',
-  coal: '#ad7a45',
-  biomass: '#d95926',
-  hydro: '#1899ac',
-  other: '#e66767',
+  'Dual Fuel': 'gas',
+  'Other Fossil Fuels': 'other',
+  'Other Renewables': 'biomass',
 }
 
-/** hourly accumulator: bucket → {sums:[24], counts:[24]} */
-function makeAcc() {
-  return new Map()
-}
-function accAdd(acc, bucketKey, hour, mw) {
-  if (hour < 0 || hour > 23 || !Number.isFinite(mw)) return
-  let a = acc.get(bucketKey)
-  if (!a) {
-    a = { sums: new Array(24).fill(0), counts: new Array(24).fill(0) }
-    acc.set(bucketKey, a)
-  }
-  a.sums[hour] += mw
-  a.counts[hour] += 1
-}
-/** finalize one ISO's accumulator → bucket → hourly-average series */
-function accSeries(acc) {
-  const out = new Map()
-  for (const [key, a] of acc) {
-    out.set(
-      key,
-      a.sums.map((v, h) => (a.counts[h] > 0 ? v / a.counts[h] : null)),
-    )
-  }
-  return out
-}
+/** finalize an accumulator → Map<bucket, hourly-average series> */
+const accToSeriesMap = (acc) => new Map(accKeys(acc).map((k) => [k, accMeanSeries(acc, k)]))
 
 // ------------------------------------------------------------------ ERCOT
-/** Returns { [isoDate]: Map<bucket, hourlySeries> } for the dates present. */
+/**
+ * fuel-mix dashboard JSON → { [isoDate]: Map<bucket, hourlySeries> }.
+ * Throws when the document shape changed (#51) — a broken feed should fail
+ * loudly, not bake an empty snapshot.
+ */
+export function parseErcot(doc) {
+  if (!doc?.data || typeof doc.data !== 'object') {
+    throw new Error('ERCOT fuel-mix JSON shape changed (no data object)')
+  }
+  const days = {}
+  for (const [date, points] of Object.entries(doc.data)) {
+    if (!points || typeof points !== 'object') continue
+    const acc = makeHourlyAcc()
+    for (const [ts, fuels] of Object.entries(points)) {
+      if (!fuels || typeof fuels !== 'object') continue
+      const hour = parseInt(ts.slice(11, 13), 10) // ERCOT-local hour
+      for (const [fuel, v] of Object.entries(fuels)) {
+        const key = FUEL_KEY[fuel]
+        if (key) accAdd(acc, key, hour, v?.gen)
+      }
+    }
+    days[date] = accToSeriesMap(acc)
+  }
+  return days
+}
+
 async function fetchErcot() {
   const res = await fetch('https://www.ercot.com/api/1/services/read/dashboards/fuel-mix.json', {
     headers: UA,
     signal: AbortSignal.timeout(60_000),
   })
   if (!res.ok) throw new Error(`ERCOT ${res.status}`)
-  const doc = await res.json()
-  const days = {}
-  for (const [date, points] of Object.entries(doc.data ?? {})) {
-    const acc = makeAcc()
-    for (const [ts, fuels] of Object.entries(points)) {
-      const hour = parseInt(ts.slice(11, 13), 10) // ERCOT-local hour
-      for (const [fuel, v] of Object.entries(fuels)) {
-        const bucket = BUCKETS[fuel]
-        if (bucket) accAdd(acc, bucket[0], hour, v?.gen)
-      }
-    }
-    days[date] = accSeries(acc)
-  }
-  return days
+  return parseErcot(await res.json())
 }
 
 // ------------------------------------------------------------------ NYISO
-/** One dated CSV → Map<bucket, hourlySeries>. */
+/**
+ * One dated rtfuelmix CSV → Map<bucket, hourlySeries>. Columns are located
+ * by header name, not position (#51) — NYISO reordering columns must not
+ * silently misread MW as fuel names.
+ */
+export function parseNyisoCsv(text) {
+  const lines = text.split('\n')
+  const header = (lines[0] ?? '')
+    .split(',')
+    .map((c) => c.replace(/^"|"$/g, '').trim().toLowerCase())
+  const iTime = header.findIndex((h) => h.includes('time stamp'))
+  const iFuel = header.findIndex((h) => h.includes('fuel'))
+  const iMW = header.findIndex((h) => h.includes('mw'))
+  if (iTime < 0 || iFuel < 0 || iMW < 0) {
+    throw new Error(`NYISO rtfuelmix header changed: "${lines[0]}"`)
+  }
+  const acc = makeHourlyAcc()
+  for (const line of lines.slice(1)) {
+    const cols = line.split(',').map((c) => c.replace(/^"|"$/g, '').trim())
+    if (cols.length <= Math.max(iTime, iFuel, iMW)) continue
+    const hour = parseInt(cols[iTime].slice(11, 13), 10) // "MM/DD/YYYY HH:mm:ss"
+    const key = FUEL_KEY[cols[iFuel]]
+    const mw = parseFloat(cols[iMW])
+    if (key) accAdd(acc, key, hour, mw)
+  }
+  return accToSeriesMap(acc)
+}
+
 async function fetchNyiso(dateCompact) {
   const url = `https://mis.nyiso.com/public/csv/rtfuelmix/${dateCompact}rtfuelmix.csv`
   const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(60_000) })
   if (!res.ok) throw new Error(`NYISO ${res.status} for ${url}`)
-  const text = await res.text()
-  const acc = makeAcc()
-  for (const line of text.split('\n').slice(1)) {
-    const cols = line.split(',')
-    if (cols.length < 4) continue
-    const hour = parseInt(cols[0]?.slice(11, 13), 10) // "MM/DD/YYYY HH:mm:ss"
-    const bucket = BUCKETS[cols[2]?.trim()]
-    const mw = parseFloat(cols[3])
-    if (bucket) accAdd(acc, bucket[0], hour, mw)
-  }
-  return accSeries(acc)
+  return parseNyisoCsv(await res.text())
 }
 
 // ------------------------------------------------------------- aggregate
 /** Sum per-ISO bucket series; a slot is non-null when EVERY ISO covers it,
- *  so the today-so-far total never dips as feeds update out of step. */
-function combine(isoSeries) {
+ *  so the today-so-far total never dips as feeds update out of step.
+ *  Callers must drop dead ISOs (no data at all) first — an all-null member
+ *  would veto every hour. */
+export function combine(isoSeries) {
   const keys = new Set(isoSeries.flatMap((m) => [...m.keys()]))
   const combined = {}
   for (const key of keys) {
@@ -138,91 +145,91 @@ function combine(isoSeries) {
   return combined
 }
 
-function rowsFrom(mixSeries) {
-  const rows = []
+/** combined mixSeries → sorted MixRow[] (positive day-averages only). */
+export function rowsFrom(mixSeries) {
+  const bucketAvg = new Map()
   for (const [key, series] of Object.entries(mixSeries)) {
-    const vals = series.filter((v) => v != null)
-    if (!vals.length) continue
-    const avg = vals.reduce((a, b) => a + b, 0) / vals.length
-    if (avg <= 0) continue
-    rows.push({
-      key,
-      label: BUCKETS_LABEL[key] ?? key,
-      color: MIX_COLORS[key] ?? '#898781',
-      nowMW: Math.round(avg),
-      capMW: 0,
-    })
+    const avg = meanCovered(series)
+    if (avg > 0) bucketAvg.set(key, avg)
   }
-  rows.sort((a, b) => b.nowMW - a.nowMW)
-  return rows
-}
-const BUCKETS_LABEL = Object.fromEntries(Object.values(BUCKETS).map(([k, l]) => [k, l]))
-
-const isoDaysAgo = (n) => {
-  const d = new Date(Date.now() - n * 24 * 3600 * 1000)
-  return d.toISOString().slice(0, 10)
+  return buildMixRows(bucketAvg).rows
 }
 
-const yesterday = isoDaysAgo(1)
-const todayDate = isoDaysAgo(0)
+/** An ISO's series map counts as data when any slot is non-null. */
+const hasData = (m) => m != null && [...m.values()].some((s) => s.some((v) => v != null))
 
-const [ercotDays, nyYesterday, nyToday] = await Promise.all([
-  fetchErcot(),
-  fetchNyiso(yesterday.replace(/-/g, '')),
-  fetchNyiso(todayDate.replace(/-/g, '')).catch(() => null),
-])
+// ------------------------------------------------------------------- main
+async function main() {
+  mkdirSync(OUT_DIR, { recursive: true })
+  const yesterday = isoDaysAgo(1)
+  const todayDate = isoDaysAgo(0)
 
-if (!ercotDays[yesterday]) throw new Error(`ERCOT has no data for ${yesterday}`)
-const meteredSeries = combine([ercotDays[yesterday], nyYesterday])
-const meteredRows = rowsFrom(meteredSeries)
-const meteredTotal = meteredRows.reduce((a, r) => a + r.nowMW, 0)
+  // NYISO is best-effort (#50): a missing/empty CSV degrades the snapshot
+  // to ERCOT-only with an honest sourceLabel instead of exiting non-zero.
+  const [ercotDays, nyYesterdayRaw, nyTodayRaw] = await Promise.all([
+    fetchErcot(),
+    fetchNyiso(compactDate(yesterday)).catch(() => null),
+    fetchNyiso(compactDate(todayDate)).catch(() => null),
+  ])
 
-let today = null
-if (ercotDays[todayDate] && nyToday) {
-  const s = combine([ercotDays[todayDate], nyToday])
-  const rows = rowsFrom(s)
-  const throughHour = Math.max(
-    ...Object.values(s).map((x) => x.reduce((a, v, h) => (v != null ? h + 1 : a), 0)),
-    0,
-  )
-  if (throughHour >= 3) {
-    today = {
-      date: todayDate,
-      throughHour,
-      mixRows: rows,
-      mixSeries: s,
-      importSeries: new Array(24).fill(null),
-      totalMW: rows.reduce((a, r) => a + r.nowMW, 0),
-      importMW: 0,
-      prices: null,
+  if (!ercotDays[yesterday]) throw new Error(`ERCOT has no data for ${yesterday}`)
+  const nyOk = hasData(nyYesterdayRaw)
+  const meteredSeries = combine([ercotDays[yesterday], ...(nyOk ? [nyYesterdayRaw] : [])])
+  const meteredRows = rowsFrom(meteredSeries)
+  const meteredTotal = meteredRows.reduce((a, r) => a + r.nowMW, 0)
+  const sourceLabel = nyOk ? 'ERCOT + NYISO' : 'ERCOT'
+
+  // Today must aggregate the same ISO set as the metered day, or the
+  // today-so-far total would jump against yesterday's basis.
+  let today = null
+  if (ercotDays[todayDate] && (!nyOk || hasData(nyTodayRaw))) {
+    const s = combine([ercotDays[todayDate], ...(nyOk ? [nyTodayRaw] : [])])
+    const rows = rowsFrom(s)
+    const through = throughHour(s)
+    if (through >= 3) {
+      today = {
+        date: todayDate,
+        throughHour: through,
+        mixRows: rows,
+        mixSeries: s,
+        importSeries: new Array(24).fill(null),
+        totalMW: rows.reduce((a, r) => a + r.nowMW, 0),
+        importMW: 0,
+        prices: null,
+      }
     }
   }
+
+  const snapshot = {
+    version: 1,
+    basis: 'entsoe', // same client contract as the European snapshots
+    sourceLabel,
+    date: yesterday,
+    generatedAt: new Date().toISOString(),
+    perStation: {}, // no US ISO publishes per-plant output openly
+    mixRows: meteredRows,
+    mixSeries: meteredSeries,
+    flowSeries: {},
+    importSeries: new Array(24).fill(null),
+    prices: null,
+    today,
+    mix: {
+      time: `${yesterday}T12:00:00Z`,
+      fuels: meteredRows.map((r) => ({ key: r.key, label: r.label, mw: r.nowMW })),
+      interconnectors: {},
+      totalMW: meteredTotal,
+      importMW: 0,
+    },
+  }
+  writeFileSync(join(OUT_DIR, 'us.json'), JSON.stringify(snapshot))
+  console.log(
+    `us: metered ${yesterday} · mix ${Math.round(meteredTotal / 100) / 10} GW avg (${sourceLabel})${
+      today ? ` · today through ${String(today.throughHour).padStart(2, '0')}:00` : ''
+    }`,
+  )
 }
 
-const snapshot = {
-  version: 1,
-  basis: 'entsoe', // same client contract as the European snapshots
-  sourceLabel: 'ERCOT + NYISO',
-  date: yesterday,
-  generatedAt: new Date().toISOString(),
-  perStation: {}, // no US ISO publishes per-plant output openly
-  mixRows: meteredRows,
-  mixSeries: meteredSeries,
-  flowSeries: {},
-  importSeries: new Array(24).fill(null),
-  prices: null,
-  today,
-  mix: {
-    time: `${yesterday}T12:00:00Z`,
-    fuels: meteredRows.map((r) => ({ key: r.key, label: r.label, mw: r.nowMW })),
-    interconnectors: {},
-    totalMW: meteredTotal,
-    importMW: 0,
-  },
+// Import-safe for tests: only run when invoked directly.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main()
 }
-writeFileSync(join(OUT_DIR, 'us.json'), JSON.stringify(snapshot))
-console.log(
-  `us: metered ${yesterday} · mix ${Math.round(meteredTotal / 100) / 10} GW avg (ERCOT+NYISO)${
-    today ? ` · today through ${String(today.throughHour).padStart(2, '0')}:00` : ''
-  }`,
-)

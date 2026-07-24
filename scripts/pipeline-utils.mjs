@@ -34,16 +34,20 @@ export function parseCapacityMW(raw, decimalComma = false) {
   return n
 }
 
-/** "400000;132000" → highest transmission class (400 / 275 / 132) or null. */
-export function parseVoltClass(v) {
+/**
+ * Multi-value OSM voltage tag ("400000;132000") + a per-country classify
+ * (volts → class kV or null) → the way's highest voltage class, or null when
+ * no part qualifies. build-data binds each country registry's classify to
+ * this; it replaces a dead GB-only copy that nothing but tests exercised.
+ */
+export function parseVoltClassWith(classify, v) {
   if (!v) return null
   let best = null
   for (const part of String(v).split(';')) {
     const n = parseInt(part.trim(), 10)
     if (!Number.isFinite(n)) continue
-    if (n >= 380000) best = Math.max(best ?? 0, 400)
-    else if (n >= 264000) best = Math.max(best ?? 0, 275)
-    else if (n >= 110000) best = Math.max(best ?? 0, 132)
+    const cls = classify(n)
+    if (cls != null) best = Math.max(best ?? 0, cls)
   }
   return best
 }

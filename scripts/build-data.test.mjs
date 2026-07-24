@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clipRingToBox,
   parseCapacityMW,
-  parseVoltClass,
+  parseVoltClassWith,
   simplify,
   unwrapRing,
 } from './pipeline-utils.mjs'
@@ -38,20 +38,30 @@ describe('parseCapacityMW', () => {
   })
 })
 
-describe('parseVoltClass', () => {
-  it('classifies single voltages', () => {
-    expect(parseVoltClass('400000')).toBe(400)
-    expect(parseVoltClass('275000')).toBe(275)
-    expect(parseVoltClass('132000')).toBe(132)
+describe('parseVoltClassWith', () => {
+  // GB-style classify, as bound by build-data's gb registry entry.
+  const gb = (n) => (n >= 380000 ? 400 : n >= 264000 ? 275 : n >= 110000 ? 132 : null)
+  // Baltic-style: a different ladder proves the classify is actually used.
+  const baltic = (n) => (n >= 300000 ? 330 : n >= 100000 ? 110 : null)
+
+  it('classifies single voltages through the country classify', () => {
+    expect(parseVoltClassWith(gb, '400000')).toBe(400)
+    expect(parseVoltClassWith(gb, '275000')).toBe(275)
+    expect(parseVoltClassWith(gb, '132000')).toBe(132)
+    expect(parseVoltClassWith(baltic, '330000')).toBe(330)
+    expect(parseVoltClassWith(baltic, '110000')).toBe(110)
   })
   it('takes the highest of multi-voltage ways', () => {
-    expect(parseVoltClass('275000;132000')).toBe(275)
-    expect(parseVoltClass('132000;400000')).toBe(400)
+    expect(parseVoltClassWith(gb, '275000;132000')).toBe(275)
+    expect(parseVoltClassWith(gb, '132000;400000')).toBe(400)
+    expect(parseVoltClassWith(baltic, '110000;330000')).toBe(330)
   })
   it('ignores sub-transmission and junk', () => {
-    expect(parseVoltClass('33000')).toBeNull()
-    expect(parseVoltClass(null)).toBeNull()
-    expect(parseVoltClass('abc')).toBeNull()
+    expect(parseVoltClassWith(gb, '33000')).toBeNull()
+    expect(parseVoltClassWith(gb, null)).toBeNull()
+    expect(parseVoltClassWith(gb, 'abc')).toBeNull()
+    // a qualifying part still wins next to junk
+    expect(parseVoltClassWith(gb, 'abc;400000')).toBe(400)
   })
 })
 

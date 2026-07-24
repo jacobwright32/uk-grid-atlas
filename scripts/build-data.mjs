@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import * as topojson from 'topojson-client'
 import { INTERCONNECTORS } from './interconnectors.mjs'
 import { buildRegionBasemap, REGIONS } from './basemap.mjs'
-import { inRing, parseCapacityMW, simplify, smooth } from './pipeline-utils.mjs'
+import { inRing, parseCapacityMW, parseVoltClassWith, simplify, smooth } from './pipeline-utils.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -509,17 +509,7 @@ for (const el of merged) {
 }
 
 // ------------------------------------------------------------------- lines
-function parseVoltClass(v) {
-  if (!v) return null
-  let best = null
-  for (const part of String(v).split(';')) {
-    const n = parseInt(part.trim(), 10)
-    if (!Number.isFinite(n)) continue
-    const cls = cfg.classify(n)
-    if (cls != null) best = Math.max(best ?? 0, cls)
-  }
-  return best
-}
+const parseVoltClass = (v) => parseVoltClassWith(cfg.classify, v)
 
 const lineFiles = readdirSync(RAW_DIR).filter((f) => cfg.lineFile.test(f))
 const seenWays = new Set()
