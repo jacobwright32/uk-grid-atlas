@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import GridMap from './components/GridMap'
 import SearchBox from './components/SearchBox'
 import TimeSlider from './components/TimeSlider'
@@ -43,6 +43,54 @@ export default function App() {
   // Metered-day scrub (#17): null = live/day-average as before.
   const [timeIndex, setTimeIndex] = useState<number | null>(null)
   const [playing, setPlaying] = useState(false)
+  // Country switcher scroll affordance: fade the clipped edge(s).
+  const switchRef = useRef<HTMLDivElement>(null)
+  const [switchFades, setSwitchFades] = useState({ l: false, r: false })
+  // The boot screen renders before data arrives, so the switcher isn't in
+  // the DOM on first mount — both effects below must re-run once it is.
+  const booted = Boolean(data)
+
+  useEffect(() => {
+    const el = switchRef.current
+    if (!el) return
+    const update = () => {
+      const l = el.scrollLeft > 2
+      const r = el.scrollLeft < el.scrollWidth - el.clientWidth - 2
+      setSwitchFades((prev) => (prev.l === l && prev.r === r ? prev : { l, r }))
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    // Flag-emoji font loading reflows chip widths after mount.
+    document.fonts?.ready.then(update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [booted])
+
+  // Keep the active chip in view — 21 grids no longer fit most widths.
+  useEffect(() => {
+    const scrollToActive = () => {
+      const btn = switchRef.current?.querySelector('.country-btn--on')
+      if (!btn) return
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      btn.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+      })
+    }
+    scrollToActive()
+    // Re-run once fonts land: emoji load can shift the chip off-screen again.
+    let stale = false
+    document.fonts?.ready.then(() => {
+      if (!stale) scrollToActive()
+    })
+    return () => {
+      stale = true
+    }
+  }, [countryId, booted])
 
   useEffect(() => {
     const onHash = () => setCountryId(countryFromHash())
@@ -135,20 +183,24 @@ export default function App() {
           </span>
           Grid Atlas
         </h1>
-        <div className="country-switch" role="tablist" aria-label="Country">
-          {Object.values(COUNTRIES).map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              role="tab"
-              aria-selected={c.id === countryId}
-              className={`country-btn${c.id === countryId ? ' country-btn--on' : ''}`}
-              onClick={() => switchCountry(c.id)}
-              title={c.name}
-            >
-              <span aria-hidden="true">{c.flag}</span> {c.id.toUpperCase()}
-            </button>
-          ))}
+        <div
+          className={`country-switch-wrap${switchFades.l ? ' fade-l' : ''}${switchFades.r ? ' fade-r' : ''}`}
+        >
+          <div className="country-switch" role="tablist" aria-label="Country" ref={switchRef}>
+            {Object.values(COUNTRIES).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                role="tab"
+                aria-selected={c.id === countryId}
+                className={`country-btn${c.id === countryId ? ' country-btn--on' : ''}`}
+                onClick={() => switchCountry(c.id)}
+                title={c.name}
+              >
+                <span aria-hidden="true">{c.flag}</span> {c.id.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
         <p className="tagline">{country.tagline}</p>
         <div className="headline-stats" aria-live="polite">

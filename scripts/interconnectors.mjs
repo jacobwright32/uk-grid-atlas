@@ -523,7 +523,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
-    countries: ['fi'],
+    countries: ['fi', 'ee'],
     id: 'estlink',
     name: 'Estlink 1+2',
     to: 'Estonia',
@@ -555,7 +555,7 @@ export const INTERCONNECTORS = [
     ],
   },
   {
-    countries: ['se'],
+    countries: ['se', 'lt'],
     id: 'nordbalt',
     name: 'NordBalt',
     to: 'Lithuania',

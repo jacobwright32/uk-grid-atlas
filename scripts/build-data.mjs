@@ -218,6 +218,34 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 140000 ? 150 : null,
   },
+  ee: {
+    decimalComma: true,
+    plantFiles: ['plants_ee.json', 'plants_ee_pbf.json'],
+    seaFiles: [],
+    lineFile: /^ee_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // Baltic backbone is the ex-Soviet 330 kV standard; 110 kV is regional.
+    classify: (volts) => (volts >= 300000 ? 330 : volts >= 100000 ? 110 : null),
+  },
+  lv: {
+    decimalComma: true,
+    plantFiles: ['plants_lv.json', 'plants_lv_pbf.json'],
+    seaFiles: [],
+    lineFile: /^lv_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) => (volts >= 300000 ? 330 : volts >= 100000 ? 110 : null),
+  },
+  lt: {
+    decimalComma: true,
+    plantFiles: ['plants_lt.json', 'plants_lt_pbf.json'],
+    seaFiles: [],
+    lineFile: /^lt_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    classify: (volts) => (volts >= 300000 ? 330 : volts >= 100000 ? 110 : null),
+  },
   fi: {
     decimalComma: true,
     plantFiles: ['plants_fi.json', 'plants_fi_pbf.json'],
@@ -315,6 +343,7 @@ const FUEL_GROUPS = {
   'mine gas': 'gas',
   coal: 'coal',
   lignite: 'coal',
+  oil_shale: 'coal',
   wind: 'wind',
   solar: 'solar',
   hydro: 'hydro',

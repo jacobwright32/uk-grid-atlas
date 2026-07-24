@@ -72,6 +72,18 @@ import fiStations from '../data/fi/stations.json?url'
 import fiTransmission from '../data/fi/transmission.json?url'
 import fiInterconnectors from '../data/fi/interconnectors.json?url'
 import fiMeta from '../data/fi/meta.json?url'
+import eeStations from '../data/ee/stations.json?url'
+import eeTransmission from '../data/ee/transmission.json?url'
+import eeInterconnectors from '../data/ee/interconnectors.json?url'
+import eeMeta from '../data/ee/meta.json?url'
+import lvStations from '../data/lv/stations.json?url'
+import lvTransmission from '../data/lv/transmission.json?url'
+import lvInterconnectors from '../data/lv/interconnectors.json?url'
+import lvMeta from '../data/lv/meta.json?url'
+import ltStations from '../data/lt/stations.json?url'
+import ltTransmission from '../data/lt/transmission.json?url'
+import ltInterconnectors from '../data/lt/interconnectors.json?url'
+import ltMeta from '../data/lt/meta.json?url'
 import usStations from '../data/us/stations.json?url'
 import usTransmission from '../data/us/transmission.json?url'
 import usInterconnectors from '../data/us/interconnectors.json?url'
@@ -185,6 +197,24 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: fiTransmission,
     interconnectors: fiInterconnectors,
     meta: fiMeta,
+  },
+  ee: {
+    stations: eeStations,
+    transmission: eeTransmission,
+    interconnectors: eeInterconnectors,
+    meta: eeMeta,
+  },
+  lv: {
+    stations: lvStations,
+    transmission: lvTransmission,
+    interconnectors: lvInterconnectors,
+    meta: lvMeta,
+  },
+  lt: {
+    stations: ltStations,
+    transmission: ltTransmission,
+    interconnectors: ltInterconnectors,
+    meta: ltMeta,
   },
   us: {
     stations: usStations,

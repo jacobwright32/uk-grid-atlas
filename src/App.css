@@ -52,6 +52,12 @@
   margin-right: 6px;
 }
 
+.country-switch-wrap {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .country-switch {
   display: flex;
   gap: 4px;
@@ -59,11 +65,46 @@
   border: 1px solid var(--hairline);
   border-radius: 8px;
   padding: 2px;
-  /* Thirteen grids + ALL no longer fit every width — let the row scroll. */
+  /* Twenty-one grids never fit — the row scrolls, edges fade as affordance. */
   overflow-x: auto;
-  scrollbar-width: thin;
-  flex: 0 1 auto;
-  min-width: 0;
+  scrollbar-width: none;
+}
+
+.country-switch::-webkit-scrollbar {
+  display: none;
+}
+
+.country-switch-wrap::before,
+.country-switch-wrap::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 22px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+  z-index: 1;
+}
+
+.country-switch-wrap::before {
+  left: 1px;
+  border-radius: 8px 0 0 8px;
+  background: linear-gradient(to right, var(--surface-2) 25%, transparent);
+}
+
+.country-switch-wrap::after {
+  right: 1px;
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(to left, var(--surface-2) 25%, transparent);
+}
+
+.country-switch-wrap.fade-l::before {
+  opacity: 1;
+}
+
+.country-switch-wrap.fade-r::after {
+  opacity: 1;
 }
 
 .country-btn {

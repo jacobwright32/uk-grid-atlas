@@ -86,6 +86,9 @@ export const ENTSOE_COUNTRIES = {
   pl: { unitDomains: ['10YPL-AREA-----S'], mixDomains: ['10YPL-AREA-----S'] },
   pt: { unitDomains: ['10YPT-REN------W'], mixDomains: ['10YPT-REN------W'] },
   fi: { unitDomains: ['10YFI-1--------U'], mixDomains: ['10YFI-1--------U'] },
+  ee: { unitDomains: ['10Y1001A1001A39I'], mixDomains: ['10Y1001A1001A39I'] },
+  lv: { unitDomains: ['10YLV-1001A00074'], mixDomains: ['10YLV-1001A00074'] },
+  lt: { unitDomains: ['10YLT-1001A0008Q'], mixDomains: ['10YLT-1001A0008Q'] },
   es: { unitDomains: ['10YES-REE------0'], mixDomains: ['10YES-REE------0'] },
   it: {
     // Terna publishes per-unit data per bidding zone; the CTA domain carries the mix.
@@ -147,9 +150,9 @@ export const FLOW_BORDERS = [
   {
     pair: ['10YFI-1--------U', '10Y1001A1001A39I'],
     links: ['estlink'],
-    countries: ['fi'],
+    countries: ['fi', 'ee'],
   },
-  { pair: ['10Y1001A1001A47J', '10YLT-1001A0008Q'], links: ['nordbalt'], countries: ['se'] },
+  { pair: ['10Y1001A1001A47J', '10YLT-1001A0008Q'], links: ['nordbalt'], countries: ['se', 'lt'] },
   {
     pair: ['10YFR-RTE------C', '10YES-REE------0'],
     links: ['inelfe'],
@@ -180,7 +183,7 @@ export const PSR_BUCKETS = {
   B11: ['hydro', 'Hydro & pumped'],
   B12: ['hydro', 'Hydro & pumped'],
   B06: ['other', 'Oil & other'],
-  B07: ['other', 'Oil & other'],
+  B07: ['coal', 'Coal & lignite'], // fossil oil shale (Estonia's Narva fleet)
   B08: ['other', 'Oil & other'],
   B09: ['geothermal', 'Geothermal'],
   B13: ['other', 'Oil & other'],
@@ -199,6 +202,7 @@ export const PSR_COMPAT = {
   B01: ['bioenergy', 'waste', 'coal', 'gas'],
   B17: ['waste', 'bioenergy'],
   B06: ['oil', 'gas'],
+  B07: ['coal', 'other'],
   B10: ['pumped', 'hydro'],
   B11: ['hydro', 'pumped'],
   B12: ['hydro', 'pumped'],

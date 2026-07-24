@@ -133,6 +133,18 @@ out tags geom;`,
     'plants_cz.json': plantsArea('CZ'),
     'cz_lines_hv.json': linesArea('CZ', '400000|380000|220000'),
   },
+  ee: {
+    'plants_ee.json': plantsArea('EE'),
+    'ee_lines_hv.json': linesArea('EE', '330000|110000'),
+  },
+  lv: {
+    'plants_lv.json': plantsArea('LV'),
+    'lv_lines_hv.json': linesArea('LV', '330000|110000'),
+  },
+  lt: {
+    'plants_lt.json': plantsArea('LT'),
+    'lt_lines_hv.json': linesArea('LT', '330000|110000'),
+  },
   es: {
     'plants_es.json': plantsArea('ES'),
     'es_lines_hv_n.json': linesArea('ES', '400000|380000|220000', '39.5,-9.9,43.9,4.6'),

@@ -18,6 +18,9 @@ export type CountryId =
   | 'pt'
   | 'it'
   | 'fi'
+  | 'ee'
+  | 'lv'
+  | 'lt'
   | 'us'
   | 'all'
 
@@ -40,6 +43,9 @@ export const REAL_COUNTRY_IDS = [
   'pt',
   'it',
   'fi',
+  'ee',
+  'lv',
+  'lt',
   'us',
 ] as const
 export type RealCountryId = (typeof REAL_COUNTRY_IDS)[number]
@@ -79,14 +85,14 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     ],
     tiers: [
       { kvs: [765, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },
-      { kvs: [345, 300, 275, 230, 225, 220], label: '220–345 kV' },
+      { kvs: [345, 330, 300, 275, 230, 225, 220], label: '220–345 kV' },
       { kvs: [150, 132, 130, 110], label: '110–150 kV' },
     ],
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Eighteen grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Eighteen grids · two continents · every HVDC link',
+      'Twenty-one grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-one grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -419,6 +425,63 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveKind: 'entsoe',
     liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
     tagline: 'Jokainen voimalaitos · kantaverkko · HVDC-yhteydet',
+  },
+  ee: {
+    id: 'ee',
+    region: 'eu',
+    name: 'Estonia',
+    flag: '🇪🇪',
+    bounds: [
+      [21.7, 57.5],
+      [28.3, 59.8],
+    ],
+    tiers: [
+      { kvs: [330], label: '330 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    tagline: 'Iga elektrijaam · põhivõrk · Estlink',
+  },
+  lv: {
+    id: 'lv',
+    region: 'eu',
+    name: 'Latvia',
+    flag: '🇱🇻',
+    bounds: [
+      [20.9, 55.6],
+      [28.3, 58.1],
+    ],
+    tiers: [
+      { kvs: [330], label: '330 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    tagline: 'Katra elektrostacija · pārvades tīkls · Daugavas kaskāde',
+  },
+  lt: {
+    id: 'lt',
+    region: 'eu',
+    name: 'Lithuania',
+    flag: '🇱🇹',
+    bounds: [
+      [20.9, 53.9],
+      [26.9, 56.5],
+    ],
+    tiers: [
+      { kvs: [330], label: '330 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote: 'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow.',
+    tagline: 'Kiekviena elektrinė · perdavimo tinklas · NordBalt',
   },
   us: {
     id: 'us',
