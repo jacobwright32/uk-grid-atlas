@@ -519,11 +519,11 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [315], label: '315 kV lines' },
       { kvs: [230], label: '230–240 kV lines' },
     ],
-    hasLive: false,
-    liveKind: 'none',
+    hasLive: true,
+    liveKind: 'entsoe',
     liveNote:
-      'No live layer yet — IESO, AESO and Hydro-Québec publish via separate APIs; on the roadmap alongside US live. Remote northern microgrids are omitted.',
-    tagline: 'Every major generator · provincial backbones · Nelson River & Québec HVDC',
+      "Ontario: per-station hourly output from IESO's public Generator Output report, refreshed by the workflow. Alberta and Québec don't publish per-plant data — on the roadmap. Remote northern microgrids are omitted.",
+    tagline: 'Every major generator · provincial backbones · Ontario live via IESO',
   },
 }
 

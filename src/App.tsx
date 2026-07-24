@@ -293,6 +293,7 @@ export default function App() {
                 importSeries={live.importSeries}
                 today={live.today}
                 prices={live.prices}
+                sourceLabel={live.sourceLabel}
                 mode={
                   live.basis === 'entsoe'
                     ? 'daily'
@@ -301,7 +302,9 @@ export default function App() {
                       : 'live'
                 }
                 title={
-                  live.basis === 'entsoe' ? `${country.name} generation mix` : 'GB transmission mix'
+                  live.basis === 'entsoe'
+                    ? `${live.sourceLabel === 'IESO' ? 'Ontario' : country.name} generation mix`
+                    : 'GB transmission mix'
                 }
                 onClose={() => setMixOpen(false)}
               />

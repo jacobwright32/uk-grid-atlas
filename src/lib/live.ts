@@ -53,6 +53,8 @@ export interface LiveData {
   flowSeries: Record<string, (number | null)[]> | null
   /** Wholesale prices over the metered day (day-ahead EU, market index GB). */
   prices: PriceDay | null
+  /** Data-source label for UI copy ("ENTSO-E" default; "IESO" for Canada). */
+  sourceLabel: string | null
   /** Today's partial mix from ENTSO-E — fresher than the metered day (#18). */
   today: EntsoeToday | null
   /** 'live' = fetched now; 'snapshot' = bundled/committed fallback. */
@@ -85,6 +87,7 @@ interface EntsoeSnapshotFile {
   importSeries?: (number | null)[]
   flowSeries?: Record<string, (number | null)[]>
   prices?: PriceDay | null
+  sourceLabel?: string
   today?: EntsoeToday | null
   mix: MixSnapshot
 }
@@ -108,6 +111,7 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       importSeries: snap.importSeries ?? null,
       flowSeries: snap.flowSeries ?? null,
       prices: snap.prices ?? null,
+      sourceLabel: snap.sourceLabel ?? null,
       today: snap.today ?? null,
       source: 'live',
     }
@@ -270,6 +274,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
       importSeries: day?.mixDay?.imports ?? null,
       flowSeries: day?.mixDay?.interconnectors ?? null,
       prices: day?.prices ?? null,
+      sourceLabel: null,
       today: null, // GB's default view is already instantaneous (FUELINST)
       source: 'live',
     }
@@ -287,6 +292,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     importSeries: null,
     flowSeries: null,
     prices: null,
+    sourceLabel: null,
     today: null,
     source: 'snapshot',
   }

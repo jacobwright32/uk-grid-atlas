@@ -32,6 +32,8 @@ interface Props {
   today: EntsoeToday | null
   /** Wholesale prices over the metered day (scrub basis). */
   prices: PriceDay | null
+  /** Data-source label for the legend ("ENTSO-E" unless the snapshot says). */
+  sourceLabel: string | null
   /** When set, a close button collapses the strip (App renders the reopen chip). */
   onClose?: () => void
 }
@@ -52,6 +54,7 @@ export default function MixStrip({
   importSeries,
   today,
   prices,
+  sourceLabel,
   onClose,
 }: Props) {
   const len = useMemo(() => {
@@ -186,9 +189,9 @@ export default function MixStrip({
           {scrubbing
             ? `bars = generation at ${scrubHH}:${scrubMM}`
             : showToday
-              ? 'bars = today-so-far average (ENTSO-E)'
+              ? `bars = today-so-far average (${sourceLabel ?? 'ENTSO-E'})`
               : mode === 'daily'
-                ? 'bars = day-average generation (ENTSO-E)'
+                ? `bars = day-average generation (${sourceLabel ?? 'ENTSO-E'})`
                 : 'bright = generating now · ghost = metered-fleet capacity'}
         </span>
         <span className="mixstrip-note">
