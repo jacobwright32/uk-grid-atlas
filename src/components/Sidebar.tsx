@@ -93,7 +93,9 @@ export default function Sidebar({
               <p className="footnote">
                 {live.sourceLabel === 'IESO'
                   ? 'Per-station data covers IESO market participants (Ontario); Alberta and Québec have no public per-plant feed.'
-                  : 'Unit-level data covers plants ≥100 MW (ENTSO-E registry); smaller sites appear in the mix but not per-station.'}
+                  : live.sourceLabel === 'ERCOT + NYISO'
+                    ? 'Fuel mix covers ERCOT (Texas) and NYISO (New York); other ISOs and per-plant data have no key-less public feed.'
+                    : 'Unit-level data covers plants ≥100 MW (ENTSO-E registry); smaller sites appear in the mix but not per-station.'}
               </p>
             )}
           </>

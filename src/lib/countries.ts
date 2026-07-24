@@ -499,11 +499,11 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
       { kvs: [345], label: '345 kV lines' },
       { kvs: [230], label: '230 kV lines' },
     ],
-    hasLive: false,
-    liveKind: 'none',
+    hasLive: true,
+    liveKind: 'entsoe',
     liveNote:
-      'Live output for the US would come from the EIA hourly API (regional, not per-plant) — on the roadmap. Alaska, Hawaii and Puerto Rico are omitted in v1.',
-    tagline: 'Every utility-scale plant · the bulk transmission grid · HVDC ties',
+      "Fuel mix from ERCOT and NYISO's public feeds (Texas + New York, ≈ a third of US generation), hourly, refreshed by the workflow. No US ISO publishes per-plant output openly. Alaska, Hawaii and Puerto Rico are omitted in v1.",
+    tagline: 'Every utility-scale plant · the bulk grid · Texas & New York live',
   },
   ca: {
     id: 'ca',

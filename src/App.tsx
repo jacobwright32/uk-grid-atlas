@@ -303,7 +303,7 @@ export default function App() {
                 }
                 title={
                   live.basis === 'entsoe'
-                    ? `${live.sourceLabel === 'IESO' ? 'Ontario' : country.name} generation mix`
+                    ? `${live.sourceLabel === 'IESO' ? 'Ontario' : live.sourceLabel === 'ERCOT + NYISO' ? 'Texas + New York' : country.name} generation mix`
                     : 'GB transmission mix'
                 }
                 onClose={() => setMixOpen(false)}
