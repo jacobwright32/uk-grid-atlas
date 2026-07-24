@@ -32,6 +32,14 @@ import deStations from '../data/de/stations.json?url'
 import deTransmission from '../data/de/transmission.json?url'
 import deInterconnectors from '../data/de/interconnectors.json?url'
 import deMeta from '../data/de/meta.json?url'
+import chStations from '../data/ch/stations.json?url'
+import chTransmission from '../data/ch/transmission.json?url'
+import chInterconnectors from '../data/ch/interconnectors.json?url'
+import chMeta from '../data/ch/meta.json?url'
+import atStations from '../data/at/stations.json?url'
+import atTransmission from '../data/at/transmission.json?url'
+import atInterconnectors from '../data/at/interconnectors.json?url'
+import atMeta from '../data/at/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -113,6 +121,18 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: deTransmission,
     interconnectors: deInterconnectors,
     meta: deMeta,
+  },
+  ch: {
+    stations: chStations,
+    transmission: chTransmission,
+    interconnectors: chInterconnectors,
+    meta: chMeta,
+  },
+  at: {
+    stations: atStations,
+    transmission: atTransmission,
+    interconnectors: atInterconnectors,
+    meta: atMeta,
   },
   no: {
     stations: noStations,

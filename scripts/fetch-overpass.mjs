@@ -121,6 +121,14 @@ out tags geom;`,
     'fi_lines_hv.json': linesArea('FI', '400000|380000|220000'),
     'fi_lines_110.json': linesArea('FI', '110000'),
   },
+  ch: {
+    'plants_ch.json': plantsArea('CH'),
+    'ch_lines_hv.json': linesArea('CH', '400000|380000|220000'),
+  },
+  at: {
+    'plants_at.json': plantsArea('AT'),
+    'at_lines_hv.json': linesArea('AT', '400000|380000|220000'),
+  },
   es: {
     'plants_es.json': plantsArea('ES'),
     'es_lines_hv_n.json': linesArea('ES', '400000|380000|220000', '39.5,-9.9,43.9,4.6'),

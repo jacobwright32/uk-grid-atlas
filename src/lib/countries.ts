@@ -8,6 +8,8 @@ export type CountryId =
   | 'dk'
   | 'fr'
   | 'de'
+  | 'ch'
+  | 'at'
   | 'no'
   | 'se'
   | 'pl'
@@ -27,6 +29,8 @@ export const REAL_COUNTRY_IDS = [
   'dk',
   'fr',
   'de',
+  'ch',
+  'at',
   'no',
   'se',
   'pl',
@@ -79,8 +83,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Fifteen grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Fifteen grids · two continents · every HVDC link',
+      'Seventeen grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Seventeen grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -216,6 +220,46 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. The vast 110 kV network is omitted to keep the map fast.',
     tagline: 'Jedes Kraftwerk · das Höchstspannungsnetz · HGÜ-Verbindungen',
+  },
+  ch: {
+    id: 'ch',
+    region: 'eu',
+    name: 'Switzerland',
+    flag: '🇨🇭',
+    bounds: [
+      [5.9, 45.7],
+      [10.6, 47.9],
+    ],
+    tiers: [
+      { kvs: [380], label: '380 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Cantonal 110 kV and the SBB 16.7 Hz railway grid are omitted.',
+    tagline: 'Jedes Kraftwerk · das Swissgrid-Netz · alpine Speicherkraft',
+  },
+  at: {
+    id: 'at',
+    region: 'eu',
+    name: 'Austria',
+    flag: '🇦🇹',
+    bounds: [
+      [9.5, 46.3],
+      [17.2, 49.1],
+    ],
+    tiers: [
+      { kvs: [380], label: '380 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Regional 110 kV and the ÖBB 16.7 Hz railway grid are omitted.',
+    tagline: 'Jedes Kraftwerk · das APG-Netz · Alpenwasserkraft',
   },
   no: {
     id: 'no',

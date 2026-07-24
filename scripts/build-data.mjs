@@ -124,6 +124,28 @@ const COUNTRIES = {
     isForeignLine: () => false,
     classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
   },
+  ch: {
+    decimalComma: true,
+    plantFiles: ['plants_ch.json', 'plants_ch_pbf.json'],
+    seaFiles: [],
+    lineFile: /^ch_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // Swissgrid's transmission grid is 380/220 only; cantonal 110 kV and the
+    // SBB 132 kV 16.7 Hz traction grid are deliberately out (same rule as DE).
+    classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
+  },
+  at: {
+    decimalComma: true,
+    plantFiles: ['plants_at.json', 'plants_at_pbf.json'],
+    seaFiles: [],
+    lineFile: /^at_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // APG's 380/220 backbone; regional 110 kV and ÖBB's 110 kV 16.7 Hz
+    // traction grid are deliberately out (same rule as DE/CH).
+    classify: (volts) => (volts >= 340000 ? 380 : volts >= 200000 ? 220 : null),
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
