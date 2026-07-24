@@ -88,6 +88,138 @@ function buildUnitMap(index, overrides, units) {
   return { byUnit, unmatched }
 }
 
+// ------------------------------------------------------- mix + flows fetch
+const MIX_COLORS = {
+  wind: '#199e70',
+  solar: '#c98500',
+  gas: '#3987e5',
+  nuclear: '#9085e9',
+  coal: '#ad7a45',
+  geothermal: '#bd5fd1',
+  biomass: '#d95926',
+  hydro: '#1899ac',
+  other: '#e66767',
+}
+
+const meanCovered = (series) => {
+  let sum = 0
+  let n = 0
+  for (const v of series) {
+    if (v == null) continue
+    sum += v
+    n++
+  }
+  return n ? sum / n : 0
+}
+
+/**
+ * One day's A75 mix + A11 flows as hourly series, with day averages taken
+ * over the covered hours — so a partial (intraday) day averages correctly.
+ */
+async function fetchMixAndFlows(cc, cfg, day) {
+  const mixHourly = new Map() // bucket key → {label, sums:[24], counts:[24]}
+  for (const domain of cfg.mixDomains) {
+    const doc = await client.get({
+      documentType: 'A75',
+      processType: 'A16',
+      in_Domain: domain,
+      ...dayWindow(day),
+    })
+    for (const s of parseSeries(doc ?? {})) {
+      if (s.outDomain && !s.inDomain) continue // consumption (pumping) series
+      const bucket = PSR_BUCKETS[s.psrType]
+      if (!bucket) continue
+      const perHour = 60 / s.stepMin
+      let hh = mixHourly.get(bucket[0])
+      if (!hh) {
+        hh = { label: bucket[1], sums: new Array(24).fill(0), counts: new Array(24).fill(0) }
+        mixHourly.set(bucket[0], hh)
+      }
+      for (const p of s.points) {
+        const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
+        if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
+        hh.sums[hour] += p.mw / perHour
+        hh.counts[hour] += 1 / perHour
+      }
+    }
+  }
+  const mixSeries = {}
+  const bucketAvg = new Map()
+  let hoursCovered = 0
+  for (const [key, hh] of mixHourly) {
+    const series = hh.sums.map((v, h) => (hh.counts[h] > 0 ? Math.round(Math.max(0, v)) : null))
+    mixSeries[key] = series
+    bucketAvg.set(key, { label: hh.label, mw: meanCovered(series) })
+    hoursCovered = Math.max(hoursCovered, series.filter((v) => v != null).length)
+  }
+
+  const flows = {}
+  const flowSeries = {}
+  const importSeries = new Array(24).fill(null)
+  for (const border of FLOW_BORDERS.filter((b) => b.countries.includes(cc))) {
+    const [home, away] = border.pair
+    const netHours = new Array(24).fill(null)
+    for (const [outD, inD, sign] of [
+      [away, home, +1],
+      [home, away, -1],
+    ]) {
+      const doc = await client.get({
+        documentType: 'A11',
+        out_Domain: outD,
+        in_Domain: inD,
+        ...dayWindow(day),
+      })
+      for (const s of parseSeries(doc ?? {})) {
+        const perHour = 60 / s.stepMin
+        for (const p of s.points) {
+          const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
+          if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
+          netHours[hour] = (netHours[hour] ?? 0) + (sign * p.mw) / perHour
+        }
+      }
+    }
+    const net = meanCovered(netHours)
+    const links = border.links
+      .map((id) => INTERCONNECTORS.find((ic) => ic.id === id))
+      .filter(Boolean)
+    const capSum = links.reduce((a, l) => a + l.capMW, 0) || 1
+    for (const link of links) {
+      flows[link.id] = Math.round((net * link.capMW) / capSum)
+      flowSeries[link.id] = netHours.map((v) =>
+        v == null ? null : Math.round((v * link.capMW) / capSum),
+      )
+    }
+    for (let h = 0; h < 24; h++) {
+      if (netHours[h] != null) importSeries[h] = (importSeries[h] ?? 0) + Math.max(0, netHours[h])
+    }
+  }
+  for (let h = 0; h < 24; h++) {
+    if (importSeries[h] != null) importSeries[h] = Math.round(importSeries[h])
+  }
+  const importMW = meanCovered(importSeries)
+
+  const mixRows = [...bucketAvg.entries()]
+    .map(([key, v]) => ({
+      key,
+      label: v.label,
+      color: MIX_COLORS[key] ?? '#898781',
+      nowMW: Math.round(v.mw),
+      capMW: 0, // registered-fleet capacity omitted in v1 for EU
+    }))
+    .filter((r) => r.nowMW > 0)
+    .sort((a, b) => b.nowMW - a.nowMW)
+  mixRows.push({
+    key: 'imports',
+    label: importMW >= 0 ? 'Imports (HVDC)' : 'Net export (HVDC)',
+    color: '#2dd4bf',
+    nowMW: Math.round(Math.abs(importMW)),
+    capMW: 0,
+  })
+  const totalMW = mixRows.filter((r) => r.key !== 'imports').reduce((a, r) => a + r.nowMW, 0)
+
+  return { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW, hoursCovered }
+}
+
 // --------------------------------------------------------------- main loop
 for (const cc of countryIds) {
   const cfg = ENTSOE_COUNTRIES[cc]
@@ -195,126 +327,41 @@ for (const cc of countryIds) {
       if (d) perStation[stationId] = d
     }
 
-    // 4. Daily mix (A75) → MixRow-shaped buckets (daily average MW) plus the
-    // hourly per-fuel series the averages come from (#17 mix-strip scrub).
-    const bucketMW = new Map()
-    const mixHourly = new Map() // bucket key → {sums:[24], counts:[24]}
-    for (const domain of cfg.mixDomains) {
-      const doc = await client.get({
-        documentType: 'A75',
-        processType: 'A16',
-        in_Domain: domain,
-        ...dayWindow(day),
-      })
-      for (const s of parseSeries(doc ?? {})) {
-        if (s.outDomain && !s.inDomain) continue // consumption (pumping) series
-        const bucket = PSR_BUCKETS[s.psrType]
-        if (!bucket) continue
-        const perHour = 60 / s.stepMin
-        const mwh = s.points.reduce((a, p) => a + (Number.isFinite(p.mw) ? p.mw / perHour : 0), 0)
-        bucketMW.set(bucket[0], {
-          label: bucket[1],
-          mw: (bucketMW.get(bucket[0])?.mw ?? 0) + mwh / 24,
-        })
-        let hh = mixHourly.get(bucket[0])
-        if (!hh) {
-          hh = { sums: new Array(24).fill(0), counts: new Array(24).fill(0) }
-          mixHourly.set(bucket[0], hh)
-        }
-        for (const p of s.points) {
-          const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
-          if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
-          hh.sums[hour] += p.mw / perHour
-          hh.counts[hour] += 1 / perHour
-        }
-      }
-    }
-    const mixSeries = {}
-    for (const [key, hh] of mixHourly) {
-      mixSeries[key] = hh.sums.map((v, h) => (hh.counts[h] > 0 ? Math.round(Math.max(0, v)) : null))
-    }
+    // 4+5. Mix (A75) + border flows (A11) for the metered day: hourly series
+    // (#17 scrub) and day averages derived from them. The same fetch runs
+    // again for today's partial day (#18 intraday, below).
+    const { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW } =
+      await fetchMixAndFlows(cc, cfg, day)
 
-    // 5. Border flows (A11) for this country's HVDC links: net daily average
-    // plus the hourly series (#17 — the imports row scrubs too).
-    const flows = {}
-    const flowSeries = {}
-    const importSeries = new Array(24).fill(null)
-    let importMW = 0
-    for (const border of FLOW_BORDERS.filter((b) => b.countries.includes(cc))) {
-      const [home, away] = border.pair
-      let net = 0
-      const netHours = new Array(24).fill(null)
-      for (const [outD, inD, sign] of [
-        [away, home, +1],
-        [home, away, -1],
-      ]) {
-        const doc = await client.get({
-          documentType: 'A11',
-          out_Domain: outD,
-          in_Domain: inD,
-          ...dayWindow(day),
-        })
-        for (const s of parseSeries(doc ?? {})) {
-          const perHour = 60 / s.stepMin
-          const mwh = s.points.reduce((a, p) => a + (Number.isFinite(p.mw) ? p.mw / perHour : 0), 0)
-          net += (sign * mwh) / 24
-          for (const p of s.points) {
-            const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
-            if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
-            netHours[hour] = (netHours[hour] ?? 0) + (sign * p.mw) / perHour
+    // 6. Intraday (#18): today's partial mix, when the TSO has published
+    // at least a few hours. Shown as the default strip; the metered day
+    // above stays the scrub/station basis.
+    let today = null
+    const todayDate = isoDaysAgo(0)
+    if (todayDate !== day) {
+      try {
+        const t = await fetchMixAndFlows(cc, cfg, todayDate)
+        if (t.hoursCovered >= 3) {
+          today = {
+            date: todayDate,
+            throughHour: Math.max(
+              ...Object.values(t.mixSeries).map((s) =>
+                s.reduce((a, v, h) => (v != null ? h + 1 : a), 0),
+              ),
+              0,
+            ),
+            mixRows: t.mixRows,
+            mixSeries: t.mixSeries,
+            importSeries: t.importSeries,
+            totalMW: t.totalMW,
+            importMW: Math.round(t.importMW),
           }
         }
+      } catch {
+        // intraday is best-effort — the snapshot is complete without it
       }
-      const links = border.links
-        .map((id) => INTERCONNECTORS.find((ic) => ic.id === id))
-        .filter(Boolean)
-      const capSum = links.reduce((a, l) => a + l.capMW, 0) || 1
-      for (const link of links) {
-        flows[link.id] = Math.round((net * link.capMW) / capSum)
-        flowSeries[link.id] = netHours.map((v) =>
-          v == null ? null : Math.round((v * link.capMW) / capSum),
-        )
-      }
-      for (let h = 0; h < 24; h++) {
-        if (netHours[h] != null) importSeries[h] = (importSeries[h] ?? 0) + Math.max(0, netHours[h])
-      }
-      importMW += Math.max(0, net)
-    }
-    for (let h = 0; h < 24; h++) {
-      if (importSeries[h] != null) importSeries[h] = Math.round(importSeries[h])
     }
 
-    // 6. Write snapshot.
-    const COLORS = {
-      wind: '#199e70',
-      solar: '#c98500',
-      gas: '#3987e5',
-      nuclear: '#9085e9',
-      coal: '#ad7a45',
-      geothermal: '#bd5fd1',
-      biomass: '#d95926',
-      hydro: '#1899ac',
-      other: '#e66767',
-    }
-    const mixRows = [...bucketMW.entries()]
-      .map(([key, v]) => ({
-        key,
-        label: v.label,
-        color: COLORS[key] ?? '#898781',
-        nowMW: Math.round(v.mw),
-        capMW: 0, // registered-fleet capacity omitted in v1 for EU
-      }))
-      .filter((r) => r.nowMW > 0)
-      .sort((a, b) => b.nowMW - a.nowMW)
-    mixRows.push({
-      key: 'imports',
-      label: importMW >= 0 ? 'Imports (HVDC)' : 'Net export (HVDC)',
-      color: '#2dd4bf',
-      nowMW: Math.round(Math.abs(importMW)),
-      capMW: 0,
-    })
-
-    const totalMW = mixRows.filter((r) => r.key !== 'imports').reduce((a, r) => a + r.nowMW, 0)
     const snapshot = {
       version: 1,
       basis: 'entsoe',
@@ -325,6 +372,7 @@ for (const cc of countryIds) {
       mixSeries,
       flowSeries,
       importSeries,
+      today,
       mix: {
         time: `${day}T12:00:00Z`,
         fuels: mixRows
@@ -339,7 +387,9 @@ for (const cc of countryIds) {
     console.log(
       `${cc}: day ${day} · ${Object.keys(perStation).length} stations · mix ${
         Math.round(totalMW / 100) / 10
-      } GW avg · ${Object.keys(flows).length} link flows · unmapped peak ${Math.round(unmappedMW)} MW`,
+      } GW avg · ${Object.keys(flows).length} link flows · unmapped peak ${Math.round(unmappedMW)} MW${
+        today ? ` · today through ${String(today.throughHour).padStart(2, '0')}:00` : ''
+      }`,
     )
   } catch (err) {
     console.error(`${cc} failed:`, err.message)

@@ -1,4 +1,4 @@
-# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇨🇭 🇦🇹 🇨🇿 🇳🇴 🇸🇪 🇫🇮 🇵🇱 🇪🇸 🇵🇹 🇮🇹 🇪🇪 🇱🇻 🇱🇹 🇺🇸 🌍
+# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇨🇭 🇦🇹 🇨🇿 🇳🇴 🇸🇪 🇫🇮 🇵🇱 🇪🇸 🇵🇹 🇮🇹 🇪🇪 🇱🇻 🇱🇹 🇺🇸 🇨🇦 🌍
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
@@ -7,7 +7,7 @@
 [![Grid Atlas — interactive dark map of generation, transmission and live output across GB, Europe and the US](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
 
 An interactive, dark-mode atlas of power grids — Great Britain in full detail,
-nineteen European countries, the United States, and a transatlantic ALL view:
+nineteen European countries, the United States, Canada, and a transatlantic ALL view:
 tens of thousands of utility-scale generation sites, each country's
 high-voltage transmission backbone, and the HVDC interconnectors that tie
 the grids together.
@@ -17,7 +17,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **Tens of thousands of generation sites across twenty-one grids** — nuclear, gas, offshore/onshore wind, solar,
+- **Tens of thousands of generation sites across twenty-two grids** — nuclear, gas, offshore/onshore wind, solar,
   hydro, pumped storage, bioenergy, battery storage and more — each sized by
   installed capacity and coloured by fuel. Hover for a card with capacity,
   operator and commissioning date; click to pin it.
@@ -97,8 +97,8 @@ node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via O
 ```
 
 The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
-`#fr`, `#de`, `#ch`, `#at`, `#cz`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#ee`, `#lv`, `#lt`, `#us`, `#all` in the URL)
-swaps data bundles, map bounds and voltage tiers per country. Twenty-one grids
+`#fr`, `#de`, `#ch`, `#at`, `#cz`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#ee`, `#lv`, `#lt`, `#us`, `#ca`, `#all` in the URL)
+swaps data bundles, map bounds and voltage tiers per country. Twenty-two grids
 ship today: Great Britain (400/275/132 kV), the Netherlands
 (380/220/150/110), Belgium (380/220/150), the island of Ireland
 (400/275/220/110 — the SEM is mapped as one grid), Denmark (400/150/132),
@@ -110,8 +110,10 @@ railway grid omitted), Czechia (400/220; 110 kV omitted), Norway (420/300/132), 
 Portugal (400/220/150), Finland (400/220/110 — 110 kV is transmission
 voltage there), Italy (380/220; the vast 150 kV layer is omitted), Estonia, Latvia and
 Lithuania (330/110 — the ex-Soviet Baltic standard, synchronised with
-Continental Europe since February 2025) and the United States
-(765/500/345/230 kV, CONUS) — plus a transatlantic ALL view that merges the
+Continental Europe since February 2025), the United States
+(765/500/345/230 kV, CONUS) and Canada (735/500/315/230–240 —
+Hydro-Québec's 735 kV network plus the Nelson River, Québec–New England,
+Labrador–Island and Maritime HVDC links) — plus a transatlantic ALL view that merges the
 lot. Each country is ~30 lines of config in `scripts/build-data.mjs` +
 `src/lib/countries.ts` plus its raw extracts — adding another is an
 afternoon, not a project. Live output: GB via Elexon (browser-side); every European grid via

@@ -41,8 +41,22 @@ export interface LiveData {
   mixSeries: Record<string, (number | null)[]> | null
   /** HVDC import total per interval, aligned with mixSeries (#17). */
   importSeries: (number | null)[] | null
+  /** Today's partial mix from ENTSO-E — fresher than the metered day (#18). */
+  today: EntsoeToday | null
   /** 'live' = fetched now; 'snapshot' = bundled/committed fallback. */
   source: 'live' | 'snapshot'
+}
+
+/** Today-so-far mix baked into ENTSO-E snapshots (#18 intraday). */
+export interface EntsoeToday {
+  date: string
+  /** Data runs through this hour (e.g. 14 = through 13:59). */
+  throughHour: number
+  mixRows: import('./fleet').MixRow[]
+  mixSeries: Record<string, (number | null)[]>
+  importSeries: (number | null)[]
+  totalMW: number
+  importMW: number
 }
 
 /** Shape of public/live/<cc>.json written by fetch-entsoe-snapshot.mjs. */
@@ -55,6 +69,7 @@ interface EntsoeSnapshotFile {
   mixRows: import('./fleet').MixRow[]
   mixSeries?: Record<string, (number | null)[]>
   importSeries?: (number | null)[]
+  today?: EntsoeToday | null
   mix: MixSnapshot
 }
 
@@ -75,6 +90,7 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       mixRows: snap.mixRows,
       mixSeries: snap.mixSeries ?? null,
       importSeries: snap.importSeries ?? null,
+      today: snap.today ?? null,
       source: 'live',
     }
   } catch {
@@ -225,6 +241,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
       mixRows: null,
       mixSeries: day?.mixDay ? foldMixDay(day.mixDay) : null,
       importSeries: day?.mixDay?.imports ?? null,
+      today: null, // GB's default view is already instantaneous (FUELINST)
       source: 'live',
     }
   }
@@ -239,6 +256,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     mixRows: null,
     mixSeries: null,
     importSeries: null,
+    today: null,
     source: 'snapshot',
   }
 }

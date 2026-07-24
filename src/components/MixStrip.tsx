@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { MixRow } from '../lib/fleet'
+import type { EntsoeToday } from '../lib/live'
 import type { MixSnapshot } from '../lib/live-core.mjs'
 import { fmtGW } from '../lib/format'
 
@@ -14,6 +15,8 @@ interface Props {
   /** Per-fuel series keyed like `rows`; intervals match the time slider. */
   mixSeries: Record<string, (number | null)[]> | null
   importSeries: (number | null)[] | null
+  /** Today's partial ENTSO-E mix — shown as the default view when present (#18). */
+  today: EntsoeToday | null
   /** When set, a close button collapses the strip (App renders the reopen chip). */
   onClose?: () => void
 }
@@ -32,6 +35,7 @@ export default function MixStrip({
   timeIndex,
   mixSeries,
   importSeries,
+  today,
   onClose,
 }: Props) {
   const len = useMemo(() => {
@@ -40,21 +44,29 @@ export default function MixStrip({
     return 0
   }, [mixSeries])
   const scrubbing = timeIndex != null && mixSeries != null && len > 0
+  // Default (non-scrub) view prefers today's partial mix when the snapshot
+  // carries one — fresher than the metered day (#18).
+  const showToday = !scrubbing && today != null
 
   const shownRows = useMemo(() => {
-    if (!scrubbing) return rows
-    return rows.map((r) => {
-      const series = r.key === 'imports' ? importSeries : (mixSeries?.[r.key] ?? null)
-      const v = series?.[timeIndex] ?? null
-      return { ...r, nowMW: v == null ? 0 : Math.abs(v) }
-    })
-  }, [scrubbing, rows, mixSeries, importSeries, timeIndex])
+    if (scrubbing) {
+      return rows.map((r) => {
+        const series = r.key === 'imports' ? importSeries : (mixSeries?.[r.key] ?? null)
+        const v = series?.[timeIndex] ?? null
+        return { ...r, nowMW: v == null ? 0 : Math.abs(v) }
+      })
+    }
+    if (showToday) return today.mixRows
+    return rows
+  }, [scrubbing, showToday, today, rows, mixSeries, importSeries, timeIndex])
 
   if (!rows.length) return null
   const maxCap = Math.max(...shownRows.map((r) => Math.max(r.capMW, r.nowMW)), 1)
   const totalNow = scrubbing
     ? shownRows.reduce((a, r) => a + (r.key === 'imports' ? 0 : r.nowMW), 0)
-    : mix.totalMW + Math.max(0, mix.importMW)
+    : showToday
+      ? today.totalMW + Math.max(0, today.importMW)
+      : mix.totalMW + Math.max(0, mix.importMW)
 
   const stepMin = len === 48 ? 30 : 60
   const scrubMins = (timeIndex ?? 0) * stepMin
@@ -64,15 +76,17 @@ export default function MixStrip({
   const when = new Date(mix.time)
   const subtitle = scrubbing
     ? `${scrubHH}:${scrubMM}`
-    : mode === 'daily'
-      ? `daily avg · ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
-      : mode === 'snapshot'
-        ? 'snapshot'
-        : when.toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Europe/London',
-          })
+    : showToday
+      ? `today · through ${String(today.throughHour).padStart(2, '0')}:00`
+      : mode === 'daily'
+        ? `daily avg · ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+        : mode === 'snapshot'
+          ? 'snapshot'
+          : when.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Europe/London',
+            })
 
   return (
     <div className="mixstrip" role="figure" aria-label="Current GB generation vs fleet capacity">
@@ -132,16 +146,20 @@ export default function MixStrip({
         <span className="mixstrip-item">
           {scrubbing
             ? `bars = generation at ${scrubHH}:${scrubMM}`
-            : mode === 'daily'
-              ? 'bars = day-average generation (ENTSO-E)'
-              : 'bright = generating now · ghost = metered-fleet capacity'}
+            : showToday
+              ? 'bars = today-so-far average (ENTSO-E)'
+              : mode === 'daily'
+                ? 'bars = day-average generation (ENTSO-E)'
+                : 'bright = generating now · ghost = metered-fleet capacity'}
         </span>
         <span className="mixstrip-note">
           {scrubbing
             ? 'drag the slider · reset for the day view'
-            : mode === 'daily'
-              ? 'transmission-metered generation'
-              : 'solar & embedded not metered here'}
+            : showToday
+              ? 'scrub the slider for the metered day'
+              : mode === 'daily'
+                ? 'transmission-metered generation'
+                : 'solar & embedded not metered here'}
         </span>
       </div>
     </div>

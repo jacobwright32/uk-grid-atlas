@@ -88,6 +88,10 @@ import usStations from '../data/us/stations.json?url'
 import usTransmission from '../data/us/transmission.json?url'
 import usInterconnectors from '../data/us/interconnectors.json?url'
 import usMeta from '../data/us/meta.json?url'
+import caStations from '../data/ca/stations.json?url'
+import caTransmission from '../data/ca/transmission.json?url'
+import caInterconnectors from '../data/ca/interconnectors.json?url'
+import caMeta from '../data/ca/meta.json?url'
 import basemapEuUrl from '../data/basemap.json?url'
 import basemapNaUrl from '../data/basemap_na.json?url'
 
@@ -221,6 +225,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: usTransmission,
     interconnectors: usInterconnectors,
     meta: usMeta,
+  },
+  ca: {
+    stations: caStations,
+    transmission: caTransmission,
+    interconnectors: caInterconnectors,
+    meta: caMeta,
   },
 }
 

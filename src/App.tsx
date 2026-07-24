@@ -291,6 +291,7 @@ export default function App() {
                 timeIndex={timeIndex}
                 mixSeries={live.mixSeries}
                 importSeries={live.importSeries}
+                today={live.today}
                 mode={
                   live.basis === 'entsoe'
                     ? 'daily'

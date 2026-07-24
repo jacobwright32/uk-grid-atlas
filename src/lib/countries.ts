@@ -22,6 +22,7 @@ export type CountryId =
   | 'lv'
   | 'lt'
   | 'us'
+  | 'ca'
   | 'all'
 
 /** Countries with their own data bundles ('all' merges these at runtime). */
@@ -47,6 +48,7 @@ export const REAL_COUNTRY_IDS = [
   'lv',
   'lt',
   'us',
+  'ca',
 ] as const
 export type RealCountryId = (typeof REAL_COUNTRY_IDS)[number]
 
@@ -80,19 +82,19 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     name: 'All countries',
     flag: '🌍',
     bounds: [
-      [-126.0, 24.0],
+      [-139.5, 24.0],
       [31.5, 71.0],
     ],
     tiers: [
-      { kvs: [765, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },
-      { kvs: [345, 330, 300, 275, 230, 225, 220], label: '220–345 kV' },
+      { kvs: [765, 735, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },
+      { kvs: [345, 330, 315, 300, 275, 230, 225, 220], label: '220–345 kV' },
       { kvs: [150, 132, 130, 110], label: '110–150 kV' },
     ],
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-one grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-one grids · two continents · every HVDC link',
+      'Twenty-two grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-two grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -502,6 +504,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Live output for the US would come from the EIA hourly API (regional, not per-plant) — on the roadmap. Alaska, Hawaii and Puerto Rico are omitted in v1.',
     tagline: 'Every utility-scale plant · the bulk transmission grid · HVDC ties',
+  },
+  ca: {
+    id: 'ca',
+    region: 'na',
+    name: 'Canada',
+    flag: '🇨🇦',
+    bounds: [
+      [-139.5, 41.7],
+      [-52.0, 62.7],
+    ],
+    tiers: [
+      { kvs: [735, 500], label: '735 / 500 kV lines' },
+      { kvs: [315], label: '315 kV lines' },
+      { kvs: [230], label: '230–240 kV lines' },
+    ],
+    hasLive: false,
+    liveKind: 'none',
+    liveNote:
+      'No live layer yet — IESO, AESO and Hydro-Québec publish via separate APIs; on the roadmap alongside US live. Remote northern microgrids are omitted.',
+    tagline: 'Every major generator · provincial backbones · Nelson River & Québec HVDC',
   },
 }
 

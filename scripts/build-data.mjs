@@ -257,6 +257,29 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  ca: {
+    region: 'na',
+    simplifyEps: 0.0005,
+    coordDp: 4,
+    plantFiles: ['plants_ca_pbf.json'],
+    seaFiles: [],
+    lineFile: /^ca_lines.*\.json$/,
+    // Populated-grid box: Vancouver Island to St. John's, up to Yellowknife.
+    keep: ([lon, lat]) => lat >= 41.7 && lat <= 62.7 && lon >= -139.5 && lon <= -52.0,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // Hydro-Québec's 735 kV is its own class; 240 kV Alberta folds into 230.
+    classify: (volts) =>
+      volts >= 650000
+        ? 735
+        : volts >= 440000
+          ? 500
+          : volts >= 280000
+            ? 315
+            : volts >= 200000
+              ? 230
+              : null,
+  },
   us: {
     region: 'na',
     simplifyEps: 0.0005,
