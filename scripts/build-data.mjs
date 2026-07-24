@@ -137,7 +137,7 @@ const COUNTRIES = {
   },
   at: {
     decimalComma: true,
-    plantFiles: ['plants_at.json', 'plants_at_pbf.json'],
+    plantFiles: ['plants_at.json', 'plants_at_pbf.json', 'plants_at_wind_clusters.json'],
     seaFiles: [],
     lineFile: /^at_lines.*\.json$/,
     isForeignSea: () => false,
@@ -220,7 +220,7 @@ const COUNTRIES = {
   },
   ee: {
     decimalComma: true,
-    plantFiles: ['plants_ee.json', 'plants_ee_pbf.json'],
+    plantFiles: ['plants_ee.json', 'plants_ee_pbf.json', 'plants_ee_wind_clusters.json'],
     seaFiles: [],
     lineFile: /^ee_lines.*\.json$/,
     isForeignSea: () => false,
@@ -248,7 +248,7 @@ const COUNTRIES = {
   },
   fi: {
     decimalComma: true,
-    plantFiles: ['plants_fi.json', 'plants_fi_pbf.json'],
+    plantFiles: ['plants_fi.json', 'plants_fi_pbf.json', 'plants_fi_wind_clusters.json'],
     seaFiles: [],
     lineFile: /^fi_lines.*\.json$/,
     isForeignSea: () => false,
@@ -322,8 +322,16 @@ const readJSON = (p) => JSON.parse(readFileSync(p, 'utf8'))
 const landTopo = readJSON(join(__dirname, '..', 'node_modules', 'world-atlas', 'land-10m.json'))
 const landFC = topojson.feature(landTopo, landTopo.objects.land)
 
+// Use the region-clipped basemap rings, not the raw world-atlas polygons:
+// the raw Eurasia ring wraps the antimeridian, which breaks point-in-ring
+// north of ~63°N (Lapland read as sea — northern wind farms went
+// "offshore"). The basemap pipeline unwraps and clips, so its rings are
+// safe at every latitude.
+const landMaskFC = {
+  features: ['eu', 'na'].flatMap((r) => buildRegionBasemap(landFC, r).features),
+}
 const landRings = []
-for (const f of landFC.features) {
+for (const f of landMaskFC.features) {
   const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
   for (const poly of polys) {
     const outer = poly[0]
