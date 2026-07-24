@@ -261,7 +261,7 @@ const COUNTRIES = {
     region: 'na',
     simplifyEps: 0.0005,
     coordDp: 4,
-    plantFiles: ['plants_ca_pbf.json'],
+    plantFiles: ['plants_ca_pbf.json', 'plants_ca_wind_clusters.json'],
     seaFiles: [],
     lineFile: /^ca_lines.*\.json$/,
     // Populated-grid box: Vancouver Island to St. John's, up to Yellowknife.

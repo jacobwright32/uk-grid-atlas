@@ -4,7 +4,7 @@
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
 [![Deploy](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/deploy.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/deploy.yml)
 
-[![Grid Atlas — interactive dark map of generation, transmission and live output across GB, Europe and the US](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
+[![Grid Atlas — interactive dark map of generation, transmission and live output across Europe and North America](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
 
 An interactive, dark-mode atlas of power grids — Great Britain in full detail,
 nineteen European countries, the United States, Canada, and a transatlantic ALL view:
@@ -17,29 +17,31 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **Tens of thousands of generation sites across twenty-two grids** — nuclear, gas, offshore/onshore wind, solar,
-  hydro, pumped storage, bioenergy, battery storage and more — each sized by
-  installed capacity and coloured by fuel. Hover for a card with capacity,
-  operator and commissioning date; click to pin it.
-- **The high-voltage network** — 400 kV and 275 kV circuits across GB,
-  132 kV in Scotland (where it is transmission voltage), and Northern
-  Ireland's 275 kV ring, styled by voltage class.
-- **HVDC links** — all operational interconnectors (France, Belgium, the
-  Netherlands, Norway, Denmark, Ireland) plus intra-GB reinforcements
-  (Western Link, Caithness–Moray, Shetland) and under-construction links
-  (Eastern Green Links, NeuConnect) shown dashed/faded.
+- **~60,000 generation sites across twenty-two grids on two continents** —
+  nuclear, gas, offshore/onshore wind, solar, hydro, pumped storage,
+  bioenergy, geothermal, battery storage and more — each sized by installed
+  capacity and coloured by fuel. Hover for a card with capacity, operator
+  and commissioning date; click to pin it. Station search on `/`.
+- **The transmission backbone of every grid** — from Hydro-Québec's 735 kV
+  to the Baltic 330 kV standard, styled by voltage class and streamed from
+  a single PMTiles vector archive (only the tiles in view download).
+- **55 HVDC links** — every operational interconnector plus in-country
+  reinforcements and under-construction links (dashed/faded). Links with a
+  known flow glow teal (importing) or amber (exporting), width tracking
+  utilisation.
+- **Live output, five sources, zero API keys in the browser** — GB per
+  station via Elexon (PN right now + the metered day, half-hourly); 19
+  European countries per station/mix via ENTSO-E snapshots; Ontario per
+  station via IESO's public report; Texas + New York fuel mixes via ERCOT
+  and NYISO. Refreshed every 6 hours by a scheduled workflow. Dots resize
+  by live output (bright) over capacity (ghost).
+- **Scrub the metered day** — a time slider plays any grid's day back:
+  station dots, the mix strip, HVDC flows and the wholesale-price line all
+  follow the slider. The default view shows *today so far*, hours old.
+- **Wholesale prices** — ENTSO-E day-ahead per bidding zone (averaged for
+  multi-zone countries) and GB's market-index price, in the mix strip.
 - **Legend-as-filter** — toggle any fuel group or network class; headline
   counts and GW totals track what's visible.
-- **Live output layer** — GB: per-station figures from the free, key-less
-  Elexon Insights API, fetched directly by the browser (the API is
-  CORS-open): scheduled output _right now_ (PN), the latest fully-metered
-  day (B1610: average/peak/energy + a half-hourly sparkline and load factor
-  in every hover card), live interconnector flows on the HVDC lines, and a
-  national transmission-mix strip (collapsible to a compact chip — it starts
-  collapsed on phones). EU: the six European grids show the latest ENTSO-E
-  metered day per station plus the daily generation mix, refreshed every
-  6 hours by a scheduled workflow. Dots resize by live output (bright) over
-  capacity (ghost); toggle it off in the sidebar.
 - **Self-contained dark basemap** (Natural Earth coastline) with an optional
   online CARTO raster underlay for street-level context.
 
@@ -124,9 +126,14 @@ Hydro-Québec's 735 kV network plus the Nelson River, Québec–New England,
 Labrador–Island and Maritime HVDC links) — plus a transatlantic ALL view that merges the
 lot. Each country is ~30 lines of config in `scripts/build-data.mjs` +
 `src/lib/countries.ts` plus its raw extracts — adding another is an
-afternoon, not a project. Live output: GB via Elexon (browser-side); every European grid via
-ENTSO-E snapshots (the Nordics and Italy are mix-only — their TSOs publish
-little per-unit data); a US live layer (EIA hourly API) is on the roadmap.
+afternoon, not a project. Live output: GB via Elexon (browser-side); every
+European grid via ENTSO-E snapshots (the Nordics and Italy are mix-only —
+their TSOs publish little per-unit data); Ontario per station via IESO's
+public report; Texas + New York fuel mixes via ERCOT and NYISO — every
+source free and key-less (only the workflow's ENTSO-E token needs a free
+account). Countries whose mappers tag single turbines instead of farms
+(FI/AT/EE) get synthetic wind-farm stations via
+`scripts/pbf-extract-generators.py` + `scripts/cluster-wind.mjs`.
 
 | Layer                  | Source                                                       | Notes                                                                                                                                                                                   |
 | ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -138,6 +145,10 @@ little per-unit data); a US live layer (EIA hourly API) is on the roadmap.
 | BMU → station map      | Elexon `reference/bmunits/all` + `scripts/build-bmu-map.mjs` | Fuzzy name match with fuel-type guards + manual overrides; ~87% of BM-registered capacity mapped (rest is mostly retired plant)                                                         |
 | Live output (GB)       | Elexon Insights API (browser-side)                           | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline |
 | Live output (EU)       | ENTSO-E Transparency API (scheduled workflow)                | A73 per-unit day series mapped to stations, A75 daily mix, A11 HVDC border flows → committed to `public/live/<cc>.json` every 6 h by `.github/workflows/live-snapshots.yml`             |
+| Live output (Canada)   | IESO Generator Output & Capability report (public, key-less) | Per-generator hourly XML → Ontario per-station day series + today-so-far mix, same snapshot shape as the EU                                                                             |
+| Live output (US)       | ERCOT fuel-mix JSON + NYISO rtfuelmix CSV (public, key-less) | Texas + New York hourly fuel mixes (≈⅓ of US generation), mix-only — no US ISO publishes per-plant output openly                                                                        |
+| Wholesale prices       | ENTSO-E A44 day-ahead + Elexon MID (GB)                      | Per bidding zone, averaged for multi-zone countries; today's prices ship with the snapshot (known since yesterday's auction)                                                            |
+| Transmission tiles     | `scripts/build-tiles.mjs` (tippecanoe → PMTiles)             | All 22 countries' lines in one committed range-requested archive; re-run after any `build-data` refresh                                                                                 |
 
 **Licences:** power data © OpenStreetMap contributors, ODbL; Natural Earth is
 public domain. Keep the attribution control visible if you deploy this.

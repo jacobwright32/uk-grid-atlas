@@ -27,6 +27,18 @@ if (!cc) {
 }
 const RAW_DIR = process.argv[3] ?? join(ROOT, '..', 'data')
 
+/**
+ * Parse one turbine's rating with a scale sanity clamp: bare numbers are
+ * often kW ("2000") or even watts in OSM, but no single turbine exceeds
+ * ~20 MW — divide by 1000 until plausible.
+ */
+function turbineMW(tag) {
+  let mw = parseCapacityMW(tag, { decimalComma: true })
+  if (mw == null) return null
+  while (mw > 20) mw /= 1000
+  return mw >= 0.05 ? mw : null
+}
+
 const LINK_KM = 1.5
 const MIN_TURBINES = 3
 const NEAR_EXISTING_KM = 0.6
@@ -40,7 +52,7 @@ const turbines = raw.elements
     lat: el.center?.lat ?? el.lat,
     name: el.tags?.name ?? null,
     operator: el.tags?.operator ?? null,
-    mw: parseCapacityMW(el.tags?.['generator:output:electricity'], { decimalComma: true }) ?? null,
+    mw: turbineMW(el.tags?.['generator:output:electricity']),
   }))
   .filter((t) => Number.isFinite(t.lon) && Number.isFinite(t.lat))
 
