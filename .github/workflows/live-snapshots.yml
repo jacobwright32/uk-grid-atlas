@@ -1,4 +1,4 @@
-name: Refresh European live snapshots
+name: Refresh live snapshots
 
 on:
   schedule:
@@ -27,6 +27,10 @@ jobs:
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
         run: node scripts/fetch-entsoe-snapshot.mjs all
+      - name: Fetch Canada snapshot (IESO, key-less)
+        run: node scripts/fetch-ca-snapshot.mjs || echo "IESO fetch failed — keeping previous ca.json"
+      - name: Fetch US snapshot (ERCOT + NYISO, key-less)
+        run: node scripts/fetch-us-snapshot.mjs || echo "US fetch failed — keeping previous us.json"
       - name: Commit refreshed snapshots
         id: commit
         run: |
