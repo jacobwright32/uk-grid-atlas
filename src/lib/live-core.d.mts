@@ -58,6 +58,8 @@ export interface MixDaySeries {
   /** FUELINST fuelType → 48 half-hourly MW values (null = no reading). */
   fuels: Record<string, (number | null)[]>
   imports: (number | null)[]
+  /** Per-interconnector series, keyed by map link id (+ = import). */
+  interconnectors: Record<string, (number | null)[]>
 }
 
 export declare function parseOutturnDay(payload: unknown): MixDaySeries | null

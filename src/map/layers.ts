@@ -83,12 +83,7 @@ export function stationLayers(source: string): LayerSpecification[] {
       paint: {
         'circle-color': fuelColorExpression() as Expr,
         'circle-radius': radiusExpression(),
-        'circle-opacity': [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          1,
-          0.85,
-        ] as Expr,
+        'circle-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0.85] as Expr,
         // Dark separation stroke normally; white ring for pumped storage
         // (secondary encoding) and on hover.
         'circle-stroke-color': [
@@ -163,6 +158,29 @@ export function interconnectorLayers(source: string): LayerSpecification[] {
         ] as Expr,
         'line-opacity': ['case', ['==', ['get', 'status'], 'construction'], 0.42, 0.85] as Expr,
         'line-dasharray': [2.4, 1.8],
+      },
+    },
+    {
+      // #43: links with a known flow glow solid over the dashed base —
+      // teal = importing into the page country, amber = exporting.
+      // Width tracks utilisation; exact MW lives in the hover card.
+      id: 'hvdc-flow',
+      type: 'line',
+      source,
+      filter: ['has', 'flowMW'],
+      layout: { 'line-cap': 'round' },
+      paint: {
+        'line-color': ['match', ['get', 'flowDir'], 'in', '#2dd4bf', '#e5a53a'] as Expr,
+        'line-width': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          4.5,
+          ['+', 1.2, ['*', 2.2, ['get', 'flowUtil']]] as Expr,
+          10,
+          ['+', 2.4, ['*', 4.2, ['get', 'flowUtil']]] as Expr,
+        ] as Expr,
+        'line-opacity': 0.9,
       },
     },
   ]

@@ -156,12 +156,19 @@ async function fetchMixAndFlows(cc, cfg, day) {
   const flows = {}
   const flowSeries = {}
   const importSeries = new Array(24).fill(null)
+  // This country's own control/bidding zones — used to orient shared borders.
+  const ownDomains = new Set([...cfg.unitDomains, ...cfg.mixDomains])
   for (const border of FLOW_BORDERS.filter((b) => b.countries.includes(cc))) {
     const [home, away] = border.pair
+    // Normalize signs per page country (#43): + always = import INTO cc.
+    // Shared borders list pair[0] of ONE side — flip when that isn't us
+    // (pre-fix, Fenno-Skan on #fi showed Sweden's perspective: imports
+    // counted as exports and vice versa).
+    const flip = ownDomains.has(home) ? 1 : -1
     const netHours = new Array(24).fill(null)
     for (const [outD, inD, sign] of [
-      [away, home, +1],
-      [home, away, -1],
+      [away, home, +flip],
+      [home, away, -flip],
     ]) {
       const doc = await client.get({
         documentType: 'A11',

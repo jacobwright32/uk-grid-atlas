@@ -131,6 +131,10 @@ describe('parseOutturnDay', () => {
     const day = parseOutturnDay(payload)!
     expect(day.fuels.WIND![0]).toBe(5200)
     expect(day.imports[0]).toBe(500)
+    // #43: per-link series, keyed by map id (INTFR → ifa), + = import
+    expect(day.interconnectors.ifa![0]).toBe(900)
+    expect(day.interconnectors.nsl![0]).toBe(-400)
+    expect(day.interconnectors.ifa![25]).toBeNull()
     expect(day.fuels.CCGT![25]).toBe(9000)
     expect(day.fuels.NOTAFUEL).toBeUndefined()
     expect(day.fuels.WIND![25]).toBeNull()

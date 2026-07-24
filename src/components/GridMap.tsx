@@ -266,6 +266,7 @@ export default function GridMap({
           : (['case', ['boolean', ['feature-state', 'hover'], false], 1, 0.85] as never),
       )
     }
+    applyFlowState(map)
     if (!live || !showLive) return
     // Feature ids from generateId are the feature's index in source order.
     data.stations.features.forEach((f, index) => {
@@ -279,6 +280,35 @@ export default function GridMap({
       }
       map.setFeatureState({ source: 'stations', id: index }, { liveMW: Math.max(0, mw) })
     })
+  }
+
+  // #43: normalized flows — the dashed HVDC base gets a solid overlay where a
+  // flow is known (+ = import into the page country), scrub-aware via
+  // flowSeries. Runs even for mix-only countries (they have flows, no dots).
+  const applyFlowState = (map: MLMap) => {
+    if (!readyRef.current) return
+    const src = map.getSource('interconnectors') as maplibregl.GeoJSONSource | undefined
+    if (!src) return
+    const flowsNow = live?.mix?.interconnectors ?? null
+    const series = live?.flowSeries ?? null
+    const wantFlows = liveMode && country.hasLive && (flowsNow || series)
+    const features = data.interconnectors.features.map((f) => {
+      if (!wantFlows || f.properties.status !== 'operational') return f
+      const id = f.properties.id as string
+      const mw = timeIndex != null ? (series?.[id]?.[timeIndex] ?? null) : (flowsNow?.[id] ?? null)
+      if (mw == null || Math.abs(mw) < 1) return f
+      const util = Math.min(1, Math.abs(mw) / Math.max(1, f.properties.capMW as number))
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          flowMW: Math.round(mw),
+          flowDir: mw >= 0 ? 'in' : 'out',
+          flowUtil: Math.round(util * 100) / 100,
+        },
+      }
+    })
+    src.setData({ type: 'FeatureCollection', features } as never)
   }
 
   useEffect(() => {

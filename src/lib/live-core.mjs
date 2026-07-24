@@ -164,6 +164,7 @@ export function parseOutturnDay(payload) {
   })
   const fuels = {}
   const imports = new Array(48).fill(null)
+  const interconnectors = {}
   for (const snap of payload) {
     const t = new Date(snap?.startTime ?? NaN)
     if (Number.isNaN(t.getTime())) continue
@@ -173,8 +174,11 @@ export function parseOutturnDay(payload) {
     let imp = null
     for (const r of snap.data ?? []) {
       if (!Number.isFinite(r?.generation)) continue
-      if (INT_TO_IC[r.fuelType]) {
+      const ic = INT_TO_IC[r.fuelType]
+      if (ic) {
         imp = (imp ?? 0) + r.generation
+        if (!interconnectors[ic]) interconnectors[ic] = new Array(48).fill(null)
+        interconnectors[ic][idx] = r.generation
         continue
       }
       if (!MIX_FUELS.some(([key]) => key === r.fuelType)) continue
@@ -183,7 +187,7 @@ export function parseOutturnDay(payload) {
     }
     if (imp != null) imports[idx] = Math.max(0, imp)
   }
-  return Object.keys(fuels).length ? { fuels, imports } : null
+  return Object.keys(fuels).length ? { fuels, imports, interconnectors } : null
 }
 
 /** Current GB settlement date + period (Europe/London local clock). */

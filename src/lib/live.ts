@@ -41,6 +41,8 @@ export interface LiveData {
   mixSeries: Record<string, (number | null)[]> | null
   /** HVDC import total per interval, aligned with mixSeries (#17). */
   importSeries: (number | null)[] | null
+  /** Per-link flow series over the metered day, + = import (#43). */
+  flowSeries: Record<string, (number | null)[]> | null
   /** Today's partial mix from ENTSO-E — fresher than the metered day (#18). */
   today: EntsoeToday | null
   /** 'live' = fetched now; 'snapshot' = bundled/committed fallback. */
@@ -69,6 +71,7 @@ interface EntsoeSnapshotFile {
   mixRows: import('./fleet').MixRow[]
   mixSeries?: Record<string, (number | null)[]>
   importSeries?: (number | null)[]
+  flowSeries?: Record<string, (number | null)[]>
   today?: EntsoeToday | null
   mix: MixSnapshot
 }
@@ -90,6 +93,7 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       mixRows: snap.mixRows,
       mixSeries: snap.mixSeries ?? null,
       importSeries: snap.importSeries ?? null,
+      flowSeries: snap.flowSeries ?? null,
       today: snap.today ?? null,
       source: 'live',
     }
@@ -241,6 +245,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
       mixRows: null,
       mixSeries: day?.mixDay ? foldMixDay(day.mixDay) : null,
       importSeries: day?.mixDay?.imports ?? null,
+      flowSeries: day?.mixDay?.interconnectors ?? null,
       today: null, // GB's default view is already instantaneous (FUELINST)
       source: 'live',
     }
@@ -256,6 +261,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     mixRows: null,
     mixSeries: null,
     importSeries: null,
+    flowSeries: null,
     today: null,
     source: 'snapshot',
   }
