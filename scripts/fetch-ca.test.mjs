@@ -1,7 +1,7 @@
 // IESO snapshot helper pins: stationStem drives every Ontario unit→station
 // match, so its stripping rules are load-bearing.
 import { describe, expect, it } from 'vitest'
-import { FUEL_COMPAT, FUEL_KEY, stationStem } from './fetch-ca-snapshot.mjs'
+import { FUEL_COMPAT, FUEL_KEY, parseZonalPrices, stationStem } from './fetch-ca-snapshot.mjs'
 import { BUCKET_META } from './snapshot-common.mjs'
 
 describe('stationStem', () => {
@@ -18,6 +18,42 @@ describe('stationStem', () => {
   })
   it('passes through names without designators', () => {
     expect(stationStem('PORTDOVER')).toBe('portdover')
+  })
+})
+
+describe('parseZonalPrices', () => {
+  const xml = (hours) => `<?xml version="1.0"?>
+    <Document xmlns="http://www.ieso.ca/schema">
+      <DocBody>
+        <DeliveryDate>2026-07-24</DeliveryDate>
+        ${hours
+          .map(
+            ([h, p]) => `<HourlyPriceComponents>
+              <PricingHour>${h}</PricingHour>
+              <ZonalPrice>${p}</ZonalPrice>
+              <LossPriceCapped>0.2</LossPriceCapped>
+            </HourlyPriceComponents>`,
+          )
+          .join('')}
+      </DocBody>
+    </Document>`
+
+  it('maps 1-based pricing hours onto 24 CAD slots', () => {
+    const out = parseZonalPrices(
+      xml([
+        [1, '33.04'],
+        [24, '-2.5'],
+      ]),
+    )
+    expect(out.currency).toBe('CAD')
+    expect(out.series[0]).toBeCloseTo(33.04)
+    expect(out.series[23]).toBeCloseTo(-2.5)
+    expect(out.series[5]).toBeNull()
+    expect(out.zones).toBe(1)
+  })
+  it('returns null for empty or junk documents', () => {
+    expect(parseZonalPrices(xml([]))).toBeNull()
+    expect(parseZonalPrices('<html>404</html>')).toBeNull()
   })
 })
 

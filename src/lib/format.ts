@@ -17,6 +17,15 @@ export function fmtCount(n: number): string {
   return n.toLocaleString('en-GB')
 }
 
+const CURRENCY_SIGNS: Record<string, string> = { EUR: '€', GBP: '£', PLN: 'zł', CAD: 'C$' }
+
+/** "42 €/MWh" · unknown currencies fall back to their code. */
+export function fmtPrice(v: number, currency: string): string {
+  const sign = CURRENCY_SIGNS[currency]
+  const n = Math.round(v)
+  return sign ? `${n} ${sign}/MWh` : `${n} ${currency}/MWh`
+}
+
 /** "combined_cycle" → "Combined cycle" ; "gas;oil" → "Gas · oil". */
 export function humanise(raw: string | null | undefined): string | null {
   if (!raw) return null

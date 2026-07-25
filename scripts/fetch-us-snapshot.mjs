@@ -18,11 +18,15 @@ import {
   accAdd,
   accKeys,
   accMeanSeries,
+  buildDayRecord,
   buildMixRows,
   compactDate,
+  historyDates,
+  hoursCovered,
   isoDaysAgo,
   makeHourlyAcc,
   meanCovered,
+  mergeHistory,
   throughHour,
 } from './snapshot-common.mjs'
 
@@ -222,6 +226,35 @@ async function main() {
     },
   }
   writeFileSync(join(OUT_DIR, 'us.json'), JSON.stringify(snapshot))
+
+  // Rolling history: ERCOT's dashboard only exposes ~2 days, so the month
+  // deepens one day per workflow run. A day is recorded only when BOTH ISOs
+  // have it (an ERCOT-only day would read as a nationwide generation dip);
+  // NYISO's archive is deep, so missed days heal on later runs.
+  try {
+    const histPath = join(OUT_DIR, 'history', 'us.json')
+    const have = new Set(historyDates(histPath))
+    const nyCache = { [yesterday]: nyYesterdayRaw }
+    let added = 0
+    for (const date of Object.keys(ercotDays).sort()) {
+      if (date === todayDate || have.has(date)) continue
+      const ny =
+        date in nyCache ? nyCache[date] : await fetchNyiso(compactDate(date)).catch(() => null)
+      if (!hasData(ny)) continue
+      const s = combine([ercotDays[date], ny])
+      if (hoursCovered(s) < 20) continue
+      mergeHistory(histPath, {
+        sourceLabel: 'ERCOT + NYISO',
+        day: buildDayRecord(date, rowsFrom(s), null, null),
+        hourly: { date, mixSeries: s, importSeries: null, prices: null },
+      })
+      added++
+    }
+    if (added) console.log(`us: history +${added} day(s)`)
+  } catch (err) {
+    console.warn(`us: history failed — ${err.message}`)
+  }
+
   console.log(
     `us: metered ${yesterday} · mix ${Math.round(meteredTotal / 100) / 10} GW avg (${sourceLabel})${
       today ? ` · today through ${String(today.throughHour).padStart(2, '0')}:00` : ''

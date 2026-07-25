@@ -25,13 +25,19 @@ import {
   accKeys,
   accSumSeries,
   asArray,
+  buildDayRecord,
   buildMixRows,
   buildStationDay,
   compactDate,
+  historyDates,
+  hoursCovered,
   isoDaysAgo,
   makeHourlyAcc,
   makeXmlParser,
   meanCovered,
+  mergeHistory,
+  missingDates,
+  priceAvg,
   throughHour,
 } from './snapshot-common.mjs'
 
@@ -100,8 +106,40 @@ async function fetchDay(dateCompact) {
   return { date, gens }
 }
 
+// ------------------------------------------------------------------ prices
+const PRICE_BASE = 'https://reports-public.ieso.ca/public/DAHourlyOntarioZonalPrice'
+
+/**
+ * Day-ahead Hourly Ontario Zonal Energy Price XML → 24-slot CAD series.
+ * Post-Market-Renewal Ontario has no HOEP; the DA zonal price is the
+ * consumer-facing hourly reference (published the afternoon before, so
+ * today's — and even tomorrow's — prices exist).
+ */
+export function parseZonalPrices(xmlText) {
+  const doc = makeXmlParser().parse(xmlText)
+  const comps = asArray(doc?.Document?.DocBody?.HourlyPriceComponents)
+  const series = new Array(24).fill(null)
+  for (const c of comps) {
+    const h = parseInt(c.PricingHour, 10)
+    const p = parseFloat(c.ZonalPrice)
+    if (h >= 1 && h <= 24 && Number.isFinite(p)) series[h - 1] = p
+  }
+  if (!series.some((v) => v != null)) return null
+  return { currency: 'CAD', series, zones: 1 }
+}
+
+async function fetchZonalPrices(dateCompact) {
+  const url = `${PRICE_BASE}/PUB_DAHourlyOntarioZonalPrice_${dateCompact}.xml`
+  const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(60_000) })
+  if (!res.ok) return null
+  return parseZonalPrices(await res.text())
+}
+
 // ------------------------------------------------------------------- main
 async function main() {
+  // --backfill N: one-off deep history fill (default window 7, catch-up cap 3)
+  const bfIdx = process.argv.indexOf('--backfill')
+  const backfillDays = bfIdx >= 0 ? Math.max(1, parseInt(process.argv[bfIdx + 1], 10) || 31) : null
   mkdirSync(OUT_DIR, { recursive: true })
 
   // ------------------------------------------------- station name matching
@@ -203,6 +241,12 @@ async function main() {
   const m = aggregate(metered)
   const t = todayData && todayData.date !== metered.date ? aggregate(todayData) : null
 
+  // Prices (#64): day-ahead Ontario zonal price for the metered day + today.
+  const prices = await fetchZonalPrices(compactDate(metered.date)).catch(() => null)
+  const todayPrices = todayData
+    ? await fetchZonalPrices(compactDate(todayData.date)).catch(() => null)
+    : null
+
   const snapshot = {
     version: 1,
     basis: 'entsoe', // same client contract as the European snapshots
@@ -214,7 +258,7 @@ async function main() {
     mixSeries: m.mixSeries,
     flowSeries: {},
     importSeries: new Array(24).fill(null),
-    prices: null,
+    prices,
     today:
       t && t.throughHour >= 3
         ? {
@@ -225,7 +269,7 @@ async function main() {
             importSeries: new Array(24).fill(null),
             totalMW: t.totalMW,
             importMW: 0,
-            prices: null,
+            prices: todayPrices,
           }
         : null,
     mix: {
@@ -237,6 +281,47 @@ async function main() {
     },
   }
   writeFileSync(join(OUT_DIR, 'ca.json'), JSON.stringify(snapshot))
+
+  // Rolling history: week of hourly series + month of daily averages. The
+  // metered day rides along free; missing recent days are fetched from
+  // IESO's dated archive (capped per incremental run; --backfill N deep-fills).
+  try {
+    const histPath = join(OUT_DIR, 'history', 'ca.json')
+    const record = (dayData, agg, price) => {
+      if (hoursCovered(agg.mixSeries) < 20) return false
+      mergeHistory(histPath, {
+        currency: price?.currency ?? null,
+        sourceLabel: 'IESO',
+        day: buildDayRecord(dayData.date, agg.mixRows, null, priceAvg(price?.series)),
+        hourly: {
+          date: dayData.date,
+          mixSeries: agg.mixSeries,
+          importSeries: null,
+          prices: price?.series ?? null,
+        },
+      })
+      return true
+    }
+    record(metered, m, prices)
+    const want = missingDates(
+      [...historyDates(histPath), metered.date],
+      1,
+      backfillDays ?? 7,
+    ).slice(0, backfillDays ?? 3)
+    let added = 0
+    for (const date of want) {
+      try {
+        const dayData = await fetchDay(compactDate(date))
+        const price = await fetchZonalPrices(compactDate(dayData.date)).catch(() => null)
+        if (record(dayData, aggregate(dayData), price)) added++
+      } catch {
+        // day not in the archive (or fetch hiccup) — retried next run
+      }
+    }
+    if (want.length) console.log(`ca: history +${added}/${want.length} day(s)`)
+  } catch (err) {
+    console.warn(`ca: history failed — ${err.message}`)
+  }
 
   const topUnmatched = [...unmatched.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)
   console.log(

@@ -1,6 +1,9 @@
 // Shared snapshot-helper tests (#52): the three live fetchers all lean on
 // these — a semantics change here would drift every baked snapshot at once.
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   BUCKET_META,
   FALLBACK_COLOR,
@@ -8,14 +11,21 @@ import {
   accAdd,
   accMeanSeries,
   accSumSeries,
+  buildDayRecord,
   buildMixRows,
   buildStationDay,
   compactDate,
   hourOfPosition,
+  hoursCovered,
+  importAvg,
   isoDaysAgo,
   makeHourlyAcc,
   meanCovered,
+  mergeHistory,
+  missingDates,
+  priceAvg,
   throughHour,
+  upsertHistory,
 } from './snapshot-common.mjs'
 
 describe('BUCKET_META', () => {
@@ -152,5 +162,82 @@ describe('dates', () => {
   })
   it('compactDate strips hyphens', () => {
     expect(compactDate('2026-07-24')).toBe('20260724')
+  })
+})
+
+describe('history', () => {
+  const day = (date, wind = 100) => ({
+    date,
+    mix: { wind },
+    importMW: null,
+    totalMW: wind,
+    price: null,
+  })
+  const hourly = (date) => ({ date, mixSeries: { wind: [] }, importSeries: null, prices: null })
+
+  it('upserts by date: appends new days, replaces re-run days, sorts', () => {
+    let h = upsertHistory(null, { day: day('2026-07-02'), currency: 'EUR' })
+    h = upsertHistory(h, { day: day('2026-07-01') })
+    h = upsertHistory(h, { day: day('2026-07-02', 999) }) // re-run replaces
+    expect(h.days.map((d) => d.date)).toEqual(['2026-07-01', '2026-07-02'])
+    expect(h.days[1].mix.wind).toBe(999)
+    expect(h.currency).toBe('EUR') // sticky when later patches omit it
+  })
+  it('trims to the window, dropping the oldest', () => {
+    let h = null
+    for (let i = 1; i <= 40; i++) {
+      const date = `2026-06-${String(i).padStart(2, '0')}` // fake but sortable
+      h = upsertHistory(h, { day: day(date), hourly: hourly(date) })
+    }
+    expect(h.days).toHaveLength(31)
+    expect(h.hourly).toHaveLength(7)
+    expect(h.days[0].date).toBe('2026-06-10')
+    expect(h.hourly[0].date).toBe('2026-06-34') // string-sorted fake dates
+  })
+  it('mergeHistory round-trips through disk and survives a corrupt file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'hist-'))
+    const path = join(dir, 'xx.json')
+    mergeHistory(path, { day: day('2026-07-01'), currency: 'EUR' })
+    const merged = mergeHistory(path, { day: day('2026-07-02') })
+    expect(merged.days).toHaveLength(2)
+    expect(merged.currency).toBe('EUR')
+    const onDisk = JSON.parse(readFileSync(path, 'utf8'))
+    expect(onDisk.days.map((d) => d.date)).toEqual(['2026-07-01', '2026-07-02'])
+    expect(onDisk.updatedAt).toBeTruthy()
+    rmSync(dir, { recursive: true, force: true })
+  })
+  it('buildDayRecord folds mixRows, skipping the imports row', () => {
+    const rec = buildDayRecord(
+      '2026-07-20',
+      [
+        { key: 'wind', nowMW: 3000 },
+        { key: 'gas', nowMW: 1000 },
+        { key: 'imports', nowMW: 500 },
+      ],
+      863.4,
+      42.074,
+    )
+    expect(rec.mix).toEqual({ wind: 3000, gas: 1000 })
+    expect(rec.totalMW).toBe(4000)
+    expect(rec.importMW).toBe(863)
+    expect(rec.price).toBe(42.07)
+  })
+  it('priceAvg / importAvg return null when nothing is covered', () => {
+    expect(priceAvg(null)).toBeNull()
+    expect(priceAvg(new Array(24).fill(null))).toBeNull()
+    expect(priceAvg([10, null, 20])).toBe(15)
+    expect(importAvg(new Array(24).fill(null))).toBeNull()
+    expect(importAvg([100, null, 200])).toBe(150)
+  })
+  it('missingDates lists the catch-up worklist', () => {
+    const have = [isoDaysAgo(1), isoDaysAgo(3)]
+    expect(missingDates(have, 1, 4)).toEqual([isoDaysAgo(2), isoDaysAgo(4)])
+  })
+  it('hoursCovered takes the best-covered bucket', () => {
+    const a = new Array(24).fill(null)
+    a[0] = 1
+    a[5] = 1
+    expect(hoursCovered({ a, b: new Array(24).fill(null) })).toBe(2)
+    expect(hoursCovered({})).toBe(0)
   })
 })

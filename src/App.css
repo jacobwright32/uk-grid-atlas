@@ -647,6 +647,94 @@
   margin-left: auto;
 }
 
+/* --------------------------------------------------- mix history (#64) */
+.mixstrip-range {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.mixstrip-range button {
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.mixstrip-range button:hover {
+  border-color: var(--ink-muted);
+}
+
+.mixstrip-range button.on {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+  border-color: var(--ink-muted);
+}
+
+.mixhistory-sub {
+  font-size: 11px;
+  color: var(--ink-2);
+  min-height: 14px;
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mixhistory-svg {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.mixhistory-dates {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--ink-muted);
+  margin-top: 3px;
+}
+
+.mixhistory-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--ink-2);
+}
+
+.mixhistory-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mixhistory-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.mixhistory-legend .mixhistory-priceswatch {
+  width: 12px;
+  height: 0;
+  border-top: 1.5px dashed #e8edf4;
+  border-radius: 0;
+}
+
+.mixhistory-empty {
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-align: center;
+  padding: 22px 0 18px;
+}
+
 /* ------------------------------------------------------------- live bits */
 .live-dot {
   width: 8px;

@@ -1,21 +1,18 @@
 import { useMemo } from 'react'
 import type { MixRow } from '../lib/fleet'
 import type { EntsoeToday } from '../lib/live'
+import type { HistoryFile } from '../lib/history'
 import type { MixSnapshot, PriceDay } from '../lib/live-core.mjs'
-import { fmtGW } from '../lib/format'
-
-const CURRENCY_SIGNS: Record<string, string> = { EUR: '€', GBP: '£', PLN: 'zł' }
-
-function fmtPrice(v: number, currency: string): string {
-  const sign = CURRENCY_SIGNS[currency]
-  const n = Math.round(v)
-  return sign ? `${n} ${sign}/MWh` : `${n} ${currency}/MWh`
-}
+import MixHistory from './MixHistory'
+import { fmtGW, fmtPrice } from '../lib/format'
 
 const priceAvg = (p: PriceDay): number | null => {
   const vals = p.series.filter((v): v is number => v != null)
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
 }
+
+export type MixRange = 'day' | 'week' | 'month'
+export type HistoryState = 'idle' | 'loading' | 'ready' | 'missing'
 
 interface Props {
   mix: MixSnapshot
@@ -34,6 +31,12 @@ interface Props {
   prices: PriceDay | null
   /** Data-source label for the legend ("ENTSO-E" unless the snapshot says). */
   sourceLabel: string | null
+  /** Mix time range (#64): day = the classic strip, week/month = history. */
+  range: MixRange
+  onRange: (r: MixRange) => void
+  /** Baked history file, loaded lazily on the first week/month switch. */
+  history: HistoryFile | null
+  historyState: HistoryState
   /** When set, a close button collapses the strip (App renders the reopen chip). */
   onClose?: () => void
 }
@@ -55,6 +58,10 @@ export default function MixStrip({
   today,
   prices,
   sourceLabel,
+  range,
+  onRange,
+  history,
+  historyState,
   onClose,
 }: Props) {
   const len = useMemo(() => {
@@ -129,13 +136,30 @@ export default function MixStrip({
     }
   }
 
+  const historyView = range !== 'day'
+  const rangeLabel: Record<MixRange, string> = { day: 'day', week: '7d', month: '31d' }
+
   return (
-    <div className="mixstrip" role="figure" aria-label="Current GB generation vs fleet capacity">
+    <div className="mixstrip" role="figure" aria-label={title}>
       <div className="mixstrip-head">
         <span className="mixstrip-title">
-          {title} · {subtitle}
+          {title} · {historyView ? (range === 'week' ? 'past week' : 'past month') : subtitle}
         </span>
-        <span className="mixstrip-total">{fmtGW(totalNow)}</span>
+        {!historyView && <span className="mixstrip-total">{fmtGW(totalNow)}</span>}
+        <span className="mixstrip-range" role="tablist" aria-label="Mix time range">
+          {(['day', 'week', 'month'] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              role="tab"
+              aria-selected={range === r}
+              className={range === r ? 'on' : undefined}
+              onClick={() => onRange(r)}
+            >
+              {rangeLabel[r]}
+            </button>
+          ))}
+        </span>
         {onClose && (
           <button
             type="button"
@@ -148,6 +172,56 @@ export default function MixStrip({
           </button>
         )}
       </div>
+      {historyView ? (
+        historyState === 'ready' && history ? (
+          <MixHistory history={history} range={range} />
+        ) : historyState === 'missing' ? (
+          <div className="mixhistory-empty">no history baked for this grid yet</div>
+        ) : (
+          <div className="mixhistory-empty">loading history…</div>
+        )
+      ) : (
+        <MixStripDay
+          shownRows={shownRows}
+          maxCap={maxCap}
+          scrubbing={scrubbing}
+          showToday={showToday}
+          mode={mode}
+          sourceLabel={sourceLabel}
+          scrubHH={scrubHH}
+          scrubMM={scrubMM}
+          priceText={priceText}
+        />
+      )}
+    </div>
+  )
+}
+
+interface DayProps {
+  shownRows: MixRow[]
+  maxCap: number
+  scrubbing: boolean
+  showToday: boolean
+  mode: 'live' | 'snapshot' | 'daily'
+  sourceLabel: string | null
+  scrubHH: string
+  scrubMM: string
+  priceText: string | null
+}
+
+function MixStripDay({
+  shownRows,
+  maxCap,
+  scrubbing,
+  showToday,
+  mode,
+  sourceLabel,
+  scrubHH,
+  scrubMM,
+  priceText,
+}: DayProps) {
+  return (
+    <>
       <div className="fleet-rows">
         {shownRows.map((r) => {
           const trackPct = (100 * Math.max(r.capMW, r.nowMW)) / maxCap
@@ -204,6 +278,6 @@ export default function MixStrip({
                 : 'solar & embedded not metered here'}
         </span>
       </div>
-    </div>
+    </>
   )
 }

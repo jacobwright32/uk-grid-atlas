@@ -11,6 +11,8 @@
  * pink storage colour) stay separate — this table is the *snapshot bucket*
  * palette shared by the three bakers.
  */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { XMLParser } from 'fast-xml-parser'
 
 export const UA = { 'User-Agent': 'grid-atlas/1.0 (open-data dashboard)' }
@@ -113,6 +115,117 @@ export function buildStationDay(series) {
     peakMW: Math.round(Math.max(...vals) * 10) / 10,
     energyGWh: Math.round(energyMWh / 100) / 10,
   }
+}
+
+// ------------------------------------------------------------- history
+/**
+ * Rolling per-country history file (public/live/history/<cc>.json):
+ *   { version, updatedAt, currency, sourceLabel,
+ *     days:   [{date, mix, importMW, totalMW, price}] oldest→newest ≤ maxDays,
+ *     hourly: [{date, mixSeries, importSeries, prices}] oldest→newest ≤ maxHourly }
+ * Each fetcher upserts its final metered days here every run (idempotent —
+ * re-running a day replaces it), so the month view maintains itself.
+ */
+export function upsertHistory(existing, { currency, sourceLabel, day, hourly }, opts = {}) {
+  const { maxDays = 31, maxHourly = 7 } = opts
+  const out = {
+    version: 1,
+    updatedAt: existing?.updatedAt ?? null,
+    currency: currency ?? existing?.currency ?? null,
+    sourceLabel: sourceLabel ?? existing?.sourceLabel ?? null,
+    days: [...(existing?.days ?? [])],
+    hourly: [...(existing?.hourly ?? [])],
+  }
+  const upsert = (list, rec) => {
+    if (!rec) return list
+    const i = list.findIndex((r) => r.date === rec.date)
+    if (i >= 0) list[i] = rec
+    else list.push(rec)
+    list.sort((a, b) => (a.date < b.date ? -1 : 1))
+    return list
+  }
+  out.days = upsert(out.days, day).slice(-maxDays)
+  out.hourly = upsert(out.hourly, hourly).slice(-maxHourly)
+  return out
+}
+
+/** Read → upsert → write history at path. Returns the merged object. */
+export function mergeHistory(path, patch, opts) {
+  let existing = null
+  if (existsSync(path)) {
+    try {
+      existing = JSON.parse(readFileSync(path, 'utf8'))
+    } catch {
+      existing = null // corrupt file — rebuild from this run onward
+    }
+  }
+  const merged = upsertHistory(existing, patch, opts)
+  merged.updatedAt = new Date().toISOString()
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, JSON.stringify(merged))
+  return merged
+}
+
+/**
+ * Day record for history.days from the pieces every fetcher already has.
+ * mixRows: MixRow[] (the imports row is skipped); importMW/price may be null.
+ */
+export function buildDayRecord(date, mixRows, importMW, price) {
+  const mix = {}
+  let totalMW = 0
+  for (const r of mixRows) {
+    if (r.key === 'imports') continue
+    mix[r.key] = r.nowMW
+    totalMW += r.nowMW
+  }
+  return {
+    date,
+    mix,
+    importMW: importMW == null ? null : Math.round(importMW),
+    totalMW,
+    price: price == null ? null : Math.round(price * 100) / 100,
+  }
+}
+
+/** Day-average price from an hourly series (null when nothing covered). */
+export function priceAvg(series) {
+  if (!series || !series.some((v) => v != null)) return null
+  return Math.round(meanCovered(series) * 100) / 100
+}
+
+/** Net-import day average, null when the country has no flow data at all. */
+export function importAvg(importSeries) {
+  if (!importSeries || !importSeries.some((v) => v != null)) return null
+  return Math.round(meanCovered(importSeries))
+}
+
+/** Dates already recorded in a history file's days (empty on missing/corrupt). */
+export function historyDates(path) {
+  if (!existsSync(path)) return []
+  try {
+    return (JSON.parse(readFileSync(path, 'utf8')).days ?? []).map((d) => d.date)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * ISO dates from `backFrom`..`backTo` days ago (inclusive) that are missing
+ * from `haveDates` — the catch-up worklist for incremental history runs.
+ */
+export function missingDates(haveDates, backFrom, backTo) {
+  const have = new Set(haveDates)
+  const out = []
+  for (let back = backFrom; back <= backTo; back++) {
+    const d = isoDaysAgo(back)
+    if (!have.has(d)) out.push(d)
+  }
+  return out
+}
+
+/** How many hours of a day's mixSeries are covered (max across buckets). */
+export function hoursCovered(mixSeries) {
+  return Math.max(...Object.values(mixSeries).map((s) => s.filter((v) => v != null).length), 0)
 }
 
 /**

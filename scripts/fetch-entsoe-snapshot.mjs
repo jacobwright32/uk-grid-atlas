@@ -30,11 +30,17 @@ import {
   accKeys,
   accMeanSeries,
   accSumSeries,
+  buildDayRecord,
   buildMixRows,
+  historyDates,
   hourOfPosition,
+  importAvg,
   isoDaysAgo,
   makeHourlyAcc,
   meanCovered,
+  mergeHistory,
+  missingDates,
+  priceAvg,
   throughHour,
 } from './snapshot-common.mjs'
 
@@ -52,8 +58,11 @@ if (!token) {
 }
 const client = new EntsoeClient(token)
 
-const target = process.argv[2] ?? 'all'
+const target = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'all'
 const countryIds = target === 'all' ? Object.keys(ENTSOE_COUNTRIES) : [target]
+// --backfill N: one-off deep history fill (default window 7, catch-up cap 3)
+const bfIdx = process.argv.indexOf('--backfill')
+const backfillDays = bfIdx >= 0 ? Math.max(1, parseInt(process.argv[bfIdx + 1], 10) || 31) : null
 
 // --------------------------------------------------- unit → station mapping
 function stationIndexFor(cc) {
@@ -237,6 +246,30 @@ async function fetchPrices(cfg, day) {
   return { currency, series, zones: zones.length }
 }
 
+// ---------------------------------------------------------------- history
+/**
+ * Record one final day into history/<cc>.json (week of hourly series, month
+ * of daily averages). `pre` passes the already-fetched metered day so the
+ * snapshot's own fetch is reused. Days covered less than 20 hours are left
+ * out — they stay "missing" and the next run retries them once complete.
+ */
+async function recordHistoryDay(cc, cfg, histPath, date, pre = null) {
+  const t = pre?.t ?? (await fetchMixAndFlows(cc, cfg, date))
+  if (t.hoursCovered < 20) return false
+  const p = pre ? pre.p : await fetchPrices(cfg, date).catch(() => null)
+  mergeHistory(histPath, {
+    currency: p?.currency ?? null,
+    day: buildDayRecord(date, t.mixRows, importAvg(t.importSeries), priceAvg(p?.series)),
+    hourly: {
+      date,
+      mixSeries: t.mixSeries,
+      importSeries: t.importSeries.some((v) => v != null) ? t.importSeries : null,
+      prices: p?.series ?? null,
+    },
+  })
+  return true
+}
+
 // --------------------------------------------------------------- main loop
 for (const cc of countryIds) {
   const cfg = ENTSOE_COUNTRIES[cc]
@@ -347,8 +380,8 @@ for (const cc of countryIds) {
     // 4+5. Mix (A75) + border flows (A11) for the metered day: hourly series
     // (#17 scrub) and day averages derived from them. The same fetch runs
     // again for today's partial day (#18 intraday, below).
-    const { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW } =
-      await fetchMixAndFlows(cc, cfg, day)
+    const metered = await fetchMixAndFlows(cc, cfg, day)
+    const { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW } = metered
     const prices = await fetchPrices(cfg, day).catch(() => null)
 
     // 6. Intraday (#18): today's partial mix, when the TSO has published
@@ -400,6 +433,26 @@ for (const cc of countryIds) {
       },
     }
     writeFileSync(join(OUT_DIR, `${cc}.json`), JSON.stringify(snapshot))
+
+    // 7. Rolling history: week of hourly series + month of daily averages.
+    // The metered day rides along free; missing recent days are back-filled
+    // (capped per incremental run so the 6-hourly workflow stays quick).
+    try {
+      const histPath = join(OUT_DIR, 'history', `${cc}.json`)
+      await recordHistoryDay(cc, cfg, histPath, day, { t: metered, p: prices })
+      const want = missingDates([...historyDates(histPath), day], 1, backfillDays ?? 7).slice(
+        0,
+        backfillDays ?? 3,
+      )
+      let added = 0
+      for (const date of want) {
+        if (await recordHistoryDay(cc, cfg, histPath, date).catch(() => false)) added++
+      }
+      if (want.length) console.log(`${cc}: history +${added}/${want.length} day(s)`)
+    } catch (err) {
+      console.warn(`${cc}: history failed — ${err.message}`)
+    }
+
     console.log(
       `${cc}: day ${day} · ${Object.keys(perStation).length} stations · mix ${
         Math.round(totalMW / 100) / 10

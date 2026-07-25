@@ -5,8 +5,11 @@ import TimeSlider from './components/TimeSlider'
 import type { SearchTarget } from './components/SearchBox'
 import Sidebar from './components/Sidebar'
 import MixStrip from './components/MixStrip'
+import type { HistoryState, MixRange } from './components/MixStrip'
 import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
+import { loadHistory } from './lib/history'
+import type { HistoryFile } from './lib/history'
 import { COUNTRIES, countryFromHash, DEFAULT_COUNTRY } from './lib/countries'
 import type { CountryId } from './lib/countries'
 import { allGroupIds, computeStats, totalsFor } from './lib/filter'
@@ -43,6 +46,32 @@ export default function App() {
   // Metered-day scrub (#17): null = live/day-average as before.
   const [timeIndex, setTimeIndex] = useState<number | null>(null)
   const [playing, setPlaying] = useState(false)
+  // Mix history (#64): week/month views load their baked file lazily. The
+  // in-flight country lives in a ref — state alone would re-run the effect
+  // and its cleanup would mark the fetch stale before it ever resolved.
+  const [mixRange, setMixRange] = useState<MixRange>('day')
+  const [history, setHistory] = useState<HistoryFile | null>(null)
+  const [historyState, setHistoryState] = useState<HistoryState>('idle')
+  const historyReq = useRef<CountryId | null>(null)
+
+  useEffect(() => {
+    // Country switch: back to the day view, drop the old country's history.
+    historyReq.current = null
+    setMixRange('day')
+    setHistory(null)
+    setHistoryState('idle')
+  }, [countryId])
+
+  useEffect(() => {
+    if (mixRange === 'day' || historyState !== 'idle' || historyReq.current === countryId) return
+    historyReq.current = countryId
+    setHistoryState('loading')
+    loadHistory(countryId).then((h) => {
+      if (historyReq.current !== countryId) return // switched away meanwhile
+      setHistory(h)
+      setHistoryState(h ? 'ready' : 'missing')
+    })
+  }, [mixRange, historyState, countryId])
   // Country switcher scroll affordance: fade the clipped edge(s).
   const switchRef = useRef<HTMLDivElement>(null)
   const [switchFades, setSwitchFades] = useState({ l: false, r: false })
@@ -294,6 +323,10 @@ export default function App() {
                 today={live.today}
                 prices={live.prices}
                 sourceLabel={live.sourceLabel}
+                range={mixRange}
+                onRange={setMixRange}
+                history={history}
+                historyState={historyState}
                 mode={
                   live.basis === 'entsoe'
                     ? 'daily'

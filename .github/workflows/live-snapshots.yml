@@ -31,6 +31,8 @@ jobs:
         run: node scripts/fetch-ca-snapshot.mjs || echo "IESO fetch failed — keeping previous ca.json"
       - name: Fetch US snapshot (ERCOT + NYISO, key-less)
         run: node scripts/fetch-us-snapshot.mjs || echo "US fetch failed — keeping previous us.json"
+      - name: Fetch GB history (Elexon, key-less)
+        run: node scripts/fetch-gb-history.mjs || echo "GB history fetch failed — keeping previous gb.json"
       - name: Commit refreshed snapshots
         id: commit
         run: |
