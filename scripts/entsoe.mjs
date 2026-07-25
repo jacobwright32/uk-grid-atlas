@@ -11,6 +11,7 @@
  *   A11     cross-border physical flows  → interconnector flows
  */
 import { XMLParser } from 'fast-xml-parser'
+import { jaccard, stemTokens, tokens } from './live-matching.mjs'
 
 const BASE = 'https://web-api.tp.entsoe.eu/api'
 
@@ -221,6 +222,41 @@ export const PSR_COMPAT = {
   B18: ['wind_offshore', 'wind_onshore'],
   B19: ['wind_onshore', 'wind_offshore'],
   B20: ['storage', 'gas', 'oil', 'other', 'bioenergy', 'waste', 'marine', 'hydro', 'solar'],
+}
+
+/**
+ * Orient one border's two A11 queries for a page country (#43/#57).
+ * FLOW_BORDERS lists pair[0] from ONE side's perspective; when that side
+ * isn't the page country the sign flips, so + is always import INTO the
+ * country being rendered. Returns [outDomain, inDomain, sign] triples.
+ * (Pre-fix, Fenno-Skan on #fi showed Sweden's perspective: imports counted
+ * as exports and vice versa — this is the regression-tested extraction.)
+ */
+export function orientFlow(border, ownDomains) {
+  const [home, away] = border.pair
+  const flip = ownDomains.has(home) ? 1 : -1
+  return [
+    [away, home, +flip],
+    [home, away, -flip],
+  ]
+}
+
+/**
+ * Fuzzy-match one ENTSO-E unit name against the OSM station index, gated by
+ * PSR type compatibility (#56) — a wind unit never lands on a gas station,
+ * however similar the names.
+ */
+export function matchByName(index, name, psrType) {
+  const compat = PSR_COMPAT[psrType] ?? PSR_COMPAT.B20
+  const unitToks = tokens(name)
+  const stem = stemTokens(unitToks)
+  let best = null
+  for (const st of index) {
+    if (!compat.includes(st.fuel)) continue
+    const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
+    if (score >= 0.5 && (!best || score > best.score)) best = { id: st.id, score }
+  }
+  return best?.id ?? null
 }
 
 const YMDHM = (d) =>

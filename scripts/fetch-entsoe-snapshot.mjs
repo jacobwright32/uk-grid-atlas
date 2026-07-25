@@ -17,14 +17,15 @@ import {
   EntsoeClient,
   FLOW_BORDERS,
   PSR_BUCKETS,
-  PSR_COMPAT,
   dayWindow,
+  matchByName,
+  orientFlow,
   parsePriceSeries,
   parseSeries,
   stationDayFromSeries,
 } from './entsoe.mjs'
 import { INTERCONNECTORS } from './interconnectors.mjs'
-import { jaccard, stemTokens, tokens } from './live-matching.mjs'
+import { tokens } from './live-matching.mjs'
 import {
   accAdd,
   accKeys,
@@ -79,19 +80,6 @@ function stationIndexFor(cc) {
 function overridesFor(cc) {
   const overridesPath = join(MAP_DIR, `${cc}-overrides.json`)
   return existsSync(overridesPath) ? JSON.parse(readFileSync(overridesPath, 'utf8')) : {}
-}
-
-function matchByName(index, name, psrType) {
-  const compat = PSR_COMPAT[psrType] ?? PSR_COMPAT.B20
-  const unitToks = tokens(name)
-  const stem = stemTokens(unitToks)
-  let best = null
-  for (const st of index) {
-    if (!compat.includes(st.fuel)) continue
-    const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
-    if (score >= 0.5 && (!best || score > best.score)) best = { id: st.id, score }
-  }
-  return best?.id ?? null
 }
 
 function buildUnitMap(index, overrides, units) {
@@ -201,17 +189,10 @@ async function fetchMixAndFlows(cc, cfg, day) {
   // This country's own control/bidding zones — used to orient shared borders.
   const ownDomains = new Set([...cfg.unitDomains, ...cfg.mixDomains])
   for (const border of FLOW_BORDERS.filter((b) => b.countries.includes(cc))) {
-    const [home, away] = border.pair
-    // Normalize signs per page country (#43): + always = import INTO cc.
-    // Shared borders list pair[0] of ONE side — flip when that isn't us
-    // (pre-fix, Fenno-Skan on #fi showed Sweden's perspective: imports
-    // counted as exports and vice versa).
-    const flip = ownDomains.has(home) ? 1 : -1
+    // Normalize signs per page country (#43): + always = import INTO cc —
+    // extracted to orientFlow() and regression-tested (#57).
     const netHours = new Array(24).fill(null)
-    for (const [outD, inD, sign] of [
-      [away, home, +flip],
-      [home, away, -flip],
-    ]) {
+    for (const [outD, inD, sign] of orientFlow(border, ownDomains)) {
       const doc = await client.get({
         documentType: 'A11',
         out_Domain: outD,

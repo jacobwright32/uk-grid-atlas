@@ -16,7 +16,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm run test
+      # Coverage is report-only (#63): the summary lands in the job log so
+      # drift is visible; thresholds can gate later once the floor settles.
+      - run: npx vitest run --coverage
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:

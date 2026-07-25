@@ -9,10 +9,13 @@ import {
   PSR_BUCKETS,
   PSR_COMPAT,
   dayWindow,
+  matchByName,
+  orientFlow,
   parsePriceSeries,
   parseSeries,
   stationDayFromSeries,
 } from './entsoe.mjs'
+import { tokens } from './live-matching.mjs'
 import { INTERCONNECTORS } from './interconnectors.mjs'
 import { BUCKET_META, makeXmlParser } from './snapshot-common.mjs'
 
@@ -185,6 +188,57 @@ describe('dayWindow', () => {
     })
     expect(dayWindow('2026-01-31').periodEnd).toBe('202602010000')
     expect(dayWindow('2026-12-31').periodEnd).toBe('202701010000')
+  })
+})
+
+describe('orientFlow (#57)', () => {
+  // Fenno-Skan: FLOW_BORDERS lists the pair from Sweden's side (SE3 first).
+  const fennoSkan = FLOW_BORDERS.find((b) => b.links.includes('fenno-skan'))
+  const SE3 = '10Y1001A1001A46L'
+  const FI = '10YFI-1--------U'
+
+  it('keeps the listed perspective when the page country owns pair[0]', () => {
+    const se = new Set(['10Y1001A1001A44P', '10Y1001A1001A45N', SE3, '10Y1001A1001A47J'])
+    expect(orientFlow(fennoSkan, se)).toEqual([
+      [FI, SE3, 1], // Finland → Sweden counts as Swedish import
+      [SE3, FI, -1],
+    ])
+  })
+  it('flips signs for the other side of a shared border (the #fi bug)', () => {
+    const fi = new Set([FI])
+    expect(orientFlow(fennoSkan, fi)).toEqual([
+      [FI, SE3, -1], // Finland → Sweden is a Finnish EXPORT
+      [SE3, FI, 1], // Sweden → Finland is the Finnish import
+    ])
+  })
+  it('both query directions cover the border exactly once each way', () => {
+    for (const border of FLOW_BORDERS) {
+      const specs = orientFlow(border, new Set(border.pair.slice(0, 1)))
+      const pairs = specs.map(([o, i]) => `${o}→${i}`)
+      expect(new Set(pairs).size).toBe(2)
+      expect(specs[0][2] + specs[1][2]).toBe(0) // opposite signs
+    }
+  })
+})
+
+describe('matchByName (#56)', () => {
+  const index = [
+    { id: 'olkiluoto', fuel: 'nuclear', toks: tokens('Olkiluoto nuclear power plant') },
+    { id: 'luenen', fuel: 'gas', toks: tokens('Kraftwerk Lünen') },
+    { id: 'ajos', fuel: 'wind_onshore', toks: tokens('Ajos tuulipuisto') },
+  ]
+  it('matches units to stations through the multilingual tokeniser', () => {
+    expect(matchByName(index, 'Olkiluoto 3', 'B14')).toBe('olkiluoto')
+    expect(matchByName(index, 'LUENEN', 'B04')).toBe('luenen') // ENTSO-E spells the umlaut out
+  })
+  it('PSR compatibility gates out same-name different-fuel stations', () => {
+    // a wind unit named like the gas plant must not land on it
+    expect(matchByName(index, 'Luenen', 'B19')).toBeNull()
+    // and a nuclear unit can never land on wind
+    expect(matchByName(index, 'Ajos', 'B14')).toBeNull()
+  })
+  it('returns null below the similarity threshold', () => {
+    expect(matchByName(index, 'Meri-Pori', 'B14')).toBeNull()
   })
 })
 
