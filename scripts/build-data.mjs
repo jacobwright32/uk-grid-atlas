@@ -1,7 +1,7 @@
 /**
  * build-data.mjs — turn raw Overpass extracts into per-country GeoJSON bundles.
  *
- *   node scripts/build-data.mjs <country> [rawDir]     country: gb | nl
+ *   node scripts/build-data.mjs <country> [rawDir]     country: any COUNTRIES key below
  *
  * Inputs  (RAW_DIR): country-specific raw extracts (see COUNTRIES below)
  * Outputs (src/data/<country>/): stations.json, transmission.json,

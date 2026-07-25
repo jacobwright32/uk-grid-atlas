@@ -43,6 +43,7 @@ import {
   mergeHistory,
   missingDates,
   priceAvg,
+  readHistory,
   stationSeriesOnly,
   throughHour,
 } from './snapshot-common.mjs'
@@ -464,7 +465,23 @@ for (const cc of countryIds) {
       const dailyWant = backfillDays
         ? missingDates([...historyDates(histPath), day], 8, backfillDays)
         : []
-      const want = [...hourlyWant, ...dailyWant].slice(0, backfillDays ?? 3)
+      // Self-heal partial publications: a day recorded while the TSO had
+      // published only some of its A73 units keeps a degraded perStation set
+      // (DE lags days and fills in piecemeal). Recent days with fewer
+      // stations than the file's best get re-recorded until they settle.
+      const hist = readHistory(histPath)
+      const stationsOf = (r) => Object.keys(r.perStation ?? {}).length
+      const maxStations = Math.max(0, ...(hist?.hourly ?? []).map(stationsOf))
+      const degraded = maxStations
+        ? (hist?.hourly ?? [])
+            .filter((r) => stationsOf(r) < maxStations)
+            .map((r) => r.date)
+            .filter((d) => d >= isoDaysAgo(5) && d !== day)
+        : []
+      const want = [...new Set([...hourlyWant, ...degraded, ...dailyWant])].slice(
+        0,
+        backfillDays ?? 3,
+      )
       let added = 0
       for (const date of want) {
         // Beyond the 7-day hourly window the record is trimmed to its daily
