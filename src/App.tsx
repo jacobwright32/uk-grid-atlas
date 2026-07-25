@@ -382,6 +382,7 @@ export default function App() {
                 importSeries={live.importSeries}
                 today={live.today}
                 prices={live.prices}
+                demandSeries={live.demandSeries}
                 sourceLabel={live.sourceLabel}
                 range={mixRange}
                 onRange={setMixRange}

@@ -47,6 +47,13 @@ describe('stitchHourly', () => {
     expect(gas[24]).toBeNull() // the missing day stays visible
     expect(gas[48]).toBe(700)
   })
+  it('stitches the demand line like any aux series (#24)', () => {
+    const withDemand = { ...hourly('2026-07-24', { gas: 1 }), demand: new Array(24).fill(7000) }
+    const out = stitchHourly([hourly('2026-07-23', { gas: 1 }), withDemand])
+    expect(out.demand?.[0]).toBeNull()
+    expect(out.demand?.[24]).toBe(7000)
+    expect(stitchHourly([hourly('2026-07-23', { gas: 1 })]).demand).toBeNull()
+  })
   it('propagates prices only when some day has them', () => {
     const none = stitchHourly([hourly('2026-07-23', { gas: 1 })])
     expect(none.prices).toBeNull()

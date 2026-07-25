@@ -128,10 +128,11 @@ export function buildStationDay(series) {
  * re-running a day replaces it), so the month view maintains itself.
  *
  * v2 added perStation/flowSeries to hourly records (week scrub on the map);
- * upserting into a v1 file keeps its days but drops the hourly records, so
- * the normal missing-hourly catch-up refetches the week in the new shape.
+ * v3 added demand (#24). Upserting into an older file keeps its days but
+ * drops the hourly records, so the normal missing-hourly catch-up refetches
+ * the week in the new shape.
  */
-export const HISTORY_VERSION = 2
+export const HISTORY_VERSION = 3
 
 export function upsertHistory(existing, { currency, sourceLabel, day, hourly }, opts = {}) {
   const { maxDays = 31, maxHourly = 7 } = opts
@@ -178,7 +179,7 @@ export function mergeHistory(path, patch, opts) {
  * Day record for history.days from the pieces every fetcher already has.
  * mixRows: MixRow[] (the imports row is skipped); importMW/price may be null.
  */
-export function buildDayRecord(date, mixRows, importMW, price) {
+export function buildDayRecord(date, mixRows, importMW, price, demandMW = null) {
   const mix = {}
   let totalMW = 0
   for (const r of mixRows) {
@@ -192,6 +193,7 @@ export function buildDayRecord(date, mixRows, importMW, price) {
     importMW: importMW == null ? null : Math.round(importMW),
     totalMW,
     price: price == null ? null : Math.round(price * 100) / 100,
+    demandMW: demandMW == null ? null : Math.round(demandMW),
   }
 }
 

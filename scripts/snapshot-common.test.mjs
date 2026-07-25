@@ -228,11 +228,14 @@ describe('history', () => {
       ],
       863.4,
       42.074,
+      4123.6,
     )
     expect(rec.mix).toEqual({ wind: 3000, gas: 1000 })
     expect(rec.totalMW).toBe(4000)
     expect(rec.importMW).toBe(863)
     expect(rec.price).toBe(42.07)
+    expect(rec.demandMW).toBe(4124)
+    expect(buildDayRecord('d', [], null, null).demandMW).toBeNull()
   })
   it('priceAvg / importAvg return null when nothing is covered', () => {
     expect(priceAvg(null)).toBeNull()

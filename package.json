@@ -11,6 +11,7 @@
     "lint": "oxlint",
     "format": "prettier -w .",
     "test": "vitest run",
+    "test:e2e": "node scripts/e2e-smoke.mjs",
     "test:watch": "vitest",
     "data:fetch": "node scripts/fetch-overpass.mjs",
     "data:build": "node scripts/build-data.mjs",
@@ -32,6 +33,8 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
@@ -40,6 +43,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
     "fast-xml-parser": "^5.10.1",
+    "jsdom": "^29.1.1",
     "oxlint": "^1.71.0",
     "playwright-core": "^1.61.1",
     "prettier": "^3.9.6",

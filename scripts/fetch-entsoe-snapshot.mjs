@@ -234,6 +234,43 @@ async function fetchMixAndFlows(cc, cfg, day) {
 }
 
 /**
+ * Actual total load (A65) for one day, summed across the country's bidding
+ * zones — the demand line the mix stacks against (#24). Null when the TSO
+ * hasn't published.
+ */
+async function fetchDemandDay(cfg, day) {
+  const acc = makeHourlyAcc()
+  for (const domain of cfg.mixDomains) {
+    const doc = await client.get({
+      documentType: 'A65',
+      processType: 'A16',
+      outBiddingZone_Domain: domain,
+      ...dayWindow(day),
+    })
+    for (const s of parseSeries(doc ?? {})) {
+      const portion = s.stepMin / 60
+      for (const p of s.points) {
+        accAdd(acc, 'demand', hourOfPosition(p.position, s.stepMin), p.mw, portion)
+      }
+    }
+  }
+  const series = accSumSeries(acc, 'demand')
+  return series?.some((v) => v != null)
+    ? series.map((v) => (v == null ? null : Math.round(v)))
+    : null
+}
+
+/** Patch one existing history day record in place (cheap demand backfill). */
+function patchHistoryDay(histPath, date, fields) {
+  const h = readHistory(histPath)
+  const rec = h?.days?.find((r) => r.date === date)
+  if (!rec) return false
+  Object.assign(rec, fields)
+  writeFileSync(histPath, JSON.stringify(h))
+  return true
+}
+
+/**
  * Day-ahead prices (A44) for one day, averaged across the country's bidding
  * zones per hour. Multi-currency countries keep the majority currency's
  * zones. Returns { currency, series[24], zones } or null when unpublished.
@@ -294,6 +331,8 @@ async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
   const t = pre?.t ?? (await fetchMixAndFlows(cc, cfg, date))
   if (t.hoursCovered < 20) return false
   const p = pre ? pre.p : await fetchPrices(cfg, date).catch(() => null)
+  const demand =
+    pre?.demand !== undefined ? pre.demand : await fetchDemandDay(cfg, date).catch(() => null)
   let perStation = pre?.perStation ?? null
   if (!perStation && ctx) {
     const units = await fetchUnitsDay(cfg, date).catch(() => [])
@@ -303,7 +342,13 @@ async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
   }
   mergeHistory(histPath, {
     currency: p?.currency ?? null,
-    day: buildDayRecord(date, t.mixRows, importAvg(t.importSeries), priceAvg(p?.series)),
+    day: buildDayRecord(
+      date,
+      t.mixRows,
+      importAvg(t.importSeries),
+      priceAvg(p?.series),
+      demand ? meanCovered(demand) : null,
+    ),
     hourly: {
       date,
       mixSeries: t.mixSeries,
@@ -311,6 +356,7 @@ async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
       prices: p?.series ?? null,
       perStation: stationSeriesOnly(perStation),
       flowSeries: Object.keys(t.flowSeries).length ? t.flowSeries : null,
+      demand: demand ?? null,
     },
   })
   return true
@@ -398,6 +444,7 @@ for (const cc of countryIds) {
     const metered = await fetchMixAndFlows(cc, cfg, day)
     const { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW } = metered
     const prices = await fetchPrices(cfg, day).catch(() => null)
+    const demandSeries = await fetchDemandDay(cfg, day).catch(() => null)
 
     // 6. Intraday (#18): today's partial mix, when the TSO has published
     // at least a few hours. Shown as the default strip; the metered day
@@ -409,9 +456,11 @@ for (const cc of countryIds) {
         const t = await fetchMixAndFlows(cc, cfg, todayDate)
         if (t.hoursCovered >= 3) {
           const todayPrices = await fetchPrices(cfg, todayDate).catch(() => null)
+          const todayDemand = await fetchDemandDay(cfg, todayDate).catch(() => null)
           today = {
             date: todayDate,
             prices: todayPrices,
+            demandSeries: todayDemand,
             throughHour: throughHour(t.mixSeries),
             mixRows: t.mixRows,
             mixSeries: t.mixSeries,
@@ -436,6 +485,7 @@ for (const cc of countryIds) {
       flowSeries,
       importSeries,
       prices,
+      demandSeries,
       today,
       mix: {
         time: `${day}T12:00:00Z`,
@@ -460,6 +510,7 @@ for (const cc of countryIds) {
         t: metered,
         p: prices,
         perStation,
+        demand: demandSeries,
       })
       const hourlyWant = missingDates([...hourlyDates(histPath), day], 1, 7)
       const dailyWant = backfillDays
@@ -490,6 +541,19 @@ for (const cc of countryIds) {
         if (await recordHistoryDay(cc, cfg, histPath, date, dayCtx).catch(() => false)) added++
       }
       if (want.length) console.log(`${cc}: history +${added}/${want.length} day(s)`)
+      // Cheap demand backfill (#24): month days recorded before demand
+      // existed get just their A65 average patched in — no full refetch.
+      const needDemand = (readHistory(histPath)?.days ?? [])
+        .filter((r) => r.demandMW === undefined)
+        .map((r) => r.date)
+        .slice(0, backfillDays ?? 3)
+      let patched = 0
+      for (const date of needDemand) {
+        const d = await fetchDemandDay(cfg, date).catch(() => null)
+        if (patchHistoryDay(histPath, date, { demandMW: d ? Math.round(meanCovered(d)) : null }))
+          patched++
+      }
+      if (needDemand.length) console.log(`${cc}: demand patched ${patched}/${needDemand.length}`)
     } catch (err) {
       console.warn(`${cc}: history failed — ${err.message}`)
     }

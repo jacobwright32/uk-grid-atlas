@@ -105,6 +105,17 @@ async function getJson(url) {
   return res.json()
 }
 
+/** INDO rows (half-hourly national demand) → hourly mean MW series (#24). */
+export function aggregateIndoDay(rows) {
+  const acc = makeHourlyAcc()
+  for (const r of rows ?? []) {
+    const hour = parseInt(r.startTime?.slice(11, 13), 10)
+    if (Number.isFinite(r.initialDemandOutturn)) accAdd(acc, 'd', hour, r.initialDemandOutturn)
+  }
+  const series = accMeanSeries(acc, 'd')
+  return series ? series.map((v) => (v == null ? null : Math.round(v))) : null
+}
+
 async function fetchDay(date) {
   const outturn = await getJson(
     `${BASE}/generation/outturn/summary?startTime=${date}T00:00Z&endTime=${date}T23:59Z&format=json`,
@@ -112,10 +123,18 @@ async function fetchDay(date) {
   const mid = await getJson(
     `${BASE}/balancing/pricing/market-index?from=${date}T00:00Z&to=${date}T23:59Z&format=json`,
   ).catch(() => null)
+  const indo = await getJson(
+    `${BASE}/demand/outturn?settlementDateFrom=${date}&settlementDateTo=${date}&format=json`,
+  ).catch(() => null)
   const { mixSeries, importSeries } = aggregateOutturnDay(
     Array.isArray(outturn) ? outturn : (outturn?.data ?? []),
   )
-  return { mixSeries, importSeries, prices: aggregateMidDay(mid?.data) }
+  return {
+    mixSeries,
+    importSeries,
+    prices: aggregateMidDay(mid?.data),
+    demand: aggregateIndoDay(indo?.data),
+  }
 }
 
 // ------------------------------------------------------------------- main
@@ -131,7 +150,7 @@ async function main() {
   let added = 0
   for (const date of want) {
     try {
-      const { mixSeries, importSeries, prices } = await fetchDay(date)
+      const { mixSeries, importSeries, prices, demand } = await fetchDay(date)
       if (hoursCovered(mixSeries) < 20) continue // partial day — retry next run
       const bucketAvg = new Map()
       for (const [key, series] of Object.entries(mixSeries)) {
@@ -146,8 +165,17 @@ async function main() {
           buildMixRows(bucketAvg).rows,
           importAvg(importSeries),
           priceAvg(prices),
+          demand ? meanCovered(demand) : null,
         ),
-        hourly: { date, mixSeries, importSeries, prices, perStation: null, flowSeries: null },
+        hourly: {
+          date,
+          mixSeries,
+          importSeries,
+          prices,
+          perStation: null,
+          flowSeries: null,
+          demand: demand ?? null,
+        },
       })
       added++
     } catch (err) {

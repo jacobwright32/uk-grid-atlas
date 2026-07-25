@@ -134,6 +134,23 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
   const hasPrices = Boolean(prices?.some((v) => v != null))
   const pScale = hasPrices && prices ? priceScale(prices) : null
 
+  // Demand (#24): same MW scale as the stack — the gap between the line and
+  // the stacked generation is net imports (line above) or exports (below).
+  const demandAtSlot: (number | null)[] = new Array(n).fill(null)
+  if (range === 'week' && week?.demand) {
+    week.demand.forEach((v, i) => {
+      demandAtSlot[i] = v
+    })
+  } else if (range === 'month' && month) {
+    month.dates.forEach((date, i) => {
+      demandAtSlot[i] = month.byDate.get(date)?.demandMW ?? null
+    })
+  }
+  const hasDemand = demandAtSlot.some((v) => v != null)
+  if (hasDemand) {
+    for (const v of demandAtSlot) if (v != null && v > maxTotal) maxTotal = v
+  }
+
   const dateOfSlot = (i: number) =>
     range === 'week' ? (week?.dates[Math.floor(i / 24)] ?? '') : (month?.dates[i] ?? '')
 
@@ -164,6 +181,7 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
     return intensityOfMix(sums)
   }
   const co2 = (v: number | null) => (v == null ? '' : ` · ${fmtIntensity(v)}`)
+  const dem = (v: number | null | undefined) => (v == null ? '' : ` · demand ${fmtGW(v)}`)
 
   let readout: string
   if (hover != null && totalAt[hover] != null) {
@@ -172,7 +190,7 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
         ? `${shortDate(dateOfSlot(hover))} ${String(hover % 24).padStart(2, '0')}:00`
         : shortDate(dateOfSlot(hover))
     const p = prices?.[hover]
-    readout = `${when} · ${fmtGW(totalAt[hover] as number)}${
+    readout = `${when} · ${fmtGW(totalAt[hover] as number)}${dem(demandAtSlot[hover])}${
       p != null ? ` · ${fmtPrice(p, currency)}` : ''
     }${co2(intensityAt(hover))}${range === 'month' ? ' avg' : ''}`
   } else if (hover != null) {
@@ -182,9 +200,11 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
     const avg = covered.length ? covered.reduce((a, b) => a + b, 0) / covered.length : 0
     const pVals = prices?.filter((v): v is number => v != null) ?? []
     const pAvg = pVals.length ? pVals.reduce((a, b) => a + b, 0) / pVals.length : null
-    readout = `${shortDate(dateOfSlot(0))} – ${shortDate(dateOfSlot(n - 1))} · avg ${fmtGW(avg)}${
-      pAvg != null ? ` · ${fmtPrice(pAvg, currency)}` : ''
-    }${co2(windowIntensity())}`
+    const dVals = demandAtSlot.filter((v): v is number => v != null)
+    const dAvg = dVals.length ? dVals.reduce((a, b) => a + b, 0) / dVals.length : null
+    readout = `${shortDate(dateOfSlot(0))} – ${shortDate(dateOfSlot(n - 1))} · avg ${fmtGW(avg)}${dem(
+      dAvg,
+    )}${pAvg != null ? ` · ${fmtPrice(pAvg, currency)}` : ''}${co2(windowIntensity())}`
   }
 
   // ------------------------------------------------------------- shapes
@@ -271,6 +291,19 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
           aria-label={`Generation mix over the past ${range}`}
         >
           {shapes}
+          {hasDemand &&
+            lineSegments(demandAtSlot, xCenter, (v) => yFor(v)).map((pts, i) =>
+              pts.includes(' ') ? (
+                <polyline
+                  key={`d-${i}`}
+                  points={pts}
+                  fill="none"
+                  stroke="#f4f7fb"
+                  strokeOpacity={0.65}
+                  strokeWidth={1.3}
+                />
+              ) : null,
+            )}
           {pScale &&
             prices &&
             lineSegments(prices, xCenter, pScale).map((pts, i) =>
@@ -310,6 +343,12 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
             {labelOf(k)}
           </span>
         ))}
+        {hasDemand && (
+          <span>
+            <i className="mixhistory-demandswatch" />
+            demand
+          </span>
+        )}
         {hasPrices && (
           <span>
             <i className="mixhistory-priceswatch" />

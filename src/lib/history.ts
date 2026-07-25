@@ -11,6 +11,8 @@ export interface HistoryDay {
   importMW: number | null
   totalMW: number
   price: number | null
+  /** Day-average actual load (#24, v3). */
+  demandMW?: number | null
 }
 
 export interface HistoryHourly {
@@ -22,6 +24,8 @@ export interface HistoryHourly {
   perStation?: Record<string, (number | null)[]> | null
   /** Interconnector id → 24-slot MW series, + = import (v2, EU only). */
   flowSeries?: Record<string, (number | null)[]> | null
+  /** Actual total load, MW per hour (#24, v3). */
+  demand?: (number | null)[] | null
 }
 
 export interface HistoryFile {
@@ -103,6 +107,7 @@ export interface StitchedWeek {
   series: Record<string, (number | null)[]>
   prices: (number | null)[] | null
   imports: (number | null)[] | null
+  demand: (number | null)[] | null
 }
 
 /**
@@ -114,7 +119,7 @@ export function stitchHourly(hourly: HistoryHourly[]): StitchedWeek {
   const firstRec = hourly[0]
   const lastRec = hourly[hourly.length - 1]
   if (!firstRec || !lastRec) {
-    return { dates: [], keys: [], series: {}, prices: null, imports: null }
+    return { dates: [], keys: [], series: {}, prices: null, imports: null, demand: null }
   }
   const first = firstRec.date
   const dates = calendarDays(first, lastRec.date)
@@ -162,6 +167,7 @@ export function stitchHourly(hourly: HistoryHourly[]): StitchedWeek {
     series,
     prices: stitchAux((h) => h.prices),
     imports: stitchAux((h) => h.importSeries),
+    demand: stitchAux((h) => h.demand ?? null),
   }
 }
 

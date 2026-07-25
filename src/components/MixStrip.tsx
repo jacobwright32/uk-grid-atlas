@@ -31,6 +31,8 @@ interface Props {
   today: EntsoeToday | null
   /** Wholesale prices over the metered day (scrub basis). */
   prices: PriceDay | null
+  /** Actual total load over the metered day (#24). */
+  demandSeries: (number | null)[] | null
   /** Data-source label for the legend ("ENTSO-E" unless the snapshot says). */
   sourceLabel: string | null
   /** Mix time range (#64): day = the classic strip, week/month = history. */
@@ -59,6 +61,7 @@ export default function MixStrip({
   importSeries,
   today,
   prices,
+  demandSeries,
   sourceLabel,
   range,
   onRange,
@@ -142,6 +145,21 @@ export default function MixStrip({
   // now (live, today-so-far, or the scrubbed interval) — no extra feeds.
   const intensity = intensityOf(shownRows)
 
+  // Demand (#24): the load the shown mix is serving — scrub reads the slot,
+  // otherwise the freshest day's average.
+  const demandSource = scrubbing ? demandSeries : (today?.demandSeries ?? demandSeries)
+  let demandText: string | null = null
+  if (demandSource?.some((v) => v != null)) {
+    if (scrubbing) {
+      const scale = demandSource.length === len ? 1 : demandSource.length / len
+      const v = demandSource[Math.floor(timeIndex * scale)]
+      if (v != null) demandText = `demand ${fmtGW(v)}`
+    } else {
+      const vals = demandSource.filter((v): v is number => v != null)
+      demandText = `demand ${fmtGW(vals.reduce((a, b) => a + b, 0) / vals.length)} avg`
+    }
+  }
+
   const historyView = range !== 'day'
   const rangeLabel: Record<MixRange, string> = { day: 'day', week: '7d', month: '31d' }
 
@@ -198,6 +216,7 @@ export default function MixStrip({
           scrubMM={scrubMM}
           priceText={priceText}
           intensity={intensity}
+          demandText={demandText}
         />
       )}
     </div>
@@ -215,6 +234,7 @@ interface DayProps {
   scrubMM: string
   priceText: string | null
   intensity: number | null
+  demandText: string | null
 }
 
 function MixStripDay({
@@ -228,6 +248,7 @@ function MixStripDay({
   scrubMM,
   priceText,
   intensity,
+  demandText,
 }: DayProps) {
   return (
     <>
@@ -266,15 +287,21 @@ function MixStripDay({
           )
         })}
       </div>
-      {(priceText || intensity != null) && (
+      {(priceText || intensity != null || demandText) && (
         <div className="mixstrip-price">
           {priceText}
+          {demandText && (
+            <span className="mixstrip-demand">
+              {priceText ? ' · ' : ''}
+              {demandText}
+            </span>
+          )}
           {intensity != null && (
             <span
               className="mixstrip-carbon"
               title="Generation-weighted lifecycle emission factors per fuel bucket (IPCC medians) — imports excluded"
             >
-              {priceText ? ' · ' : ''}≈ {fmtIntensity(intensity)} CO₂
+              {priceText || demandText ? ' · ' : ''}≈ {fmtIntensity(intensity)} CO₂
             </span>
           )}
         </div>

@@ -39,6 +39,7 @@ import {
   mergeHistory,
   missingDates,
   priceAvg,
+  readHistory,
   stationSeriesOnly,
   throughHour,
 } from './snapshot-common.mjs'
@@ -135,6 +136,39 @@ async function fetchZonalPrices(dateCompact) {
   const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(60_000) })
   if (!res.ok) return null
   return parseZonalPrices(await res.text())
+}
+
+// ------------------------------------------------------------------ demand
+/**
+ * IESO yearly demand CSV → Map<date, 24-slot Ontario Demand series> (#24).
+ * One fetch covers the whole window (metered day, history, today-so-far).
+ */
+export function parseDemandCsv(text) {
+  const lines = text.split('\n')
+  const start = lines.findIndex((l) => l.startsWith('Date,Hour'))
+  const byDate = new Map()
+  if (start < 0) return byDate
+  for (const line of lines.slice(start + 1)) {
+    const [date, hour, , ontario] = line.split(',')
+    const h = parseInt(hour, 10)
+    const mw = parseFloat(ontario)
+    if (!date || !(h >= 1 && h <= 24) || !Number.isFinite(mw)) continue
+    let s = byDate.get(date)
+    if (!s) {
+      s = new Array(24).fill(null)
+      byDate.set(date, s)
+    }
+    s[h - 1] = Math.round(mw)
+  }
+  return byDate
+}
+
+async function fetchDemandYear() {
+  const year = new Date().getUTCFullYear()
+  const url = `https://reports-public.ieso.ca/public/Demand/PUB_Demand_${year}.csv`
+  const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(60_000) })
+  if (!res.ok) return new Map()
+  return parseDemandCsv(await res.text())
 }
 
 // ------------------------------------------------------------------- main
@@ -245,6 +279,8 @@ async function main() {
 
   // Prices (#64): day-ahead Ontario zonal price for the metered day + today.
   const prices = await fetchZonalPrices(compactDate(metered.date)).catch(() => null)
+  // Demand (#24): one yearly CSV covers every date this run touches.
+  const demandByDate = await fetchDemandYear().catch(() => new Map())
   const todayPrices = todayData
     ? await fetchZonalPrices(compactDate(todayData.date)).catch(() => null)
     : null
@@ -261,6 +297,7 @@ async function main() {
     flowSeries: {},
     importSeries: new Array(24).fill(null),
     prices,
+    demandSeries: demandByDate.get(metered.date) ?? null,
     today:
       t && t.throughHour >= 3
         ? {
@@ -272,6 +309,7 @@ async function main() {
             totalMW: t.totalMW,
             importMW: 0,
             prices: todayPrices,
+            demandSeries: demandByDate.get(todayData.date) ?? null,
           }
         : null,
     mix: {
@@ -291,10 +329,17 @@ async function main() {
     const histPath = join(OUT_DIR, 'history', 'ca.json')
     const record = (dayData, agg, price) => {
       if (hoursCovered(agg.mixSeries) < 20) return false
+      const demand = demandByDate.get(dayData.date) ?? null
       mergeHistory(histPath, {
         currency: price?.currency ?? null,
         sourceLabel: 'IESO',
-        day: buildDayRecord(dayData.date, agg.mixRows, null, priceAvg(price?.series)),
+        day: buildDayRecord(
+          dayData.date,
+          agg.mixRows,
+          null,
+          priceAvg(price?.series),
+          demand ? meanCovered(demand) : null,
+        ),
         hourly: {
           date: dayData.date,
           mixSeries: agg.mixSeries,
@@ -302,6 +347,7 @@ async function main() {
           prices: price?.series ?? null,
           perStation: stationSeriesOnly(agg.perStation),
           flowSeries: null,
+          demand,
         },
       })
       return true
@@ -323,6 +369,19 @@ async function main() {
       }
     }
     if (want.length) console.log(`ca: history +${added}/${want.length} day(s)`)
+    // Cheap demand backfill (#24) for month days recorded pre-demand.
+    const hist = readHistory(histPath)
+    let patched = 0
+    for (const rec of hist?.days ?? []) {
+      if (rec.demandMW !== undefined) continue
+      const d = demandByDate.get(rec.date)
+      rec.demandMW = d ? Math.round(meanCovered(d)) : null
+      patched++
+    }
+    if (patched) {
+      writeFileSync(histPath, JSON.stringify(hist))
+      console.log(`ca: demand patched ${patched} day(s)`)
+    }
   } catch (err) {
     console.warn(`ca: history failed — ${err.message}`)
   }
