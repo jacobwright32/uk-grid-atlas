@@ -34,11 +34,21 @@
     />
     <meta name="twitter:image" content="https://jacobwright32.github.io/uk-grid-atlas/og.png" />
 
-    <!-- Analytics (GoatCounter — free, no cookies, GDPR-friendly).
-         1. Sign up at https://www.goatcounter.com (pick a code, e.g. ukgridatlas)
-         2. Replace MYCODE below with your code and delete these comment markers.
-    <script data-goatcounter="https://MYCODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-    -->
+    <!-- Analytics: GoatCounter (free, no cookies, GDPR-friendly). The path
+         callback folds the country hash into the counted path, and the
+         hashchange listener counts grid switches — so the dashboard shows
+         per-grid views (…/#fi, …/#ca), not just landings. Needs the site
+         code "uk-grid-atlas" registered at https://www.goatcounter.com;
+         until then the beacon 404s harmlessly. Localhost isn't counted. -->
+    <script>
+      window.goatcounter = { path: () => location.pathname + location.search + location.hash }
+      window.addEventListener('hashchange', () => window.goatcounter.count?.())
+    </script>
+    <script
+      data-goatcounter="https://uk-grid-atlas.goatcounter.com/count"
+      async
+      src="//gc.zgo.at/count.js"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
