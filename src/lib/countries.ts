@@ -529,7 +529,31 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
 
 export const DEFAULT_COUNTRY: CountryId = 'all'
 
+/**
+ * Hash grammar (#22): `#cc` or `#cc/station/<osm-id>` — station ids contain
+ * a slash themselves (`way/653307622`), so everything after `station/` is
+ * the id. Pure so it's testable without a DOM.
+ */
+export function parseHash(raw: string): { country: CountryId; station: string | null } {
+  const parts = raw.replace(/^#/, '').split('/')
+  const cc = (parts[0] ?? '').toLowerCase()
+  const country = Object.hasOwn(COUNTRIES, cc) ? (cc as CountryId) : DEFAULT_COUNTRY
+  const rest = parts[1] === 'station' ? parts.slice(2).join('/') : ''
+  const station = rest && Object.hasOwn(COUNTRIES, cc) ? rest : null
+  return { country, station }
+}
+
 export function countryFromHash(): CountryId {
-  const h = window.location.hash.replace('#', '').toLowerCase()
-  return h in COUNTRIES ? (h as CountryId) : DEFAULT_COUNTRY
+  return parseHash(window.location.hash).country
+}
+
+/** Station deep link in the current hash, if any (#22). */
+export function stationFromHash(): string | null {
+  return parseHash(window.location.hash).station
+}
+
+/** The shareable hash for a view — '' for the plain default view. */
+export function hashFor(country: CountryId, station: string | null): string {
+  if (station) return `#${country}/station/${station}`
+  return country === DEFAULT_COUNTRY ? '' : `#${country}`
 }

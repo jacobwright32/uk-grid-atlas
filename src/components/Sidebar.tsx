@@ -4,6 +4,7 @@ import { fmtCount, fmtGW } from '../lib/format'
 import type { StatsByGroup } from '../lib/filter'
 import type { GroupId, GridMeta, NetworkToggles } from '../lib/types'
 import type { LiveData } from '../lib/live'
+import { isBaked, sourceMetaFor } from '../lib/sources'
 import type { LiveStatus } from '../hooks/useLiveData'
 import type { CountryConfig } from '../lib/countries'
 
@@ -40,8 +41,8 @@ function liveStatusLine(status: LiveStatus, live: LiveData | null, kind: string)
       })
     : null
   if (status === 'snapshot') return `Offline — bundled snapshot${date ? ` of ${date}` : ''}.`
-  if (live?.basis === 'entsoe')
-    return `${live.sourceLabel ?? 'ENTSO-E'} metered day: ${date ?? '—'} · refreshed every 6 h`
+  if (isBaked(live) && live)
+    return `${sourceMetaFor(live.sourceLabel).label} metered day: ${date ?? '—'} · refreshed every 6 h`
   return `Latest metered day: ${date ?? '—'} (settles ~a week behind)${live?.perStationNow ? ' · schedules live' : ''}`
 }
 
@@ -90,13 +91,7 @@ export default function Sidebar({
               </p>
             )}
             {live && country.liveKind === 'entsoe' && (
-              <p className="footnote">
-                {live.sourceLabel === 'IESO'
-                  ? 'Per-station data covers IESO market participants (Ontario); Alberta and Québec have no public per-plant feed.'
-                  : live.sourceLabel === 'ERCOT + NYISO'
-                    ? 'Fuel mix covers ERCOT (Texas) and NYISO (New York); other ISOs and per-plant data have no key-less public feed.'
-                    : 'Unit-level data covers plants ≥100 MW (ENTSO-E registry); smaller sites appear in the mix but not per-station.'}
-              </p>
+              <p className="footnote">{sourceMetaFor(live.sourceLabel).footnote}</p>
             )}
           </>
         ) : (

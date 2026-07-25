@@ -283,12 +283,19 @@ async function loadCountry(id: RealCountryId): Promise<GridData> {
  * arrives instead of blocking on the slowest of thirteen. Degrades
  * gracefully — a failed bundle is skipped (#3) and only complete merges are
  * cached, so transient failures heal on the next visit.
+ *
+ * `deps` is dependency-injected for the race tests (#60): the ordering and
+ * failure semantics live HERE, not in the per-country fetch plumbing.
  */
-async function loadAllProgressive(
+export async function loadAllProgressive(
   onUpdate: (data: GridData) => void,
   onError: (err: unknown) => void,
+  deps: {
+    load: (id: RealCountryId) => Promise<GridData>
+    cache: Map<string, GridData>
+  } = { load: loadCountry, cache },
 ): Promise<void> {
-  const cached = cache.get('all')
+  const cached = deps.cache.get('all')
   if (cached) {
     onUpdate(cached)
     return
@@ -299,7 +306,7 @@ async function loadAllProgressive(
   await Promise.all(
     REAL_COUNTRY_IDS.map(async (id) => {
       try {
-        const bundle = await loadCountry(id)
+        const bundle = await deps.load(id)
         arrived.push(bundle)
         onUpdate(mergeGridData(arrived))
       } catch (err) {
@@ -314,7 +321,7 @@ async function loadAllProgressive(
     return
   }
   if (failures === 0) {
-    cache.set('all', mergeGridData(arrived))
+    deps.cache.set('all', mergeGridData(arrived))
   }
 }
 

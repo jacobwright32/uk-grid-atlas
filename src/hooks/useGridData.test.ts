@@ -1,0 +1,127 @@
+// Progressive ALL loader race tests (#60): the shipped bug was merges being
+// dropped around load timing — these pin the ordering/failure semantics with
+// an injected per-country loader (no fetch mocking needed; the race logic
+// lives in loadAllProgressive itself).
+import { describe, expect, it } from 'vitest'
+import { loadAllProgressive } from './useGridData'
+import { REAL_COUNTRY_IDS } from '../lib/countries'
+import type { RealCountryId } from '../lib/countries'
+import type { GridData } from '../lib/types'
+
+/** Minimal-but-valid one-station bundle for country `id`. */
+function bundle(id: string): GridData {
+  const fc = (features: unknown[]) => ({ type: 'FeatureCollection', features })
+  return {
+    stations: fc([
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [0, 0] },
+        properties: { id: `${id}/station`, name: id, fuel: 'wind_onshore' },
+      },
+    ]),
+    transmission: fc([]),
+    interconnectors: fc([]),
+    basemap: fc([]),
+    meta: { generatedAt: '', counts: {} },
+  } as unknown as GridData
+}
+
+/** A loader whose per-country resolution the test controls explicitly. */
+function controlledLoader(failIds: Set<string> = new Set()) {
+  const resolvers = new Map<string, () => void>()
+  const load = (id: RealCountryId) =>
+    new Promise<GridData>((resolve, reject) => {
+      resolvers.set(id, () =>
+        failIds.has(id) ? reject(new Error(`${id} down`)) : resolve(bundle(id)),
+      )
+    })
+  const settle = (id: string) => {
+    resolvers.get(id)?.()
+    // let the loader's then-chain run
+    return new Promise((r) => setTimeout(r, 0))
+  }
+  return { load, settle }
+}
+
+const ids = [...REAL_COUNTRY_IDS]
+
+describe('loadAllProgressive (#60)', () => {
+  it('fires onUpdate per arrival with a growing merge, in any order', async () => {
+    const { load, settle } = controlledLoader()
+    const sizes: number[] = []
+    const cache = new Map<string, GridData>()
+    const run = loadAllProgressive(
+      (d) => sizes.push(d.stations.features.length),
+      () => {},
+      {
+        load,
+        cache,
+      },
+    )
+    // resolve in reverse order — the shipped bug was order-sensitivity
+    for (const id of [...ids].reverse()) await settle(id)
+    await run
+    expect(sizes).toHaveLength(ids.length)
+    expect(sizes).toEqual(ids.map((_, i) => i + 1)) // strictly growing merges
+    expect(cache.get('all')?.stations.features).toHaveLength(ids.length)
+  })
+
+  it('skips a failed country, renders the rest, and never caches the partial', async () => {
+    const { load, settle } = controlledLoader(new Set(['de']))
+    const sizes: number[] = []
+    let errored = false
+    const cache = new Map<string, GridData>()
+    const run = loadAllProgressive(
+      (d) => sizes.push(d.stations.features.length),
+      () => {
+        errored = true
+      },
+      { load, cache },
+    )
+    for (const id of ids) await settle(id)
+    await run
+    expect(sizes).toHaveLength(ids.length - 1)
+    expect(Math.max(...sizes)).toBe(ids.length - 1)
+    expect(errored).toBe(false) // partial success is success (#3)
+    expect(cache.has('all')).toBe(false) // transient failure must heal next visit
+  })
+
+  it('reports the first error when every bundle fails', async () => {
+    const { load, settle } = controlledLoader(new Set(ids))
+    let err: unknown = null
+    const cache = new Map<string, GridData>()
+    const run = loadAllProgressive(
+      () => {
+        throw new Error('onUpdate must never fire with zero bundles')
+      },
+      (e) => {
+        err = e
+      },
+      { load, cache },
+    )
+    for (const id of ids) await settle(id)
+    await run
+    expect(err).toBeInstanceOf(Error)
+    expect(cache.has('all')).toBe(false)
+  })
+
+  it('serves a cached ALL merge without touching the loader', async () => {
+    const cache = new Map<string, GridData>()
+    cache.set('all', bundle('cached'))
+    let loads = 0
+    const updates: GridData[] = []
+    await loadAllProgressive(
+      (d) => updates.push(d),
+      () => {},
+      {
+        load: async () => {
+          loads++
+          return bundle('x')
+        },
+        cache,
+      },
+    )
+    expect(updates).toHaveLength(1)
+    expect(loads).toBe(0)
+  })
+})

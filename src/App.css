@@ -1012,3 +1012,7 @@
     bottom: 76px; /* clear the mix chip */
   }
 }
+
+.mixstrip-carbon {
+  color: var(--ink-2);
+}

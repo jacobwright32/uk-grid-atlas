@@ -5,6 +5,8 @@ import type { HistoryFile } from '../lib/history'
 import type { MixSnapshot, PriceDay } from '../lib/live-core.mjs'
 import MixHistory from './MixHistory'
 import { fmtGW, fmtPrice } from '../lib/format'
+import { fmtIntensity, intensityOf } from '../lib/carbon'
+import { sourceMetaFor } from '../lib/sources'
 
 const priceAvg = (p: PriceDay): number | null => {
   const vals = p.series.filter((v): v is number => v != null)
@@ -136,6 +138,10 @@ export default function MixStrip({
     }
   }
 
+  // Carbon intensity (#21): derived from whatever mix the bars show right
+  // now (live, today-so-far, or the scrubbed interval) — no extra feeds.
+  const intensity = intensityOf(shownRows)
+
   const historyView = range !== 'day'
   const rangeLabel: Record<MixRange, string> = { day: 'day', week: '7d', month: '31d' }
 
@@ -191,6 +197,7 @@ export default function MixStrip({
           scrubHH={scrubHH}
           scrubMM={scrubMM}
           priceText={priceText}
+          intensity={intensity}
         />
       )}
     </div>
@@ -207,6 +214,7 @@ interface DayProps {
   scrubHH: string
   scrubMM: string
   priceText: string | null
+  intensity: number | null
 }
 
 function MixStripDay({
@@ -219,6 +227,7 @@ function MixStripDay({
   scrubHH,
   scrubMM,
   priceText,
+  intensity,
 }: DayProps) {
   return (
     <>
@@ -257,15 +266,27 @@ function MixStripDay({
           )
         })}
       </div>
-      {priceText && <div className="mixstrip-price">{priceText}</div>}
+      {(priceText || intensity != null) && (
+        <div className="mixstrip-price">
+          {priceText}
+          {intensity != null && (
+            <span
+              className="mixstrip-carbon"
+              title="Generation-weighted lifecycle emission factors per fuel bucket (IPCC medians) — imports excluded"
+            >
+              {priceText ? ' · ' : ''}≈ {fmtIntensity(intensity)} CO₂
+            </span>
+          )}
+        </div>
+      )}
       <div className="mixstrip-legend">
         <span className="mixstrip-item">
           {scrubbing
             ? `bars = generation at ${scrubHH}:${scrubMM}`
             : showToday
-              ? `bars = today-so-far average (${sourceLabel ?? 'ENTSO-E'})`
+              ? `bars = today-so-far average (${sourceMetaFor(sourceLabel).label})`
               : mode === 'daily'
-                ? `bars = day-average generation (${sourceLabel ?? 'ENTSO-E'})`
+                ? `bars = day-average generation (${sourceMetaFor(sourceLabel).label})`
                 : 'bright = generating now · ghost = metered-fleet capacity'}
         </span>
         <span className="mixstrip-note">

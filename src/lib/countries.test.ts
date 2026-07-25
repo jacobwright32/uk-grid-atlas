@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain-JS script module without type declarations
 import { ENTSOE_COUNTRIES, FLOW_BORDERS } from '../../scripts/entsoe.mjs'
-import { COUNTRIES, REAL_COUNTRY_IDS } from './countries'
+import { COUNTRIES, DEFAULT_COUNTRY, hashFor, parseHash, REAL_COUNTRY_IDS } from './countries'
 
 const entries = Object.entries(COUNTRIES)
 
@@ -52,6 +52,36 @@ describe('COUNTRIES registry', () => {
       if (cfg.hasLive) expect(cfg.liveKind, key).not.toBe('none')
       if (cfg.liveKind === 'elexon') expect(key).toBe('gb')
     }
+  })
+})
+
+describe('hash permalinks (#22)', () => {
+  it('parses country-only hashes as before', () => {
+    expect(parseHash('#fi')).toEqual({ country: 'fi', station: null })
+    expect(parseHash('#FI')).toEqual({ country: 'fi', station: null })
+    expect(parseHash('')).toEqual({ country: DEFAULT_COUNTRY, station: null })
+    expect(parseHash('#nope')).toEqual({ country: DEFAULT_COUNTRY, station: null })
+  })
+  it('parses station deep links, keeping the slash inside OSM ids', () => {
+    expect(parseHash('#fi/station/way/653307622')).toEqual({
+      country: 'fi',
+      station: 'way/653307622',
+    })
+    expect(parseHash('#ca/station/node/12345')).toEqual({ country: 'ca', station: 'node/12345' })
+    expect(parseHash('#all/station/way/1')).toEqual({ country: 'all', station: 'way/1' })
+  })
+  it('ignores malformed station segments', () => {
+    expect(parseHash('#fi/station/')).toEqual({ country: 'fi', station: null })
+    expect(parseHash('#fi/nonsense/way/1')).toEqual({ country: 'fi', station: null })
+    expect(parseHash('#nope/station/way/1').station).toBeNull() // junk country
+  })
+  it('hashFor round-trips through parseHash', () => {
+    expect(parseHash(hashFor('fi', 'way/653307622'))).toEqual({
+      country: 'fi',
+      station: 'way/653307622',
+    })
+    expect(hashFor(DEFAULT_COUNTRY, null)).toBe('')
+    expect(hashFor('fi', null)).toBe('#fi')
   })
 })
 

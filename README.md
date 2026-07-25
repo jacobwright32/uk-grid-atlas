@@ -96,8 +96,11 @@ npm run data:fetch -- gb    # download raw extracts from Overpass (mirrors, retr
 node scripts/build-data.mjs gb   # → src/data/gb/*.json
 node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via Overpass or
                                  #   scripts/pbf-extract-lines.py on a Geofabrik .osm.pbf)
-npm run data:tiles               # → public/tiles/transmission.pmtiles (needs tippecanoe;
-                                 #   re-run after any build-data refresh)
+npm run data:slim                # shrink committed bundles (drop sub-threshold noise)
+npm run data:tiles               # → public/tiles/transmission.pmtiles (re-run after any
+                                 #   build-data refresh; needs tippecanoe — macOS:
+                                 #   `brew install tippecanoe`, Debian/Ubuntu: build from
+                                 #   https://github.com/felt/tippecanoe)
 ```
 
 Transmission lines render from a single committed [PMTiles](https://github.com/protomaps/PMTiles)
@@ -282,6 +285,9 @@ Design decisions worth knowing:
 | `npm run data:bmumap`               | Rebuild the GB BMU → station map (Elexon registry)                  |
 | `npm run data:snapshot`             | Bake the offline GB live snapshot                                   |
 | `npm run live:snapshots`            | Fetch ENTSO-E snapshots for all EU countries (needs `ENTSOE_TOKEN`) |
+| `npm run data:snapshot:ca` / `:us`  | Bake the Ontario (IESO) and Texas+New York (ERCOT+NYISO) snapshots  |
+| `npm run data:history:gb`           | Bake GB mix/price history from Elexon (key-less)                    |
+| `npm run data:slim` / `data:tiles`  | Shrink bundles / rebuild the PMTiles transmission archive           |
 
 ## Environment
 

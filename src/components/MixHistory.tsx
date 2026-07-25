@@ -9,6 +9,7 @@ import {
   stitchHourly,
 } from '../lib/history'
 import { fmtGW, fmtPrice } from '../lib/format'
+import { fmtIntensity, intensityOf, intensityOfMix } from '../lib/carbon'
 
 interface Props {
   history: HistoryFile
@@ -136,6 +137,34 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
   const dateOfSlot = (i: number) =>
     range === 'week' ? (week?.dates[Math.floor(i / 24)] ?? '') : (month?.dates[i] ?? '')
 
+  // Carbon intensity (#21) for the hovered slot / whole window.
+  const intensityAt = (i: number): number | null => {
+    if (range === 'week' && week) {
+      return intensityOf(week.keys.map((k) => ({ key: k, nowMW: week.series[k]?.[i] ?? 0 })))
+    }
+    const d = month?.byDate.get(month.dates[i] ?? '')
+    return d ? intensityOfMix(d.mix) : null
+  }
+  const windowIntensity = (): number | null => {
+    if (range === 'week' && week) {
+      return intensityOf(
+        week.keys.map((k) => ({
+          key: k,
+          nowMW: (week.series[k] ?? []).reduce<number>((a, v) => a + (v ?? 0), 0),
+        })),
+      )
+    }
+    if (!month) return null
+    const sums: Record<string, number> = {}
+    for (const date of month.dates) {
+      const d = month.byDate.get(date)
+      if (!d) continue
+      for (const [k, mw] of Object.entries(d.mix)) sums[k] = (sums[k] ?? 0) + mw
+    }
+    return intensityOfMix(sums)
+  }
+  const co2 = (v: number | null) => (v == null ? '' : ` · ${fmtIntensity(v)}`)
+
   let readout: string
   if (hover != null && totalAt[hover] != null) {
     const when =
@@ -145,7 +174,7 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
     const p = prices?.[hover]
     readout = `${when} · ${fmtGW(totalAt[hover] as number)}${
       p != null ? ` · ${fmtPrice(p, currency)}` : ''
-    }${range === 'month' ? ' avg' : ''}`
+    }${co2(intensityAt(hover))}${range === 'month' ? ' avg' : ''}`
   } else if (hover != null) {
     readout = `${shortDate(dateOfSlot(hover))} · no data`
   } else {
@@ -155,7 +184,7 @@ export default function MixHistory({ history, range, scrubIndex }: Props) {
     const pAvg = pVals.length ? pVals.reduce((a, b) => a + b, 0) / pVals.length : null
     readout = `${shortDate(dateOfSlot(0))} – ${shortDate(dateOfSlot(n - 1))} · avg ${fmtGW(avg)}${
       pAvg != null ? ` · ${fmtPrice(pAvg, currency)}` : ''
-    }`
+    }${co2(windowIntensity())}`
   }
 
   // ------------------------------------------------------------- shapes

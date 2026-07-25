@@ -52,6 +52,12 @@ interface Props {
     perStation: Map<string, (number | null)[]> | null
     flowSeries: Record<string, (number | null)[]> | null
   } | null
+  /**
+   * Pin permalinks (#22): fires with the station id when a station card is
+   * pinned, and null when unpinned (or a non-station feature is pinned) —
+   * App mirrors it into the URL hash.
+   */
+  onStationPin?: (id: string | null) => void
 }
 
 export default function GridMap({
@@ -67,6 +73,7 @@ export default function GridMap({
   searchTarget,
   timeIndex,
   weekScrub,
+  onStationPin,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -78,6 +85,10 @@ export default function GridMap({
   dataRef.current = data
   const hoverIdRef = useRef<number | string | null>(null)
   const pinnedRef = useRef(false)
+  // Fresh callback for the once-only map handlers (App's writeHash closes
+  // over the current country).
+  const onPinRef = useRef(onStationPin)
+  onPinRef.current = onStationPin
   const popupRef = useRef<Popup | null>(null)
   const cardCtxRef = useRef<CardContext>({ live: null, bmuMap: null })
   const tierKvs = country.tiers.map((t) => t.kvs) as [number[], number[], number[]]
@@ -226,9 +237,14 @@ export default function GridMap({
       if (feature) {
         pinnedRef.current = true
         popup.setLngLat(e.lngLat).setDOMContent(cardFor(feature, cardCtxRef.current)).addTo(map)
+        // Only stations get permalinks — a pinned line clears the station hash.
+        const isStation = feature.layer.id === 'stations' || feature.layer.id === 'stations-live'
+        const id = (feature.properties as { id?: string }).id ?? null
+        onPinRef.current?.(isStation ? id : null)
       } else {
         pinnedRef.current = false
         popup.remove()
+        onPinRef.current?.(null)
       }
     })
 

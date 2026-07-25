@@ -3,6 +3,7 @@ import { FUEL_COLOR, FUEL_LABEL, LINE_COLORS, TIER_COLORS } from '../lib/fuels'
 import { fmtMW, humanise } from '../lib/format'
 import type { FuelId, InterconnectorProps, LineProps, StationProps } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
+import { isBaked, sourceMetaFor } from '../lib/sources'
 import type { StationDay } from '../lib/live-core.mjs'
 
 /** Context handed in by GridMap so cards can show live figures. */
@@ -104,8 +105,9 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
 
   // ------------------------------------------------------------ live block
   const live = ctx?.live
-  const mapped =
-    live?.basis === 'entsoe' ? live.perStationDay.has(p.id) : Boolean(ctx?.bmuMap?.stations[p.id])
+  const mapped = isBaked(live)
+    ? (live?.perStationDay.has(p.id) ?? false)
+    : Boolean(ctx?.bmuMap?.stations[p.id])
   if (live && mapped) {
     const block = el('div', 'card-live')
     const nowMW = live.perStationNow?.get(p.id)
@@ -134,7 +136,7 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
         el(
           'div',
           'card-live-head',
-          `Metered ${dateLabel}${live.basis === 'entsoe' ? ` (${live.sourceLabel ?? 'ENTSO-E'})` : live.source === 'snapshot' ? ' (snapshot)' : ' · settlement data lags ~a week'}`,
+          `Metered ${dateLabel}${isBaked(live) ? ` (${sourceMetaFor(live.sourceLabel).label})` : live.source === 'snapshot' ? ' (snapshot)' : ' · settlement data lags ~a week'}`,
         ),
       )
       const statRows = [
@@ -159,8 +161,12 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
       el(
         'div',
         'card-live-none',
-        live.basis === 'entsoe'
-          ? `No unit-level feed${live.sourceLabel ? '' : ' — below the 100 MW ENTSO-E reporting threshold'}`
+        isBaked(live)
+          ? `No unit-level feed${
+              sourceMetaFor(live.sourceLabel).unitThreshold
+                ? ' — below the 100 MW ENTSO-E reporting threshold'
+                : ''
+            }`
           : 'No unit-level public feed — distribution-connected site',
       ),
     )
@@ -230,7 +236,7 @@ export function hvdcCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElement {
     const home = ctx?.countryName ?? 'GB'
     const dir = flow >= 0 ? `importing to ${home}` : `exporting from ${home}`
     const r = row(
-      ctx?.live?.basis === 'entsoe' ? 'Flow (day avg)' : 'Flow now',
+      isBaked(ctx?.live) ? 'Flow (day avg)' : 'Flow now',
       `${fmtMW(Math.abs(flow))} — ${dir}`,
     )
     if (r) {

@@ -41,7 +41,6 @@ export interface LiveData {
   perStationDay: Map<string, StationDay>
   /** Scheduled output right now (PN), per station — Elexon only. */
   perStationNow: Map<string, number> | null
-  nowLabel: string | null
   mix: MixSnapshot | null
   /** Pre-computed mix rows (ENTSO-E snapshots ship them ready-made). */
   mixRows: import('./fleet').MixRow[] | null
@@ -104,7 +103,6 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       meteredDate: snap.date,
       perStationDay,
       perStationNow: null,
-      nowLabel: null,
       mix: snap.mix,
       mixRows: snap.mixRows,
       mixSeries: snap.mixSeries ?? null,
@@ -267,7 +265,6 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
       meteredDate: day?.date ?? null,
       perStationDay: day?.per ?? snapshotToMap(snapshot),
       perStationNow: nowData?.perStation ?? null,
-      nowLabel: nowData?.label ?? null,
       mix,
       mixRows: null,
       mixSeries: day?.mixDay ? foldMixDay(day.mixDay) : null,
@@ -285,7 +282,6 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     meteredDate: snapshot?.date ?? null,
     perStationDay: snapshotToMap(snapshot),
     perStationNow: null,
-    nowLabel: null,
     mix: snapshot?.mix ?? null,
     mixRows: null,
     mixSeries: null,

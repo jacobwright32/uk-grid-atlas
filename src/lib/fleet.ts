@@ -56,7 +56,7 @@ const BUCKETS: {
   },
 ]
 
-export const IMPORTS_ROW = { key: 'imports', label: 'Imports', color: '#2dd4bf' }
+export const IMPORTS_ROW = { key: 'imports', color: '#2dd4bf' }
 
 /**
  * Fold a raw FUELINST day (fuelType-keyed) into bucket-keyed series matching

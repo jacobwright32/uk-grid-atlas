@@ -10,15 +10,24 @@ import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
 import { buildWeekScrub, loadHistory } from './lib/history'
 import type { HistoryFile } from './lib/history'
-import { COUNTRIES, countryFromHash, DEFAULT_COUNTRY } from './lib/countries'
+import {
+  COUNTRIES,
+  countryFromHash,
+  DEFAULT_COUNTRY,
+  hashFor,
+  stationFromHash,
+} from './lib/countries'
 import type { CountryId } from './lib/countries'
 import { allGroupIds, computeStats, totalsFor } from './lib/filter'
+import { isBaked, mixTitleFor } from './lib/sources'
 import { computeMixRows, fleetCapacity, interconnectorCapacity } from './lib/fleet'
 import { fmtCount, fmtGW } from './lib/format'
 import type { GroupId, NetworkToggles } from './lib/types'
 import './App.css'
 
 const DEFAULT_TILES = import.meta.env.VITE_DEFAULT_TILES === '1'
+/** Single source for the phone/desktop breakpoint (#55). */
+const DESKTOP_MQ = '(min-width: 640px)'
 
 export default function App() {
   const [countryId, setCountryId] = useState<CountryId>(countryFromHash)
@@ -36,11 +45,9 @@ export default function App() {
   const [tiles, setTiles] = useState(DEFAULT_TILES)
   const [liveMode, setLiveMode] = useState(true)
   // Phones get the map first; the burger opens the legend over a scrim (#13).
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => window.matchMedia('(min-width: 640px)').matches,
-  )
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia(DESKTOP_MQ).matches)
   // The mix panel crowds small screens — start it collapsed on phones.
-  const [mixOpen, setMixOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
+  const [mixOpen, setMixOpen] = useState(() => window.matchMedia(DESKTOP_MQ).matches)
   const [resizeSignal, setResizeSignal] = useState(0)
   const [searchTarget, setSearchTarget] = useState<SearchTarget | null>(null)
   // Metered-day scrub (#17): null = live/day-average as before.
@@ -134,16 +141,43 @@ export default function App() {
   }, [countryId, booted])
 
   useEffect(() => {
-    const onHash = () => setCountryId(countryFromHash())
+    const onHash = () => {
+      setCountryId(countryFromHash())
+      setDeepLink(stationFromHash()) // pasted permalinks work mid-session too
+    }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  // Station permalinks (#22): consume `#cc/station/<id>` once its country's
+  // data has the station (progressive ALL loads may deliver it late), then
+  // reuse the search fly-to + pin machinery.
+  const [deepLink, setDeepLink] = useState<string | null>(stationFromHash)
+  useEffect(() => {
+    if (!deepLink || !data) return
+    const feature = data.stations.features.find((f) => f.properties.id === deepLink)
+    if (!feature) return // not merged yet (ALL) or wrong country — keep waiting
+    setSearchTarget({
+      id: deepLink,
+      coords: feature.geometry.coordinates as [number, number],
+      tick: Date.now(),
+    })
+    setDeepLink(null)
+  }, [deepLink, data])
+
+  /** Reflect the pinned station (or its absence) in the address bar. */
+  const writeHash = (stationId: string | null) => {
+    const h = hashFor(countryId, stationId)
+    // replaceState avoids a hashchange feedback loop and browser-history
+    // spam (window.history — `history` is this component's mix history).
+    window.history.replaceState(null, '', h || window.location.pathname + window.location.search)
+  }
 
   // Escape closes the sidebar when it overlays the map on small screens.
   useEffect(() => {
     if (!sidebarOpen) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !window.matchMedia('(min-width: 640px)').matches) {
+      if (e.key === 'Escape' && !window.matchMedia(DESKTOP_MQ).matches) {
         setSidebarOpen(false)
       }
     }
@@ -306,9 +340,16 @@ export default function App() {
               ? { perStation: weekScrub.perStation, flowSeries: weekScrub.flowSeries }
               : null
           }
+          onStationPin={writeHash}
         />
         <div className="search-dock">
-          <SearchBox data={data} onSelect={setSearchTarget} />
+          <SearchBox
+            data={data}
+            onSelect={(t) => {
+              setSearchTarget(t)
+              writeHash(t.id) // picked stations are instantly shareable (#22)
+            }}
+          />
         </div>
         {country.hasLive && liveMode && seriesLen > 0 && (
           <div className="timeslider-dock">
@@ -346,18 +387,8 @@ export default function App() {
                 onRange={setMixRange}
                 history={history}
                 historyState={historyState}
-                mode={
-                  live.basis === 'entsoe'
-                    ? 'daily'
-                    : live.source === 'snapshot'
-                      ? 'snapshot'
-                      : 'live'
-                }
-                title={
-                  live.basis === 'entsoe'
-                    ? `${live.sourceLabel === 'IESO' ? 'Ontario' : live.sourceLabel === 'ERCOT + NYISO' ? 'Texas + New York' : country.name} generation mix`
-                    : 'GB transmission mix'
-                }
+                mode={isBaked(live) ? 'daily' : live.source === 'snapshot' ? 'snapshot' : 'live'}
+                title={mixTitleFor(country.name, live)}
                 onClose={() => setMixOpen(false)}
               />
             ) : (
