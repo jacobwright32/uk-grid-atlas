@@ -1,31 +1,17 @@
 import { useEffect, useRef } from 'react'
 import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { Protocol } from 'pmtiles'
 import type { GridData, GroupId, NetworkToggles } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
 import type { CountryConfig } from '../lib/countries'
-import { stationFilter } from '../lib/filter'
-import { buildBaseStyle, CARTO_SOURCE } from '../map/style'
-import {
-  INTERACTIVE_LAYERS,
-  interconnectorLayers,
-  liveStationLayer,
-  stationLayers,
-  transmissionLayers,
-} from '../map/layers'
-import { cardFor } from '../map/popup'
+import { createAtlasMap, installSourcesAndLayers, setAllSourceData } from '../map/setup'
+import { wireInteractions } from '../map/interactions'
+import type { Interactions } from '../map/interactions'
+import { applyViewState } from '../map/viewState'
+import { applyLiveView } from '../map/liveView'
+import type { WeekScrubData } from '../map/liveView'
 import type { CardContext } from '../map/popup'
 import type { SearchTarget } from './SearchBox'
-
-// Transmission tiles (#8): one PMTiles archive for all countries, fetched
-// by HTTP range requests — only the tiles in view load. The single-file
-// build keeps GeoJSON bundles instead (__TILES__ is false there).
-if (__TILES__) {
-  const protocol = new Protocol()
-  maplibregl.addProtocol('pmtiles', protocol.tile)
-}
-const TILES_URL = () => `pmtiles://${new URL('tiles/transmission.pmtiles', document.baseURI).href}`
 
 interface Props {
   data: GridData
@@ -48,10 +34,7 @@ interface Props {
    * series instead of the metered day's. Null members mean that layer has
    * no weekly data (GB/US) — dots fall back to day-average, flows hide.
    */
-  weekScrub: {
-    perStation: Map<string, (number | null)[]> | null
-    flowSeries: Record<string, (number | null)[]> | null
-  } | null
+  weekScrub: WeekScrubData | null
   /**
    * Pin permalinks (#22): fires with the station id when a station card is
    * pinned, and null when unpinned (or a non-station feature is pinned) —
@@ -60,6 +43,11 @@ interface Props {
   onStationPin?: (id: string | null) => void
 }
 
+/**
+ * The map orchestrator (#54): owns the MapLibre lifecycle and effect wiring;
+ * everything with substance lives in src/map/ (setup, interactions,
+ * viewState, liveView, layers, popup, style) where it's testable.
+ */
 export default function GridMap({
   data,
   country,
@@ -83,8 +71,7 @@ export default function GridMap({
   // so `load` must replay the newest snapshot or those merges are lost.
   const dataRef = useRef(data)
   dataRef.current = data
-  const hoverIdRef = useRef<number | string | null>(null)
-  const pinnedRef = useRef(false)
+  const interactionsRef = useRef<Interactions | null>(null)
   // Fresh callback for the once-only map handlers (App's writeHash closes
   // over the current country).
   const onPinRef = useRef(onStationPin)
@@ -96,81 +83,26 @@ export default function GridMap({
     ? { live, bmuMap, countryName: country.name, tierKvs }
     : { live: null, bmuMap: null, tierKvs }
 
+  /** Current props, bundled for the pure map-mutation helpers. */
+  const viewArgs = () => ({ country, enabledGroups, network, tiles })
+  const liveArgs = () => ({ data, country, live, liveMode, timeIndex, weekScrub })
+
   // ------------------------------------------------------------------ init
   useEffect(() => {
     const container = containerRef.current
     if (!container || mapRef.current) return
 
-    const map = new maplibregl.Map({
-      container,
-      style: buildBaseStyle(data.basemap),
-      bounds: country.bounds,
-      fitBoundsOptions: { padding: 24 },
-      minZoom: 2,
-      maxZoom: 15,
-      attributionControl: false,
-      dragRotate: false,
-      pitchWithRotate: false,
-    })
-    map.touchZoomRotate.disableRotation()
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-    map.addControl(
-      new maplibregl.AttributionControl({
-        compact: true,
-        customAttribution:
-          'Power data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL) · Coastline: Natural Earth',
-      }),
-      'bottom-right',
-    )
-    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+    const map = createAtlasMap(container, data, country.bounds)
 
     map.on('load', () => {
-      // Optional raster underlay slot (kept hidden until toggled).
-      map.addSource('carto', CARTO_SOURCE)
-      map.addLayer(
-        {
-          id: 'carto',
-          type: 'raster',
-          source: 'carto',
-          layout: { visibility: 'none' },
-          paint: { 'raster-opacity': 0.85 },
-        },
-        'land',
-      )
-
-      if (__TILES__) {
-        map.addSource('transmission', {
-          type: 'vector',
-          url: TILES_URL(),
-          minzoom: 2,
-          maxzoom: 11, // tiles overzoom beyond their native maximum
-        })
-      } else {
-        map.addSource('transmission', { type: 'geojson', data: data.transmission })
-      }
-      map.addSource('interconnectors', { type: 'geojson', data: data.interconnectors })
-      map.addSource('stations', { type: 'geojson', data: data.stations, generateId: true })
-
-      for (const layer of transmissionLayers(
-        'transmission',
-        __TILES__ ? 'transmission' : undefined,
-      ))
-        map.addLayer(layer)
-      for (const layer of interconnectorLayers('interconnectors')) map.addLayer(layer)
-      for (const layer of stationLayers('stations')) map.addLayer(layer)
-      map.addLayer(liveStationLayer('stations'))
-
+      installSourcesAndLayers(map, data)
       readyRef.current = true
       if (dataRef.current !== data) {
         // Data advanced while the style was loading — push the latest merge.
-        const src = (id: string) => map.getSource(id) as maplibregl.GeoJSONSource | undefined
-        src('land')?.setData(dataRef.current.basemap as never)
-        src('stations')?.setData(dataRef.current.stations as never)
-        if (!__TILES__) src('transmission')?.setData(dataRef.current.transmission as never)
-        src('interconnectors')?.setData(dataRef.current.interconnectors as never)
+        setAllSourceData(map, dataRef.current)
       }
-      applyState(map)
-      applyLiveState(map)
+      applyViewState(map, viewArgs())
+      applyLiveView(map, liveArgs())
     })
 
     const popup = new Popup({
@@ -182,80 +114,22 @@ export default function GridMap({
     })
     popupRef.current = popup
 
-    const clearHover = () => {
-      if (hoverIdRef.current != null) {
-        map.setFeatureState({ source: 'stations', id: hoverIdRef.current }, { hover: false })
-        hoverIdRef.current = null
-      }
-    }
-
-    const pick = (point: maplibregl.PointLike & { x: number; y: number }) => {
-      const pad = 5
-      const box: [maplibregl.PointLike, maplibregl.PointLike] = [
-        [point.x - pad, point.y - pad],
-        [point.x + pad, point.y + pad],
-      ]
-      const layers = INTERACTIVE_LAYERS.filter((l) => map.getLayer(l))
-      return map.queryRenderedFeatures(box, { layers })[0]
-    }
-
-    let raf = 0
-    map.on('mousemove', (e) => {
-      if (!readyRef.current || pinnedRef.current) return
-      cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => {
-        const feature = pick(e.point)
-        map.getCanvas().style.cursor = feature ? 'pointer' : ''
-        if (!feature) {
-          clearHover()
-          popup.remove()
-          return
-        }
-        if (feature.layer.id === 'stations' || feature.layer.id === 'stations-live') {
-          if (hoverIdRef.current !== feature.id) {
-            clearHover()
-            if (feature.id != null) {
-              hoverIdRef.current = feature.id
-              map.setFeatureState({ source: 'stations', id: feature.id }, { hover: true })
-            }
-          }
-        } else {
-          clearHover()
-        }
-        popup.setLngLat(e.lngLat).setDOMContent(cardFor(feature, cardCtxRef.current)).addTo(map)
-      })
-    })
-
-    map.on('mouseout', () => {
-      if (pinnedRef.current) return
-      clearHover()
-      popup.remove()
-    })
-
-    map.on('click', (e) => {
-      const feature = pick(e.point)
-      if (feature) {
-        pinnedRef.current = true
-        popup.setLngLat(e.lngLat).setDOMContent(cardFor(feature, cardCtxRef.current)).addTo(map)
-        // Only stations get permalinks — a pinned line clears the station hash.
-        const isStation = feature.layer.id === 'stations' || feature.layer.id === 'stations-live'
-        const id = (feature.properties as { id?: string }).id ?? null
-        onPinRef.current?.(isStation ? id : null)
-      } else {
-        pinnedRef.current = false
-        popup.remove()
-        onPinRef.current?.(null)
-      }
-    })
+    const interactions = wireInteractions(
+      map,
+      popup,
+      () => cardCtxRef.current,
+      (id) => onPinRef.current?.(id),
+    )
+    interactionsRef.current = interactions
 
     mapRef.current = map
     // Debug/E2E handle (also handy in the browser console).
     ;(window as unknown as Record<string, unknown>).__ukgridMap = map
     return () => {
-      cancelAnimationFrame(raf)
-      popup.remove()
+      interactions.cleanup()
       map.remove()
       mapRef.current = null
+      interactionsRef.current = null
       readyRef.current = false
       delete (window as unknown as Record<string, unknown>).__ukgridMap
     }
@@ -263,131 +137,16 @@ export default function GridMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // --------------------------------------------------------- state → style
-  const applyState = (map: MLMap) => {
-    if (!readyRef.current) return
-    map.setFilter('stations', stationFilter(enabledGroups) as never)
-    if (map.getLayer('stations-live'))
-      map.setFilter('stations-live', stationFilter(enabledGroups) as never)
-
-    const vis = (id: string, on: boolean) => {
-      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
-    }
-    const tierIds = ['lines-t1', 'lines-t2', 'lines-t3'] as const
-    const tierOn = [network.t1, network.t2, network.t3] as const
-    country.tiers.forEach((tier, i) => {
-      const id = tierIds[i]!
-      if (!map.getLayer(id)) return
-      const kvFilter = ['in', ['get', 'v'], ['literal', tier.kvs]]
-      // One shared tile archive holds every country's lines — single-country
-      // pages filter to their own (the ALL view shows the lot).
-      const filter =
-        __TILES__ && country.id !== 'all'
-          ? ['all', kvFilter, ['==', ['get', 'cc'], country.id]]
-          : kvFilter
-      map.setFilter(id, filter as never)
-      vis(id, tierOn[i]! && tier.kvs.length > 0)
-    })
-    vis('hvdc', network.hvdc)
-    if (map.getLayer('hvdc')) {
-      map.setFilter(
-        'hvdc',
-        network.construction ? null : (['==', ['get', 'status'], 'operational'] as never),
-      )
-    }
-    vis('carto', tiles)
-    if (map.getLayer('land')) {
-      map.setPaintProperty('land', 'fill-opacity', tiles ? 0 : 1)
-      map.setPaintProperty('coast', 'line-opacity', tiles ? 0.25 : 1)
-    }
-  }
-
-  // ------------------------------------------------------ live → map state
-  const applyLiveState = (map: MLMap) => {
-    if (!readyRef.current) return
-    // Mix-only snapshots (Nordics: no per-unit ENTSO-E feed) must not ghost
-    // the station dots — live sizing needs actual per-station figures.
-    const hasStationData =
-      live != null && ((live.perStationNow?.size ?? 0) > 0 || live.perStationDay.size > 0)
-    const showLive = liveMode && country.hasLive && hasStationData
-    if (map.getLayer('stations-live')) {
-      map.setLayoutProperty('stations-live', 'visibility', showLive ? 'visible' : 'none')
-    }
-    if (map.getLayer('stations')) {
-      map.setPaintProperty(
-        'stations',
-        'circle-opacity',
-        showLive
-          ? 0.22
-          : (['case', ['boolean', ['feature-state', 'hover'], false], 1, 0.85] as never),
-      )
-    }
-    applyFlowState(map)
-    if (!live || !showLive) return
-    // Feature ids from generateId are the feature's index in source order.
-    data.stations.features.forEach((f, index) => {
-      const id = f.properties.id
-      let mw: number
-      if (timeIndex != null && weekScrub) {
-        // Week scrub (#65): read the stitched week series; grids without
-        // per-station history keep their day-average sizing while the mix
-        // panel does the scrubbing.
-        mw = weekScrub.perStation
-          ? (weekScrub.perStation.get(id)?.[timeIndex] ?? 0)
-          : (live.perStationNow?.get(id) ?? live.perStationDay.get(id)?.avgMW ?? 0)
-      } else if (timeIndex != null) {
-        // Scrub mode (#17): show the selected interval of the metered day.
-        mw = live.perStationDay.get(id)?.series[timeIndex] ?? 0
-      } else {
-        mw = live.perStationNow?.get(id) ?? live.perStationDay.get(id)?.avgMW ?? 0
-      }
-      map.setFeatureState({ source: 'stations', id: index }, { liveMW: Math.max(0, mw) })
-    })
-  }
-
-  // #43: normalized flows — the dashed HVDC base gets a solid overlay where a
-  // flow is known (+ = import into the page country), scrub-aware via
-  // flowSeries. Runs even for mix-only countries (they have flows, no dots).
-  const applyFlowState = (map: MLMap) => {
-    if (!readyRef.current) return
-    const src = map.getSource('interconnectors') as maplibregl.GeoJSONSource | undefined
-    if (!src) return
-    const flowsNow = live?.mix?.interconnectors ?? null
-    const series = live?.flowSeries ?? null
-    const wantFlows = liveMode && country.hasLive && (flowsNow || series)
-    const features = data.interconnectors.features.map((f) => {
-      if (!wantFlows || f.properties.status !== 'operational') return f
-      const id = f.properties.id as string
-      const mw =
-        timeIndex != null && weekScrub
-          ? (weekScrub.flowSeries?.[id]?.[timeIndex] ?? null)
-          : timeIndex != null
-            ? (series?.[id]?.[timeIndex] ?? null)
-            : (flowsNow?.[id] ?? null)
-      if (mw == null || Math.abs(mw) < 1) return f
-      const util = Math.min(1, Math.abs(mw) / Math.max(1, f.properties.capMW as number))
-      return {
-        ...f,
-        properties: {
-          ...f.properties,
-          flowMW: Math.round(mw),
-          flowDir: mw >= 0 ? 'in' : 'out',
-          flowUtil: Math.round(util * 100) / 100,
-        },
-      }
-    })
-    src.setData({ type: 'FeatureCollection', features } as never)
-  }
-
+  // ------------------------------------------------------- state → style
   useEffect(() => {
     const map = mapRef.current
-    if (map && readyRef.current) applyState(map)
+    if (map && readyRef.current) applyViewState(map, viewArgs())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabledGroups, network, tiles])
 
   useEffect(() => {
     const map = mapRef.current
-    if (map && readyRef.current) applyLiveState(map)
+    if (map && readyRef.current) applyLiveView(map, liveArgs())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, liveMode, country, timeIndex, weekScrub])
 
@@ -395,19 +154,12 @@ export default function GridMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !readyRef.current) return
-    const src = (id: string) => map.getSource(id) as maplibregl.GeoJSONSource | undefined
-    popupRef.current?.remove()
-    pinnedRef.current = false
-    hoverIdRef.current = null
-    map.removeFeatureState({ source: 'stations' })
+    interactionsRef.current?.clear()
     // The basemap differs per region (eu / na / merged for ALL) — without
     // this, switching e.g. GB → ALL leaves the US floating on open sea.
-    src('land')?.setData(data.basemap as never)
-    src('stations')?.setData(data.stations as never)
-    if (!__TILES__) src('transmission')?.setData(data.transmission as never)
-    src('interconnectors')?.setData(data.interconnectors as never)
-    applyState(map)
-    applyLiveState(map)
+    setAllSourceData(map, data)
+    applyViewState(map, viewArgs())
+    applyLiveView(map, liveArgs())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
@@ -438,11 +190,7 @@ export default function GridMap({
       properties: feature.properties,
       layer: { id: 'stations' },
     } as unknown as maplibregl.MapGeoJSONFeature
-    pinnedRef.current = true
-    popupRef.current
-      ?.setLngLat(searchTarget.coords)
-      .setDOMContent(cardFor(fake, cardCtxRef.current))
-      .addTo(map)
+    interactionsRef.current?.pinStation(searchTarget.coords, fake)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTarget])
 
