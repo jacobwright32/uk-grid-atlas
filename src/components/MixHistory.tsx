@@ -13,6 +13,8 @@ import { fmtGW, fmtPrice } from '../lib/format'
 interface Props {
   history: HistoryFile
   range: 'week' | 'month'
+  /** Week-scrub slot from the time slider (#65) — crosshair when not hovering. */
+  scrubIndex?: number | null
 }
 
 const W = 360
@@ -70,8 +72,11 @@ function lineSegments(
  * baked mix history, with the wholesale price as a dashed overlay on its own
  * scale. Hover reads out slot totals; the legend reuses the bucket palette.
  */
-export default function MixHistory({ history, range }: Props) {
-  const [hover, setHover] = useState<number | null>(null)
+export default function MixHistory({ history, range, scrubIndex }: Props) {
+  const [hoverIdx, setHover] = useState<number | null>(null)
+  // The slider's slot doubles as the crosshair when the mouse is elsewhere.
+  const scrub = range === 'week' && scrubIndex != null ? scrubIndex : null
+  const hover = hoverIdx ?? scrub
 
   const week = useMemo(
     () => (range === 'week' ? stitchHourly(history.hourly) : null),

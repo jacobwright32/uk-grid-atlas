@@ -30,6 +30,7 @@ import {
   buildStationDay,
   compactDate,
   historyDates,
+  hourlyDates,
   hoursCovered,
   isoDaysAgo,
   makeHourlyAcc,
@@ -38,6 +39,7 @@ import {
   mergeHistory,
   missingDates,
   priceAvg,
+  stationSeriesOnly,
   throughHour,
 } from './snapshot-common.mjs'
 
@@ -298,16 +300,18 @@ async function main() {
           mixSeries: agg.mixSeries,
           importSeries: null,
           prices: price?.series ?? null,
+          perStation: stationSeriesOnly(agg.perStation),
+          flowSeries: null,
         },
       })
       return true
     }
     record(metered, m, prices)
-    const want = missingDates(
-      [...historyDates(histPath), metered.date],
-      1,
-      backfillDays ?? 7,
-    ).slice(0, backfillDays ?? 3)
+    const hourlyWant = missingDates([...hourlyDates(histPath), metered.date], 1, 7)
+    const dailyWant = backfillDays
+      ? missingDates([...historyDates(histPath), metered.date], 8, backfillDays)
+      : []
+    const want = [...hourlyWant, ...dailyWant].slice(0, backfillDays ?? 3)
     let added = 0
     for (const date of want) {
       try {

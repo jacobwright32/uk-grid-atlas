@@ -43,6 +43,15 @@ interface Props {
   searchTarget: SearchTarget | null
   /** Metered-day interval to display, or null for live/day-average (#17). */
   timeIndex: number | null
+  /**
+   * Week-scrub override (#65): when set, timeIndex indexes these week-long
+   * series instead of the metered day's. Null members mean that layer has
+   * no weekly data (GB/US) — dots fall back to day-average, flows hide.
+   */
+  weekScrub: {
+    perStation: Map<string, (number | null)[]> | null
+    flowSeries: Record<string, (number | null)[]> | null
+  } | null
 }
 
 export default function GridMap({
@@ -57,6 +66,7 @@ export default function GridMap({
   resizeSignal,
   searchTarget,
   timeIndex,
+  weekScrub,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -302,7 +312,14 @@ export default function GridMap({
     data.stations.features.forEach((f, index) => {
       const id = f.properties.id
       let mw: number
-      if (timeIndex != null) {
+      if (timeIndex != null && weekScrub) {
+        // Week scrub (#65): read the stitched week series; grids without
+        // per-station history keep their day-average sizing while the mix
+        // panel does the scrubbing.
+        mw = weekScrub.perStation
+          ? (weekScrub.perStation.get(id)?.[timeIndex] ?? 0)
+          : (live.perStationNow?.get(id) ?? live.perStationDay.get(id)?.avgMW ?? 0)
+      } else if (timeIndex != null) {
         // Scrub mode (#17): show the selected interval of the metered day.
         mw = live.perStationDay.get(id)?.series[timeIndex] ?? 0
       } else {
@@ -325,7 +342,12 @@ export default function GridMap({
     const features = data.interconnectors.features.map((f) => {
       if (!wantFlows || f.properties.status !== 'operational') return f
       const id = f.properties.id as string
-      const mw = timeIndex != null ? (series?.[id]?.[timeIndex] ?? null) : (flowsNow?.[id] ?? null)
+      const mw =
+        timeIndex != null && weekScrub
+          ? (weekScrub.flowSeries?.[id]?.[timeIndex] ?? null)
+          : timeIndex != null
+            ? (series?.[id]?.[timeIndex] ?? null)
+            : (flowsNow?.[id] ?? null)
       if (mw == null || Math.abs(mw) < 1) return f
       const util = Math.min(1, Math.abs(mw) / Math.max(1, f.properties.capMW as number))
       return {
@@ -351,7 +373,7 @@ export default function GridMap({
     const map = mapRef.current
     if (map && readyRef.current) applyLiveState(map)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, liveMode, country, timeIndex])
+  }, [live, liveMode, country, timeIndex, weekScrub])
 
   // ----------------------------------------------------- country data swap
   useEffect(() => {

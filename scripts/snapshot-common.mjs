@@ -122,19 +122,27 @@ export function buildStationDay(series) {
  * Rolling per-country history file (public/live/history/<cc>.json):
  *   { version, updatedAt, currency, sourceLabel,
  *     days:   [{date, mix, importMW, totalMW, price}] oldest→newest ≤ maxDays,
- *     hourly: [{date, mixSeries, importSeries, prices}] oldest→newest ≤ maxHourly }
+ *     hourly: [{date, mixSeries, importSeries, prices, perStation, flowSeries}]
+ *             oldest→newest ≤ maxHourly }
  * Each fetcher upserts its final metered days here every run (idempotent —
  * re-running a day replaces it), so the month view maintains itself.
+ *
+ * v2 added perStation/flowSeries to hourly records (week scrub on the map);
+ * upserting into a v1 file keeps its days but drops the hourly records, so
+ * the normal missing-hourly catch-up refetches the week in the new shape.
  */
+export const HISTORY_VERSION = 2
+
 export function upsertHistory(existing, { currency, sourceLabel, day, hourly }, opts = {}) {
   const { maxDays = 31, maxHourly = 7 } = opts
+  const outdated = existing != null && (existing.version ?? 1) < HISTORY_VERSION
   const out = {
-    version: 1,
+    version: HISTORY_VERSION,
     updatedAt: existing?.updatedAt ?? null,
     currency: currency ?? existing?.currency ?? null,
     sourceLabel: sourceLabel ?? existing?.sourceLabel ?? null,
     days: [...(existing?.days ?? [])],
-    hourly: [...(existing?.hourly ?? [])],
+    hourly: outdated ? [] : [...(existing?.hourly ?? [])],
   }
   const upsert = (list, rec) => {
     if (!rec) return list
@@ -199,14 +207,38 @@ export function importAvg(importSeries) {
   return Math.round(meanCovered(importSeries))
 }
 
+/** Parse a history file (null on missing/corrupt). */
+export function readHistory(path) {
+  if (!existsSync(path)) return null
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
 /** Dates already recorded in a history file's days (empty on missing/corrupt). */
 export function historyDates(path) {
-  if (!existsSync(path)) return []
-  try {
-    return (JSON.parse(readFileSync(path, 'utf8')).days ?? []).map((d) => d.date)
-  } catch {
-    return []
+  return (readHistory(path)?.days ?? []).map((d) => d.date)
+}
+
+/**
+ * Dates whose HOURLY record is missing or pre-dates the current schema —
+ * the week-scrub catch-up worklist (a v1 file reports every recent day).
+ */
+export function hourlyDates(path) {
+  const h = readHistory(path)
+  if (!h || (h.version ?? 1) < HISTORY_VERSION) return []
+  return (h.hourly ?? []).map((r) => r.date)
+}
+
+/** StationDay map → lean {id: series} for hourly history (null when empty). */
+export function stationSeriesOnly(perStation) {
+  const out = {}
+  for (const [id, d] of Object.entries(perStation ?? {})) {
+    if (d?.series) out[id] = d.series
   }
+  return Object.keys(out).length ? out : null
 }
 
 /**

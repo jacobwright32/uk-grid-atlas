@@ -34,6 +34,7 @@ import {
   buildMixRows,
   historyDates,
   hourOfPosition,
+  hourlyDates,
   importAvg,
   isoDaysAgo,
   makeHourlyAcc,
@@ -41,6 +42,7 @@ import {
   mergeHistory,
   missingDates,
   priceAvg,
+  stationSeriesOnly,
   throughHour,
 } from './snapshot-common.mjs'
 
@@ -103,6 +105,56 @@ function buildUnitMap(index, overrides, units) {
   }
   unmatched.sort((a, b) => (b.nominalP ?? 0) - (a.nominalP ?? 0))
   return { byUnit, unmatched }
+}
+
+/** One day's per-unit actuals (A73) across the country's control areas. */
+async function fetchUnitsDay(cfg, date) {
+  const collected = []
+  for (const domain of cfg.unitDomains) {
+    const doc = await client.get({
+      documentType: 'A73',
+      processType: 'A16',
+      in_Domain: domain,
+      ...dayWindow(date),
+    })
+    if (doc) collected.push(...parseSeries(doc))
+  }
+  return collected
+}
+
+/**
+ * Aggregate unit series → stations. Units missing from the A71 registry
+ * (common for hydro fleets) are matched by their A73 name; hits are written
+ * into the registry so future runs skip the fuzzy pass. Overrides outrank
+ * the cached registry, so a hand-mapping added after a wrong fuzzy match
+ * takes effect immediately (not at the 30-day rebuild).
+ */
+function stationsFromUnits(unitSeries, index, overrides, registry) {
+  const byStation = new Map()
+  let unmappedMW = 0
+  let registryDirty = false
+  for (const s of unitSeries) {
+    let stationId = overrides[s.unitEic] ?? registry.byUnit[s.unitEic] ?? null
+    if (!stationId && s.unitName) {
+      stationId = matchByName(index, s.unitName, s.psrType)
+    }
+    if (stationId && s.unitEic && registry.byUnit[s.unitEic] !== stationId) {
+      registry.byUnit[s.unitEic] = stationId
+      registryDirty = true
+    }
+    if (!stationId) {
+      unmappedMW += Math.max(...s.points.map((p) => p.mw), 0)
+      continue
+    }
+    if (!byStation.has(stationId)) byStation.set(stationId, [])
+    byStation.get(stationId).push(s)
+  }
+  const perStation = {}
+  for (const [stationId, list] of byStation) {
+    const d = stationDayFromSeries(list)
+    if (d) perStation[stationId] = d
+  }
+  return { perStation, unmappedMW, registryDirty }
 }
 
 // ------------------------------------------------------- mix + flows fetch
@@ -248,15 +300,25 @@ async function fetchPrices(cfg, day) {
 
 // ---------------------------------------------------------------- history
 /**
- * Record one final day into history/<cc>.json (week of hourly series, month
- * of daily averages). `pre` passes the already-fetched metered day so the
- * snapshot's own fetch is reused. Days covered less than 20 hours are left
- * out — they stay "missing" and the next run retries them once complete.
+ * Record one final day into history/<cc>.json (week of hourly series with
+ * per-station and per-link detail for the map scrub, month of daily
+ * averages). `pre` passes the already-fetched metered day so the snapshot's
+ * own fetches are reused; other days fetch their own A73 + A75 + A11 + A44.
+ * Days covered less than 20 hours are left out — they stay "missing" and
+ * the next run retries them once complete. `ctx` carries the unit-matching
+ * machinery (station index, overrides, registry) for per-station series.
  */
-async function recordHistoryDay(cc, cfg, histPath, date, pre = null) {
+async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
   const t = pre?.t ?? (await fetchMixAndFlows(cc, cfg, date))
   if (t.hoursCovered < 20) return false
   const p = pre ? pre.p : await fetchPrices(cfg, date).catch(() => null)
+  let perStation = pre?.perStation ?? null
+  if (!perStation && ctx) {
+    const units = await fetchUnitsDay(cfg, date).catch(() => [])
+    const r = stationsFromUnits(units, ctx.index, ctx.overrides, ctx.registry)
+    perStation = r.perStation
+    if (r.registryDirty) writeFileSync(ctx.mapPath, JSON.stringify(ctx.registry, null, 1))
+  }
   mergeHistory(histPath, {
     currency: p?.currency ?? null,
     day: buildDayRecord(date, t.mixRows, importAvg(t.importSeries), priceAvg(p?.series)),
@@ -265,6 +327,8 @@ async function recordHistoryDay(cc, cfg, histPath, date, pre = null) {
       mixSeries: t.mixSeries,
       importSeries: t.importSeries.some((v) => v != null) ? t.importSeries : null,
       prices: p?.series ?? null,
+      perStation: stationSeriesOnly(perStation),
+      flowSeries: Object.keys(t.flowSeries).length ? t.flowSeries : null,
     },
   })
   return true
@@ -323,16 +387,7 @@ for (const cc of countryIds) {
     let unitSeries = []
     for (let back = 1; back <= 14 && !day; back++) {
       const candidate = isoDaysAgo(back)
-      const collected = []
-      for (const domain of cfg.unitDomains) {
-        const doc = await client.get({
-          documentType: 'A73',
-          processType: 'A16',
-          in_Domain: domain,
-          ...dayWindow(candidate),
-        })
-        if (doc) collected.push(...parseSeries(doc))
-      }
+      const collected = await fetchUnitsDay(cfg, candidate)
       if (collected.length) {
         day = candidate
         unitSeries = collected
@@ -346,36 +401,14 @@ for (const cc of countryIds) {
       unitSeries = []
     }
 
-    // 3. Aggregate unit series → stations. Units missing from the A71
-    // registry (common for hydro fleets) are matched here by their A73
-    // name; hits are persisted into the registry for future runs.
-    const byStation = new Map()
-    let unmappedMW = 0
-    let registryDirty = false
-    for (const s of unitSeries) {
-      // Overrides outrank the cached registry, so a hand-mapping added after
-      // a wrong fuzzy match takes effect immediately (not at the 30d rebuild).
-      let stationId = overrides[s.unitEic] ?? registry.byUnit[s.unitEic] ?? null
-      if (!stationId && s.unitName) {
-        stationId = matchByName(index, s.unitName, s.psrType)
-      }
-      if (stationId && registry.byUnit[s.unitEic] !== stationId) {
-        registry.byUnit[s.unitEic] = stationId
-        registryDirty = true
-      }
-      if (!stationId) {
-        unmappedMW += Math.max(...s.points.map((p) => p.mw), 0)
-        continue
-      }
-      if (!byStation.has(stationId)) byStation.set(stationId, [])
-      byStation.get(stationId).push(s)
-    }
+    // 3. Aggregate unit series → stations.
+    const { perStation, unmappedMW, registryDirty } = stationsFromUnits(
+      unitSeries,
+      index,
+      overrides,
+      registry,
+    )
     if (registryDirty) writeFileSync(mapPath, JSON.stringify(registry, null, 1))
-    const perStation = {}
-    for (const [stationId, list] of byStation) {
-      const d = stationDayFromSeries(list)
-      if (d) perStation[stationId] = d
-    }
 
     // 4+5. Mix (A75) + border flows (A11) for the metered day: hourly series
     // (#17 scrub) and day averages derived from them. The same fetch runs
@@ -434,19 +467,29 @@ for (const cc of countryIds) {
     }
     writeFileSync(join(OUT_DIR, `${cc}.json`), JSON.stringify(snapshot))
 
-    // 7. Rolling history: week of hourly series + month of daily averages.
-    // The metered day rides along free; missing recent days are back-filled
-    // (capped per incremental run so the 6-hourly workflow stays quick).
+    // 7. Rolling history: week of hourly series (with per-station/link
+    // detail for the map scrub) + month of daily averages. The metered day
+    // rides along free; the hourly window and any missing month days are
+    // back-filled, capped per incremental run so the workflow stays quick.
     try {
       const histPath = join(OUT_DIR, 'history', `${cc}.json`)
-      await recordHistoryDay(cc, cfg, histPath, day, { t: metered, p: prices })
-      const want = missingDates([...historyDates(histPath), day], 1, backfillDays ?? 7).slice(
-        0,
-        backfillDays ?? 3,
-      )
+      const ctx = { index, overrides, registry, mapPath }
+      await recordHistoryDay(cc, cfg, histPath, day, ctx, {
+        t: metered,
+        p: prices,
+        perStation,
+      })
+      const hourlyWant = missingDates([...hourlyDates(histPath), day], 1, 7)
+      const dailyWant = backfillDays
+        ? missingDates([...historyDates(histPath), day], 8, backfillDays)
+        : []
+      const want = [...hourlyWant, ...dailyWant].slice(0, backfillDays ?? 3)
       let added = 0
       for (const date of want) {
-        if (await recordHistoryDay(cc, cfg, histPath, date).catch(() => false)) added++
+        // Beyond the 7-day hourly window the record is trimmed to its daily
+        // average anyway — skip the expensive per-unit A73 fetch there.
+        const dayCtx = hourlyWant.includes(date) ? ctx : null
+        if (await recordHistoryDay(cc, cfg, histPath, date, dayCtx).catch(() => false)) added++
       }
       if (want.length) console.log(`${cc}: history +${added}/${want.length} day(s)`)
     } catch (err) {

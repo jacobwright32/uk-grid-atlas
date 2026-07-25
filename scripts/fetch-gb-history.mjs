@@ -21,6 +21,7 @@ import {
   buildDayRecord,
   buildMixRows,
   historyDates,
+  hourlyDates,
   hoursCovered,
   importAvg,
   makeHourlyAcc,
@@ -124,10 +125,9 @@ async function main() {
   const backfillDays = bfIdx >= 0 ? Math.max(1, parseInt(process.argv[bfIdx + 1], 10) || 31) : null
 
   const histPath = join(OUT_DIR, 'history', 'gb.json')
-  const want = missingDates(historyDates(histPath), 1, backfillDays ?? 7).slice(
-    0,
-    backfillDays ?? 3,
-  )
+  const hourlyWant = missingDates(hourlyDates(histPath), 1, 7)
+  const dailyWant = backfillDays ? missingDates(historyDates(histPath), 8, backfillDays) : []
+  const want = [...hourlyWant, ...dailyWant].slice(0, backfillDays ?? 3)
   let added = 0
   for (const date of want) {
     try {
@@ -147,7 +147,7 @@ async function main() {
           importAvg(importSeries),
           priceAvg(prices),
         ),
-        hourly: { date, mixSeries, importSeries, prices },
+        hourly: { date, mixSeries, importSeries, prices, perStation: null, flowSeries: null },
       })
       added++
     } catch (err) {

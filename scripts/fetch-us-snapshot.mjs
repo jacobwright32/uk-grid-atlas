@@ -22,6 +22,7 @@ import {
   buildMixRows,
   compactDate,
   historyDates,
+  hourlyDates,
   hoursCovered,
   isoDaysAgo,
   makeHourlyAcc,
@@ -233,11 +234,14 @@ async function main() {
   // NYISO's archive is deep, so missed days heal on later runs.
   try {
     const histPath = join(OUT_DIR, 'history', 'us.json')
-    const have = new Set(historyDates(histPath))
+    const haveDay = new Set(historyDates(histPath))
+    const haveHourly = new Set(hourlyDates(histPath))
     const nyCache = { [yesterday]: nyYesterdayRaw }
     let added = 0
     for (const date of Object.keys(ercotDays).sort()) {
-      if (date === todayDate || have.has(date)) continue
+      // Re-record while a date is inside ERCOT's window if its hourly record
+      // is missing or pre-dates the current schema (v2 wipe).
+      if (date === todayDate || (haveDay.has(date) && haveHourly.has(date))) continue
       const ny =
         date in nyCache ? nyCache[date] : await fetchNyiso(compactDate(date)).catch(() => null)
       if (!hasData(ny)) continue
@@ -246,7 +250,14 @@ async function main() {
       mergeHistory(histPath, {
         sourceLabel: 'ERCOT + NYISO',
         day: buildDayRecord(date, rowsFrom(s), null, null),
-        hourly: { date, mixSeries: s, importSeries: null, prices: null },
+        hourly: {
+          date,
+          mixSeries: s,
+          importSeries: null,
+          prices: null,
+          perStation: null,
+          flowSeries: null,
+        },
       })
       added++
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bucketOrder, shortDate, stitchHourly } from './history'
+import { bucketOrder, buildWeekScrub, shortDate, stitchHourly } from './history'
 import type { HistoryDay, HistoryHourly } from './history'
 
 const hourly = (
@@ -56,6 +56,46 @@ describe('stitchHourly', () => {
     ])
     expect(some.prices?.[0]).toBeNull()
     expect(some.prices?.[24]).toBe(42)
+  })
+})
+
+describe('buildWeekScrub', () => {
+  const withStations = (
+    date: string,
+    stations: Record<string, number> | null,
+    flows: Record<string, number> | null = null,
+  ): HistoryHourly => ({
+    ...hourly(date, { gas: 100 }),
+    perStation: stations
+      ? Object.fromEntries(Object.entries(stations).map(([id, mw]) => [id, new Array(24).fill(mw)]))
+      : null,
+    flowSeries: flows
+      ? Object.fromEntries(Object.entries(flows).map(([id, mw]) => [id, new Array(24).fill(mw)]))
+      : null,
+  })
+
+  it('stitches per-station and per-link series across the calendar', () => {
+    const out = buildWeekScrub([
+      withStations('2026-07-22', { 'way/1': 500 }, { estlink: 300 }),
+      withStations('2026-07-24', { 'way/1': 700, 'way/2': 50 }, { estlink: -120 }),
+    ])!
+    expect(out.len).toBe(72) // 22, 23 (gap), 24
+    expect(out.dates).toHaveLength(3)
+    expect(out.perStation?.get('way/1')?.[0]).toBe(500)
+    expect(out.perStation?.get('way/1')?.[24]).toBeNull() // the gap day
+    expect(out.perStation?.get('way/1')?.[48]).toBe(700)
+    expect(out.perStation?.get('way/2')?.[0]).toBeNull() // absent first day
+    expect(out.flowSeries?.estlink?.[48]).toBe(-120)
+    expect(out.mixSeries.gas?.[0]).toBe(100)
+  })
+  it('returns null station/flow maps for mix-only grids', () => {
+    const out = buildWeekScrub([withStations('2026-07-23', null)])!
+    expect(out.perStation).toBeNull()
+    expect(out.flowSeries).toBeNull()
+    expect(out.len).toBe(24)
+  })
+  it('returns null for an empty week', () => {
+    expect(buildWeekScrub([])).toBeNull()
   })
 })
 

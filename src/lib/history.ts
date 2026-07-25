@@ -18,6 +18,10 @@ export interface HistoryHourly {
   mixSeries: Record<string, (number | null)[]>
   importSeries: (number | null)[] | null
   prices: (number | null)[] | null
+  /** Station id → 24-slot MW series (v2; where the TSO publishes per-unit). */
+  perStation?: Record<string, (number | null)[]> | null
+  /** Interconnector id → 24-slot MW series, + = import (v2, EU only). */
+  flowSeries?: Record<string, (number | null)[]> | null
 }
 
 export interface HistoryFile {
@@ -165,4 +169,63 @@ export function stitchHourly(hourly: HistoryHourly[]): StitchedWeek {
 export function shortDate(iso: string): string {
   const d = new Date(`${iso}T12:00:00Z`)
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+/** Everything the map needs to scrub the week hourly (#65). */
+export interface WeekScrub {
+  /** Total hourly slots (calendar days × 24, gaps included). */
+  len: number
+  /** Calendar day per 24-slot block, for slider labels. */
+  dates: string[]
+  /** Station id → len-slot series; null when no per-unit history exists. */
+  perStation: Map<string, (number | null)[]> | null
+  /** Interconnector id → len-slot series (+ = import); null when absent. */
+  flowSeries: Record<string, (number | null)[]> | null
+  mixSeries: Record<string, (number | null)[]>
+  importSeries: (number | null)[] | null
+  prices: (number | null)[] | null
+}
+
+/**
+ * Stitch the hourly records into week-long scrubbable series — the same
+ * calendar placement as stitchHourly, extended to per-station and per-link
+ * detail so the map's dots and HVDC flows can animate across the week.
+ */
+export function buildWeekScrub(hourly: HistoryHourly[]): WeekScrub | null {
+  const firstRec = hourly[0]
+  const lastRec = hourly[hourly.length - 1]
+  if (!firstRec || !lastRec) return null
+  const stitched = stitchHourly(hourly)
+  const first = firstRec.date
+  const len = stitched.dates.length * 24
+
+  const collect = (pick: (h: HistoryHourly) => Record<string, (number | null)[]> | null) => {
+    const ids = new Set<string>()
+    for (const h of hourly) for (const id of Object.keys(pick(h) ?? {})) ids.add(id)
+    if (!ids.size) return null
+    const out = new Map<string, (number | null)[]>()
+    for (const id of ids) {
+      const series = new Array<number | null>(len).fill(null)
+      for (const h of hourly) {
+        const s = pick(h)?.[id]
+        if (!s) continue
+        const base = dayIndexOf(first, h.date) * 24
+        for (let hr = 0; hr < 24; hr++) series[base + hr] = s[hr] ?? null
+      }
+      out.set(id, series)
+    }
+    return out
+  }
+
+  const perStation = collect((h) => h.perStation ?? null)
+  const flowMap = collect((h) => h.flowSeries ?? null)
+  return {
+    len,
+    dates: stitched.dates,
+    perStation,
+    flowSeries: flowMap ? Object.fromEntries(flowMap) : null,
+    mixSeries: stitched.series,
+    importSeries: stitched.imports,
+    prices: stitched.prices,
+  }
 }

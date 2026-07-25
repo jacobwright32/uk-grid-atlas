@@ -194,6 +194,18 @@ describe('history', () => {
     expect(h.days[0].date).toBe('2026-06-10')
     expect(h.hourly[0].date).toBe('2026-06-34') // string-sorted fake dates
   })
+  it('v2 upsert keeps a v1 file’s days but drops its hourly records', () => {
+    const v1 = {
+      version: 1,
+      currency: 'EUR',
+      days: [day('2026-07-01')],
+      hourly: [hourly('2026-07-01')],
+    }
+    const h = upsertHistory(v1, { day: day('2026-07-02') })
+    expect(h.version).toBeGreaterThanOrEqual(2)
+    expect(h.days).toHaveLength(2) // the expensive month survives
+    expect(h.hourly).toHaveLength(0) // the week refills in the new shape
+  })
   it('mergeHistory round-trips through disk and survives a corrupt file', () => {
     const dir = mkdtempSync(join(tmpdir(), 'hist-'))
     const path = join(dir, 'xx.json')

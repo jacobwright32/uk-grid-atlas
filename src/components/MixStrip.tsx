@@ -174,7 +174,7 @@ export default function MixStrip({
       </div>
       {historyView ? (
         historyState === 'ready' && history ? (
-          <MixHistory history={history} range={range} />
+          <MixHistory history={history} range={range} scrubIndex={timeIndex} />
         ) : historyState === 'missing' ? (
           <div className="mixhistory-empty">no history baked for this grid yet</div>
         ) : (

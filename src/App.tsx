@@ -8,7 +8,7 @@ import MixStrip from './components/MixStrip'
 import type { HistoryState, MixRange } from './components/MixStrip'
 import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
-import { loadHistory } from './lib/history'
+import { buildWeekScrub, loadHistory } from './lib/history'
 import type { HistoryFile } from './lib/history'
 import { COUNTRIES, countryFromHash, DEFAULT_COUNTRY } from './lib/countries'
 import type { CountryId } from './lib/countries'
@@ -72,6 +72,18 @@ export default function App() {
       setHistoryState(h ? 'ready' : 'missing')
     })
   }, [mixRange, historyState, countryId])
+
+  // Range flips re-scope the slider (day ↔ week lengths differ) (#65).
+  useEffect(() => {
+    setTimeIndex(null)
+    setPlaying(false)
+  }, [mixRange])
+
+  // Week scrub (#65): stitched per-station/link/mix series for the slider.
+  const weekScrub = useMemo(
+    () => (mixRange === 'week' && history ? buildWeekScrub(history.hourly) : null),
+    [mixRange, history],
+  )
   // Country switcher scroll affordance: fade the clipped edge(s).
   const switchRef = useRef<HTMLDivElement>(null)
   const [switchFades, setSwitchFades] = useState({ l: false, r: false })
@@ -147,6 +159,7 @@ export default function App() {
   }
 
   const seriesLen = useMemo(() => {
+    if (weekScrub) return weekScrub.len // week mode re-scopes the slider (#65)
     if (live?.perStationDay.size) {
       for (const day of live.perStationDay.values()) return day.series.length
     }
@@ -154,7 +167,7 @@ export default function App() {
     const ms = live?.mixSeries
     if (ms) for (const k in ms) return ms[k]?.length ?? 0
     return 0
-  }, [live])
+  }, [live, weekScrub])
 
   const stats = useMemo(() => (data ? computeStats(data.stations) : null), [data])
   const totals = useMemo(() => (stats ? totalsFor(stats, enabled) : null), [stats, enabled])
@@ -288,6 +301,11 @@ export default function App() {
           resizeSignal={resizeSignal}
           searchTarget={searchTarget}
           timeIndex={timeIndex}
+          weekScrub={
+            weekScrub
+              ? { perStation: weekScrub.perStation, flowSeries: weekScrub.flowSeries }
+              : null
+          }
         />
         <div className="search-dock">
           <SearchBox data={data} onSelect={setSearchTarget} />
@@ -299,6 +317,7 @@ export default function App() {
               index={timeIndex}
               playing={playing}
               meteredDate={live?.meteredDate ?? null}
+              weekDates={weekScrub?.dates ?? null}
               onChange={setTimeIndex}
               onPlayToggle={() => {
                 setPlaying((p) => !p)
