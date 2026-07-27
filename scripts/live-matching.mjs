@@ -274,8 +274,10 @@ export const COMPAT = {
   BIOMASS: ['bioenergy', 'waste', 'gas'],
   COAL: ['bioenergy', 'coal', 'other'],
   OIL: ['oil', 'gas'],
-  // OTHER / null covers batteries, new offshore wind registrations (e.g.
-  // Sofia pre-classification), tidal, CHP oddities — allow broadly.
+  // A *declared* OTHER (and a missing fuelType, which Elexon leaves off plenty
+  // of embedded units) covers batteries, new offshore wind registrations (e.g.
+  // Sofia pre-classification), tidal, CHP oddities — allow broadly. Codes the
+  // table has never heard of do NOT get this list; see compatFuels (#11).
   OTHER: [
     'storage',
     'gas',
@@ -292,23 +294,108 @@ export const COMPAT = {
   ],
 }
 
-export function compatible(bmuFuel, stationFuel) {
-  const list = COMPAT[bmuFuel ?? 'OTHER'] ?? COMPAT.OTHER
-  return list.includes(stationFuel)
+/** Name-score floor when the fuel gate is a confident single-fuel one. */
+export const MIN_SCORE = 0.55
+
+/**
+ * Name-score floor when the fuel gate does almost no work — the broad
+ * OTHER list. The name then carries the whole decision, so demand a
+ * near-exact overlap: 0.7 rejects the "one shared locality word" band
+ * (1-of-2 = 0.5, 2-of-3 = 0.67) and admits 3-of-4 = 0.75 and up (#11).
+ */
+export const BROAD_MIN_SCORE = 0.7
+
+/** Runner-up this close to the winner = ambiguous match, worth a QA look (#11). */
+export const NEAR_TIE_DELTA = 0.05
+
+/**
+ * Warn-once tally for unrecognised type codes (#11). Silence is how a new
+ * Elexon/ENTSO-E code degrades a whole run unnoticed; one line per distinct
+ * code is enough to notice without spamming a several-thousand-unit loop.
+ */
+export function makeUnknownCodeTally(label) {
+  const counts = new Map()
+  return {
+    note(code) {
+      const seen = counts.get(code) ?? 0
+      counts.set(code, seen + 1)
+      if (!seen)
+        console.warn(`${label}: unrecognised code ${JSON.stringify(code)} — not matched (#11)`)
+    },
+    /** {CODE: attempts}, commonest first — goes into the run's match report. */
+    counts: () => Object.fromEntries([...counts].sort((a, b) => b[1] - a[1])),
+    reset: () => counts.clear(),
+  }
+}
+
+const unknownFuels = makeUnknownCodeTally('bmu fuelType')
+
+/** Unrecognised BMU fuelTypes seen so far this run → match attempts (#11). */
+export function unknownFuelCounts() {
+  return unknownFuels.counts()
+}
+
+/** Clear the unrecognised-fuelType tally (per-run scripts, tests). */
+export function resetUnknownFuels() {
+  unknownFuels.reset()
+}
+
+/** Fuels whose allow-list is broad enough that the name must carry the match. */
+export function isBroadFuel(bmuFuel) {
+  return bmuFuel == null || bmuFuel === 'OTHER'
 }
 
 /**
- * Match one BMU against the station index.
- * @returns {{stationId: string, score: number} | null}
+ * Station fuels a BMU fuelType may match. A declared OTHER (or an absent
+ * fuelType) keeps the broad list; a code the table has never heard of —
+ * 'B20', a typo, a newly-introduced Elexon code — gets nothing instead of
+ * silently inheriting 12 of 13 fuels. It lands in the unmatched QA list,
+ * where an OVERRIDE (or a new COMPAT row) can place it deliberately (#11).
+ */
+export function compatFuels(bmuFuel) {
+  if (isBroadFuel(bmuFuel)) return COMPAT.OTHER
+  const list = COMPAT[bmuFuel]
+  if (list) return list
+  unknownFuels.note(bmuFuel)
+  return []
+}
+
+export function compatible(bmuFuel, stationFuel) {
+  return compatFuels(bmuFuel).includes(stationFuel)
+}
+
+/** True when the runner-up scored within NEAR_TIE_DELTA of the winner (#11). */
+export function isNearTie(match) {
+  if (!match?.runnerUp) return false
+  return match.score - match.runnerUp.score <= NEAR_TIE_DELTA
+}
+
+/**
+ * Match one BMU against the station index. Broad-list fuels must clear
+ * BROAD_MIN_SCORE, unrecognised fuels never match at all (#11). The runner-up
+ * rides along so callers can flag ambiguous wins — see isNearTie.
+ * @returns {{stationId: string, score: number, runnerUp: {stationId: string, score: number} | null} | null}
  */
 export function matchUnit(bmu, stationIndex) {
+  const fuels = compatFuels(bmu.fuelType)
+  if (!fuels.length) return null
+  const floor = isBroadFuel(bmu.fuelType) ? BROAD_MIN_SCORE : MIN_SCORE
   const unitToks = tokens(bmu.bmUnitName)
   const stem = stemTokens(unitToks)
   let best = null
+  let runnerUp = null
   for (const st of stationIndex) {
-    if (!compatible(bmu.fuelType, st.fuel)) continue
+    if (!fuels.includes(st.fuel)) continue
     const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
-    if (score >= 0.55 && (!best || score > best.score)) best = { stationId: st.id, score }
+    if (score <= 0) continue
+    // best is always >= runnerUp, so a new winner demotes the old one
+    if (!best || score > best.score) {
+      runnerUp = best
+      best = { stationId: st.id, score }
+    } else if (!runnerUp || score > runnerUp.score) runnerUp = { stationId: st.id, score }
   }
-  return best
+  // The runner-up may sit just under the floor — that is still the ambiguity
+  // worth reporting, so it survives the floor check on the winner.
+  if (!best || best.score < floor) return null
+  return { ...best, runnerUp }
 }

@@ -54,3 +54,20 @@ button {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+/**
+ * Available to assistive tech, invisible on screen (#12). Not `display: none`
+ * and not `visibility: hidden` — both remove the node from the accessibility
+ * tree, which would silence the live regions that use this.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

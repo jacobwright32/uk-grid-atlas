@@ -32,6 +32,7 @@ const baseProps = {
   today: null,
   prices: { currency: 'EUR', series: new Array(24).fill(42), zones: 1 },
   demandSeries: new Array(24).fill(7100),
+  meteredDate: null,
   sourceLabel: null,
   range: 'day' as const,
   onRange: () => {},
@@ -84,9 +85,69 @@ describe('MixStrip (day view)', () => {
   })
   it('exposes the range toggle with day selected', () => {
     render(<MixStrip {...baseProps} />)
-    const tabs = screen.getAllByRole('tab')
-    expect(tabs.map((t) => t.textContent)).toEqual(['day', '7d', '31d'])
-    expect(tabs[0]?.getAttribute('aria-selected')).toBe('true')
+    // Toggle buttons, not tabs — a tab without a tabpanel or arrow-key
+    // movement is a broken ARIA promise, so these carry aria-pressed.
+    const group = screen.getByRole('group', { name: 'Mix time range' })
+    const btns = [...group.querySelectorAll('button')]
+    expect(btns.map((t) => t.textContent)).toEqual(['day', '7d', '31d'])
+    expect(btns.map((t) => t.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false'])
+  })
+})
+
+// Scrub labels (#5): slot → label used to be `i * 30 min` off midnight, which
+// only holds on the 46 days a year that have 48 half-hours, and the half-hourly
+// test itself was an exact `=== 48` so the two clock-change days fell back to
+// hourly labels. These pin all three cases to real London wall-clock.
+describe('MixStrip (scrub labels, #5)', () => {
+  /** A half-hourly metered day of `len` settlement periods. */
+  const halfHourly = (len: number) => ({
+    nuclear: new Array(len).fill(3800),
+    wind: new Array(len).fill(2500),
+  })
+
+  it('labels a 48-period day in London wall-clock', () => {
+    render(
+      <MixStrip
+        {...baseProps}
+        mixSeries={halfHourly(48)}
+        meteredDate="2026-07-24"
+        timeIndex={25}
+      />,
+    )
+    expect(screen.getByText(/Finland generation mix · 12:30/)).toBeTruthy()
+    expect(screen.getByText('bars = generation at 12:30')).toBeTruthy()
+    expect(screen.getByText(/Day-ahead · 42 €\/MWh at 12:30/)).toBeTruthy()
+  })
+
+  it('keeps the 50-period October day half-hourly and on the right side of the fold', () => {
+    render(
+      <MixStrip {...baseProps} mixSeries={halfHourly(50)} meteredDate="2026-10-25" timeIndex={4} />,
+    )
+    // 4 × 30 min past a *nominal* midnight says 02:00; the clock goes back at
+    // 02:00 BST, so the fifth period of that day is really 01:00 GMT.
+    expect(screen.getByText('bars = generation at 01:00')).toBeTruthy()
+    expect(screen.queryByText('bars = generation at 02:00')).toBeNull()
+  })
+
+  it('keeps the 46-period March day half-hourly and past the spring gap', () => {
+    render(
+      <MixStrip {...baseProps} mixSeries={halfHourly(46)} meteredDate="2026-03-29" timeIndex={3} />,
+    )
+    // Naive arithmetic says 01:30 — an hour that does not exist that day. A 46
+    // that fell back to hourly labels would have said 03:00.
+    expect(screen.getByText('bars = generation at 02:30')).toBeTruthy()
+  })
+
+  it('labels hourly EU snapshots by index, since those are already local hours', () => {
+    render(
+      <MixStrip
+        {...baseProps}
+        mixSeries={{ nuclear: new Array(24).fill(3800) }}
+        meteredDate="2026-10-25"
+        timeIndex={5}
+      />,
+    )
+    expect(screen.getByText('bars = generation at 05:00')).toBeTruthy()
   })
 })
 

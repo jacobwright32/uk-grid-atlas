@@ -11,7 +11,13 @@
  *   A11     cross-border physical flows  → interconnector flows
  */
 import { XMLParser } from 'fast-xml-parser'
-import { jaccard, stemTokens, tokens } from './live-matching.mjs'
+import {
+  BROAD_MIN_SCORE,
+  jaccard,
+  makeUnknownCodeTally,
+  stemTokens,
+  tokens,
+} from './live-matching.mjs'
 
 const BASE = 'https://web-api.tp.entsoe.eu/api'
 
@@ -19,30 +25,90 @@ const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: false })
 
 const asArray = (x) => (x == null ? [] : Array.isArray(x) ? x : [x])
 
+/** ENTSO-E states its own ban expiry in the 429 body — honour it, don't guess. */
+const BAN_UNTIL_RE = /banned until '([^']+)'/
+
+/** A ban can outlast a short backoff, but never block a run indefinitely. */
+const MAX_WAIT_MS = 15 * 60_000
+
+const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * How long to wait before retrying a throttled/failed ENTSO-E request.
+ *
+ * The API answers a rate-limit breach with `429` and an HTML body naming the
+ * instant the ban lifts, so the only correct wait is "until then". Guessing a
+ * fixed backoff either gives up while still banned or sleeps far too long.
+ * Falls back to Retry-After, then to exponential backoff for a bare 429 or a
+ * transient 5xx.
+ *
+ * Exported for tests — the wait is the part worth pinning, not the sleeping.
+ */
+export function retryDelayMs({ body = '', retryAfter = null, attempt = 1, now = Date.now() }) {
+  const banned = BAN_UNTIL_RE.exec(body)
+  if (banned) {
+    const until = Date.parse(banned[1])
+    // +2s so we don't race the server's own clock back to a second ban.
+    if (Number.isFinite(until)) return Math.min(Math.max(until - now + 2_000, 1_000), MAX_WAIT_MS)
+  }
+  const secs = Number(retryAfter)
+  if (Number.isFinite(secs) && secs > 0) return Math.min(secs * 1_000, MAX_WAIT_MS)
+  return Math.min(30_000 * 2 ** (attempt - 1), MAX_WAIT_MS)
+}
+
 export class EntsoeClient {
-  constructor(token) {
+  /**
+   * @param token ENTSO-E security token.
+   * @param opts.maxAttempts total tries per request, including the first.
+   * @param opts.sleep injectable for tests.
+   */
+  constructor(token, { maxAttempts = 4, sleep = sleepMs } = {}) {
     if (!token) throw new Error('ENTSOE_TOKEN missing')
     this.token = token
+    this.maxAttempts = maxAttempts
+    this.sleep = sleep
   }
 
   async get(params) {
     const qs = new URLSearchParams({ securityToken: this.token, ...params })
-    const res = await fetch(`${BASE}?${qs}`, {
-      headers: { 'User-Agent': 'grid-atlas/1.0 (open-data dashboard)' },
-      signal: AbortSignal.timeout(90_000),
-    })
-    const text = await res.text()
-    if (!res.ok) {
+    for (let attempt = 1; ; attempt++) {
+      const res = await fetch(`${BASE}?${qs}`, {
+        headers: { 'User-Agent': 'grid-atlas/1.0 (open-data dashboard)' },
+        signal: AbortSignal.timeout(90_000),
+      })
+      const text = await res.text()
       // 400 with an Acknowledgement document = "no data" for many queries
       if (text.includes('Acknowledgement_MarketDocument')) return null
-      throw new Error(`ENTSO-E ${res.status}: ${text.slice(0, 160)}`)
+      if (res.ok) return parser.parse(text)
+
+      // A 31-day backfill is a few hundred requests, so a parallel bank of
+      // them trips ENTSO-E's limiter and every subsequent call 429s. Without
+      // this the whole run died on the first one — and a baker that deletes
+      // history before refetching leaves nothing behind when it does.
+      const retryable = res.status === 429 || res.status >= 500
+      if (!retryable || attempt >= this.maxAttempts)
+        throw new Error(`ENTSO-E ${res.status}: ${text.slice(0, 160)}`)
+      const waitMs = retryDelayMs({
+        body: text,
+        retryAfter: res.headers?.get?.('retry-after') ?? null,
+        attempt,
+      })
+      console.warn(
+        `ENTSO-E ${res.status} — waiting ${Math.round(waitMs / 1000)}s then retrying (attempt ${attempt}/${this.maxAttempts})`,
+      )
+      await this.sleep(waitMs)
     }
-    if (text.includes('Acknowledgement_MarketDocument')) return null
-    return parser.parse(text)
   }
 }
 
-/** Control/bidding-zone registry per Grid Atlas country. */
+/**
+ * Control/bidding-zone registry per Grid Atlas country.
+ *
+ * `mixDomains` answers generation (A75) and, for every grid but Ireland, load
+ * (A65) as well. `loadDomains` overrides the load query where the two differ —
+ * load is a control-area measurement, so a market-only construct like the SEM
+ * bidding zone has generation but no load at all.
+ */
 export const ENTSOE_COUNTRIES = {
   nl: { unitDomains: ['10YNL----------L'], mixDomains: ['10YNL----------L'] },
   be: { unitDomains: ['10YBE----------2'], mixDomains: ['10YBE----------2'] },
@@ -50,6 +116,13 @@ export const ENTSOE_COUNTRIES = {
     // All-island: EirGrid + SONI control areas, SEM bidding zone.
     unitDomains: ['10YIE-1001A00010', '10Y1001A1001A016'],
     mixDomains: ['10Y1001A1001A59C'],
+    // A65 against the SEM zone returns nothing, which is why Ireland was the
+    // one grid with demand null on every day of history (#24). EirGrid's
+    // control area does publish it (~3.7 GW). SONI files no load with ENTSO-E
+    // at all, so this figure is the Republic only while the mix above is
+    // all-island — the gap to generation is partly real imports (EWIC, Moyle,
+    // Greenlink) and partly that missing NI slice.
+    loadDomains: ['10YIE-1001A00010'],
   },
   dk: {
     unitDomains: ['10Y1001A1001A796'],
@@ -200,9 +273,16 @@ export const PSR_BUCKETS = {
   B13: ['other', 'Oil & other'],
   B15: ['hydro', 'Hydro & pumped'],
   B20: ['other', 'Oil & other'],
+  // Grid batteries discharging. Declared by BE (and increasingly others) and
+  // previously unmapped, so the MW were dropped from the mix entirely (#11).
+  B25: ['storage', 'Battery storage'],
 }
 
-/** psrType → station fuel groups it may match (for unit→station mapping). */
+/**
+ * psrType → station fuel groups it may match (for unit→station mapping).
+ * Must stay complete over PSR_BUCKETS: a code missing here is treated as
+ * unrecognised and matches nothing at all (#11).
+ */
 export const PSR_COMPAT = {
   B14: ['nuclear'],
   B09: ['geothermal', 'other'],
@@ -214,14 +294,61 @@ export const PSR_COMPAT = {
   B17: ['waste', 'bioenergy'],
   B06: ['oil', 'gas'],
   B07: ['coal', 'other'],
+  B08: ['coal', 'bioenergy', 'other'], // fossil peat (Finnish/Irish multi-fuel CHP)
   B10: ['pumped', 'hydro'],
   B11: ['hydro', 'pumped'],
   B12: ['hydro', 'pumped'],
+  B13: ['marine'],
   B15: ['hydro'],
   B16: ['solar'],
   B18: ['wind_offshore', 'wind_onshore'],
   B19: ['wind_onshore', 'wind_offshore'],
+  // B20 "Other" is a real declaration — batteries, tidal, CHP oddities, units
+  // awaiting reclassification — so it stays broad, but a B20 win has to clear
+  // BROAD_MIN_SCORE. Unrecognised codes no longer inherit this list (#11).
   B20: ['storage', 'gas', 'oil', 'other', 'bioenergy', 'waste', 'marine', 'hydro', 'solar'],
+  // B25 is an explicit battery declaration, so unlike B20 it stays narrow.
+  B25: ['storage'],
+}
+
+/**
+ * Name-score floor for a confident single-fuel psr gate. Deliberately looser
+ * than GB's MIN_SCORE (0.55): OSM names for continental plants routinely carry
+ * a locality token ENTSO-E omits — "Amer 9" vs "Amercentrale Geertruidenberg"
+ * scores 0.5 exactly — so 0.5 is load-bearing on this corpus. The broad-list
+ * floor is shared with GB: once the fuel gate stops helping there is no
+ * corpus-specific reason to be looser than the other matcher (#11).
+ */
+export const PSR_MIN_SCORE = 0.5
+
+const unknownPsrTypes = makeUnknownCodeTally('entsoe psrType')
+
+/** Unrecognised psrTypes seen so far this run → match attempts (#11). */
+export function unknownPsrCounts() {
+  return unknownPsrTypes.counts()
+}
+
+/** Clear the unrecognised-psrType tally (per-run scripts, tests). */
+export function resetUnknownPsrTypes() {
+  unknownPsrTypes.reset()
+}
+
+/** psrTypes whose allow-list is broad enough that the name must carry the match. */
+export function isBroadPsr(psrType) {
+  return psrType == null || psrType === 'B20'
+}
+
+/**
+ * Station fuels a psrType may match. A declared B20 (or a missing psrType)
+ * keeps the broad list; a code PSR_COMPAT has never heard of gets nothing
+ * rather than silently inheriting B20's nine fuels (#11).
+ */
+export function psrCompatFuels(psrType) {
+  if (isBroadPsr(psrType)) return PSR_COMPAT.B20
+  const list = PSR_COMPAT[psrType]
+  if (list) return list
+  unknownPsrTypes.note(psrType)
+  return []
 }
 
 /**
@@ -244,17 +371,20 @@ export function orientFlow(border, ownDomains) {
 /**
  * Fuzzy-match one ENTSO-E unit name against the OSM station index, gated by
  * PSR type compatibility (#56) — a wind unit never lands on a gas station,
- * however similar the names.
+ * however similar the names. Unrecognised psr codes match nothing, and broad
+ * (B20 / missing) ones must clear the higher BROAD_MIN_SCORE bar (#11).
  */
 export function matchByName(index, name, psrType) {
-  const compat = PSR_COMPAT[psrType] ?? PSR_COMPAT.B20
+  const compat = psrCompatFuels(psrType)
+  if (!compat.length) return null
+  const floor = isBroadPsr(psrType) ? BROAD_MIN_SCORE : PSR_MIN_SCORE
   const unitToks = tokens(name)
   const stem = stemTokens(unitToks)
   let best = null
   for (const st of index) {
     if (!compat.includes(st.fuel)) continue
     const score = Math.max(jaccard(unitToks, st.toks), jaccard(stem, st.toks))
-    if (score >= 0.5 && (!best || score > best.score)) best = { id: st.id, score }
+    if (score >= floor && (!best || score > best.score)) best = { id: st.id, score }
   }
   return best?.id ?? null
 }
@@ -271,6 +401,68 @@ export function dayWindow(isoDate) {
   const start = new Date(`${isoDate}T00:00:00Z`)
   const end = new Date(start.getTime() + 24 * 3600 * 1000)
   return { periodStart: YMDHM(start), periodEnd: YMDHM(end) }
+}
+
+/** UTC midnight of an ISO date — the origin every series is placed against. */
+export const dayStartMs = (isoDate) => Date.parse(`${isoDate}T00:00:00Z`)
+
+/** A Period's declared bounds as epoch ms, null when the document omits them. */
+function intervalMs(period) {
+  const at = (v) => {
+    const ms = Date.parse(v ?? '')
+    return Number.isFinite(ms) ? ms : null
+  }
+  return { startMs: at(period.timeInterval?.start), endMs: at(period.timeInterval?.end) }
+}
+
+/**
+ * Expand one parsed Period into dense, absolutely-timed per-slot values.
+ *
+ * Two ENTSO-E details make raw points unusable as they arrive, and getting
+ * either wrong silently corrupts the mix rather than failing loudly:
+ *
+ *  1. `position` is 1-based *within its own Period*, and a document may split
+ *     one day across several Periods starting at any instant — Ireland's
+ *     all-island A75 routinely publishes a 01:00Z fragment and a 15:00Z one.
+ *     Read positionally, every fragment lands back on hour 0: the afternoon
+ *     disappears and the fragments stack on top of each other, so the day
+ *     either fails the 20-hour coverage gate (17 of IE's last 31 days did) or
+ *     passes it carrying double-counted early hours.
+ *  2. Every document is curveType A03, "variable sized block" — a point's
+ *     value holds until the next declared position, and the final one runs to
+ *     the Period's end. Unchanged values are omitted, so a steady generator
+ *     describes a whole day with a single point (DE's B09 does exactly that).
+ *     Read one-slot-per-point, a flat 24-hour contribution becomes a blip and
+ *     every sparse series under-reports its coverage.
+ *
+ * Partial days are safe: the TSO shortens the Period's end to the publication
+ * boundary (FR mid-morning reports end=10:00Z), so running the last block to
+ * that end fabricates nothing. Slots outside the requested day are dropped.
+ * A Period with no declared interval — only synthetic test documents now —
+ * falls back to position-as-slot-index, one slot per point.
+ */
+export function expandSeries(s, originMs, valueKey = 'mw') {
+  const step = s.stepMin * 60_000
+  const base = s.startMs ?? originMs
+  const pts = s.points
+    .filter((p) => Number.isFinite(p.position) && Number.isFinite(p[valueKey]))
+    .sort((a, b) => a.position - b.position)
+  if (!pts.length) return []
+  // Never fill past the end of the day being asked for, whatever the document
+  // claims — bad bounds waste cycles, they don't get to invent slots.
+  const dayEndSlot = Math.ceil((originMs + 24 * 3600_000 - base) / step)
+  const declaredEnd = s.endMs == null ? pts.at(-1).position : Math.round((s.endMs - base) / step)
+  const lastSlot = Math.min(declaredEnd, dayEndSlot)
+  const out = []
+  for (let i = 0; i < pts.length; i++) {
+    const from = pts[i].position
+    const to = i + 1 < pts.length ? pts[i + 1].position - 1 : Math.max(lastSlot, from)
+    for (let pos = from; pos <= Math.min(to, dayEndSlot); pos++) {
+      const hour = Math.floor((base + (pos - 1) * step - originMs) / 3600_000)
+      if (hour >= 0 && hour <= 23) out.push({ hour, value: pts[i][valueKey] })
+    }
+  }
+  return out
 }
 
 function resolutionMinutes(res) {
@@ -297,7 +489,7 @@ export function parsePriceSeries(doc) {
         position: parseInt(p.position, 10),
         price: parseFloat(p['price.amount']),
       }))
-      out.push({ currency, stepMin, points })
+      out.push({ currency, stepMin, ...intervalMs(period), points })
     }
   }
   return out
@@ -327,6 +519,7 @@ export function parseSeries(doc) {
         outDomain:
           ts['outBiddingZone_Domain.mRID']?.['#text'] ?? ts['outBiddingZone_Domain.mRID'] ?? null,
         stepMin,
+        ...intervalMs(period),
         points,
       })
     }
@@ -335,16 +528,19 @@ export function parseSeries(doc) {
 }
 
 /** Sum per-unit series (already mapped to stations) into StationDay shape. */
-export function stationDayFromSeries(seriesList) {
+export function stationDayFromSeries(seriesList, originMs = null) {
   // Normalise to hourly slots (0-23); finer resolutions are averaged.
   const sums = new Array(24).fill(0)
   const counts = new Array(24).fill(0)
   for (const s of seriesList) {
     const perHour = 60 / s.stepMin
-    for (const p of s.points) {
-      const hour = Math.floor(((p.position - 1) * s.stepMin) / 60)
-      if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
-      sums[hour] += p.mw / perHour
+    // Without a day origin, place each series against its own start — the old
+    // positional reading, so callers that don't know the date still work.
+    const origin = originMs ?? s.startMs ?? 0
+    // Same A03 / fragment handling the mix needs — a unit held at a steady
+    // output publishes one point covering the whole day.
+    for (const { hour, value } of expandSeries(s, origin)) {
+      sums[hour] += value / perHour
       counts[hour] += 1 / perHour
     }
   }

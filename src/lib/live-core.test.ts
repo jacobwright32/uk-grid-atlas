@@ -5,8 +5,11 @@ import {
   currentSettlement,
   daysBefore,
   aggregateMID,
+  londonDayStartMs,
   parseOutturn,
   parseOutturnDay,
+  periodsInDay,
+  settlementPeriodAt,
 } from './live-core.mjs'
 
 const byUnit = { 'T_AAA-1': 'way/1', 'T_AAA-2': 'way/1', 'T_BBB-1': 'way/2' }
@@ -181,5 +184,151 @@ describe('settlement helpers', () => {
 
   it('daysBefore is calendar-safe', () => {
     expect(daysBefore('2026-03-01', 1)).toBe('2026-02-28')
+  })
+})
+
+// #5 — GB clock-change days. 25 Oct 2026 is the clocks-back day (50 periods,
+// local 01:00-02:00 happens twice); 29 Mar 2026 is clocks-forward (46 periods,
+// local 01:00-02:00 never happens).
+const LONG_DAY = '2026-10-25'
+const SHORT_DAY = '2026-03-29'
+const NORMAL_DAY = '2026-07-21'
+
+describe('settlement-period geometry (#5)', () => {
+  it('counts 50 periods on the clocks-back day, 46 on clocks-forward, 48 otherwise', () => {
+    expect(periodsInDay(LONG_DAY)).toBe(50)
+    expect(periodsInDay(SHORT_DAY)).toBe(46)
+    expect(periodsInDay(NORMAL_DAY)).toBe(48)
+  })
+
+  it('anchors the day to Europe/London midnight, not UTC midnight', () => {
+    // BST day → local midnight is 23:00Z the day before; GMT day → 00:00Z.
+    expect(new Date(londonDayStartMs(NORMAL_DAY)).toISOString()).toBe('2026-07-20T23:00:00.000Z')
+    expect(new Date(londonDayStartMs(LONG_DAY)).toISOString()).toBe('2026-10-24T23:00:00.000Z')
+    expect(new Date(londonDayStartMs(SHORT_DAY)).toISOString()).toBe('2026-03-29T00:00:00.000Z')
+  })
+
+  it('separates the clocks-back day repeated hour into distinct periods', () => {
+    // 01:15 BST (first pass) then 01:15 GMT (second pass) — same wall clock.
+    expect(settlementPeriodAt(LONG_DAY, Date.parse('2026-10-25T00:15:00Z'))).toBe(3)
+    expect(settlementPeriodAt(LONG_DAY, Date.parse('2026-10-25T01:15:00Z'))).toBe(5)
+    // Late evening reaches SP 49/50, unreachable from an hour*2 formula.
+    expect(settlementPeriodAt(LONG_DAY, Date.parse('2026-10-25T23:15:00Z'))).toBe(49)
+    expect(settlementPeriodAt(LONG_DAY, Date.parse('2026-10-25T23:45:00Z'))).toBe(50)
+  })
+
+  it('rejects a date whose period count is not 46/48/50', () => {
+    expect(() => periodsInDay('nonsense')).toThrow()
+  })
+})
+
+describe('aggregateDay on clock-change days (#5)', () => {
+  it('keeps SP 49 and 50 of the clocks-back day', () => {
+    const rows = [
+      { bmUnit: 'T_AAA-1', settlementPeriod: 1, quantity: 100 },
+      { bmUnit: 'T_AAA-1', settlementPeriod: 49, quantity: 200 },
+      { bmUnit: 'T_AAA-2', settlementPeriod: 49, quantity: 50 },
+      { bmUnit: 'T_AAA-1', settlementPeriod: 50, quantity: 150 },
+    ]
+    const s = aggregateDay(rows, byUnit, LONG_DAY).get('way/1')!
+    expect(s.series).toHaveLength(50)
+    expect(s.series[48]).toBe(500) // (200 + 50) MWh/hh → MW
+    expect(s.series[49]).toBe(300)
+    expect(s.periods).toBe(3)
+    expect(s.peakMW).toBe(500)
+    expect(s.energyGWh).toBeCloseTo(0.5, 1)
+  })
+
+  it('sizes the clocks-forward day to 46 periods', () => {
+    const rows = [{ bmUnit: 'T_AAA-1', settlementPeriod: 46, quantity: 100 }]
+    const s = aggregateDay(rows, byUnit, SHORT_DAY).get('way/1')!
+    expect(s.series).toHaveLength(46)
+    expect(s.series[45]).toBe(200)
+  })
+
+  it('widens past 48 without a date rather than dropping SP 49/50', () => {
+    const rows = [{ bmUnit: 'T_AAA-1', settlementPeriod: 50, quantity: 100 }]
+    const s = aggregateDay(rows, byUnit).get('way/1')!
+    expect(s.series).toHaveLength(50)
+    expect(s.series[49]).toBe(200)
+  })
+})
+
+describe('aggregateMID on clock-change days (#5)', () => {
+  it('keeps prices at SP 49/50 of the clocks-back day', () => {
+    const rows = [
+      { settlementPeriod: 1, price: 40, volume: 100 },
+      { settlementPeriod: 49, price: 71.5, volume: 200 },
+      { settlementPeriod: 50, price: 66, volume: 100 },
+    ]
+    const day = aggregateMID(rows, LONG_DAY)!
+    expect(day.series).toHaveLength(50)
+    expect(day.series[48]).toBe(71.5)
+    expect(day.series[49]).toBe(66)
+  })
+
+  it('sizes the clocks-forward day to 46 periods and drops out-of-range ones', () => {
+    const rows = [
+      { settlementPeriod: 46, price: 52, volume: 100 },
+      { settlementPeriod: 47, price: 999, volume: 100 }, // does not exist on this day
+    ]
+    const day = aggregateMID(rows, SHORT_DAY)!
+    expect(day.series).toHaveLength(46)
+    expect(day.series[45]).toBe(52)
+  })
+})
+
+describe('parseOutturnDay on clock-change days (#5)', () => {
+  it('puts the clocks-back day repeated hour in distinct slots', () => {
+    const payload = [
+      // 01:10 BST — the first pass through the repeated hour.
+      { startTime: '2026-10-25T00:10:00Z', data: [{ fuelType: 'WIND', generation: 5000 }] },
+      // 01:10 GMT — the second pass. Same wall clock, one hour later.
+      { startTime: '2026-10-25T01:10:00Z', data: [{ fuelType: 'WIND', generation: 6100 }] },
+      // 23:40 GMT — inside SP 50, which a 48-slot array cannot hold.
+      { startTime: '2026-10-25T23:40:00Z', data: [{ fuelType: 'WIND', generation: 7200 }] },
+    ]
+    const day = parseOutturnDay(payload, LONG_DAY)!
+    expect(day.fuels.WIND!).toHaveLength(50)
+    expect(day.fuels.WIND![2]).toBe(5000)
+    expect(day.fuels.WIND![4]).toBe(6100)
+    expect(day.fuels.WIND![49]).toBe(7200)
+  })
+
+  it('leaves no phantom gap where the clocks-forward day skips an hour', () => {
+    const payload = [
+      { startTime: '2026-03-29T00:10:00Z', data: [{ fuelType: 'WIND', generation: 4000 }] }, // 00:10 GMT
+      { startTime: '2026-03-29T01:10:00Z', data: [{ fuelType: 'WIND', generation: 4400 }] }, // 02:10 BST
+      { startTime: '2026-03-29T01:40:00Z', data: [{ fuelType: 'WIND', generation: 4600 }] }, // 02:40 BST
+    ]
+    const day = parseOutturnDay(payload, SHORT_DAY)!
+    expect(day.fuels.WIND!).toHaveLength(46)
+    expect(day.fuels.WIND![0]).toBe(4000)
+    // The old wall-clock bucketing pushed these to slots 4/5 and left 2/3 null
+    // forever; the skipped hour simply does not occupy slots.
+    expect(day.fuels.WIND![2]).toBe(4400)
+    expect(day.fuels.WIND![3]).toBe(4600)
+  })
+})
+
+describe('currentSettlement on clock-change days (#5)', () => {
+  it('returns the high period during the clocks-back repeated hour', () => {
+    // 01:15 GMT on 25 Oct — the second pass of local 01:00-02:00. An hour*2
+    // formula says 3; the day has already run five half-hours.
+    const s = currentSettlement(new Date('2026-10-25T01:15:00Z'))
+    expect(s.settlementDate).toBe(LONG_DAY)
+    expect(s.settlementPeriod).toBe(5)
+  })
+
+  it('reaches period 49/50 late on the clocks-back day', () => {
+    expect(currentSettlement(new Date('2026-10-25T23:15:00Z')).settlementPeriod).toBe(49)
+    expect(currentSettlement(new Date('2026-10-25T23:45:00Z')).settlementPeriod).toBe(50)
+  })
+
+  it('skips the hour that never happens on the clocks-forward day', () => {
+    // 03:30 BST on 29 Mar is the sixth half-hour of the day, not the seventh.
+    const s = currentSettlement(new Date('2026-03-29T02:30:00Z'))
+    expect(s.settlementDate).toBe(SHORT_DAY)
+    expect(s.settlementPeriod).toBe(6)
   })
 })

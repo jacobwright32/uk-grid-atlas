@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { GridData, GroupId, NetworkToggles } from '../lib/types'
@@ -66,6 +66,10 @@ export default function GridMap({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
   const readyRef = useRef(false)
+  const hintId = useId()
+  // Narration for the keyboard roving selection (#12). `setState` identity is
+  // stable, so the once-only interaction wiring can close over it directly.
+  const [announcement, setAnnouncement] = useState('')
   // Latest data prop — progressive ALL loading can swap `data` several times
   // before the map's `load` event; the swap effect below bails until ready,
   // so `load` must replay the newest snapshot or those merges are lost.
@@ -119,6 +123,7 @@ export default function GridMap({
       popup,
       () => cardCtxRef.current,
       (id) => onPinRef.current?.(id),
+      setAnnouncement,
     )
     interactionsRef.current = interactions
 
@@ -136,6 +141,16 @@ export default function GridMap({
     // The dataset is immutable for the lifetime of the app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // MapLibre puts tabindex, role and aria-label on the <canvas> it creates, so
+  // that — not our wrapper — is the element focus lands on and the element that
+  // has to name the map and point at the key hints (#12).
+  useEffect(() => {
+    const canvas = mapRef.current?.getCanvas()
+    if (!canvas) return
+    canvas.setAttribute('aria-label', `Map of ${country.name} energy infrastructure`)
+    canvas.setAttribute('aria-describedby', hintId)
+  }, [country.name, hintId])
 
   // ------------------------------------------------------- state → style
   useEffect(() => {
@@ -195,11 +210,24 @@ export default function GridMap({
   }, [searchTarget])
 
   return (
-    <div
-      ref={containerRef}
-      className="map-container"
-      role="application"
-      aria-label={`Map of ${country.name} energy infrastructure`}
-    />
+    <>
+      {/* `role="application"` earns its keep now that the map has a real
+          keyboard model (#12): without it, screen readers in browse mode
+          swallow ] / [ / Enter before the canvas ever sees them. */}
+      <div
+        ref={containerRef}
+        className="map-container"
+        role="application"
+        aria-label={`Map of ${country.name} energy infrastructure`}
+      />
+      <p id={hintId} className="sr-only">
+        Press the right bracket and left bracket keys to step through the power stations currently
+        in view, Enter to pin the selected station, Escape to release it. Arrow keys pan the map;
+        plus and minus zoom.
+      </p>
+      <div className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </div>
+    </>
   )
 }

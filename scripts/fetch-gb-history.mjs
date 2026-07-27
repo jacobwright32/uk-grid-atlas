@@ -28,7 +28,9 @@ import {
   meanCovered,
   mergeHistory,
   missingDates,
+  patchHistoryDay,
   priceAvg,
+  readHistory,
 } from './snapshot-common.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -183,6 +185,24 @@ async function main() {
     }
   }
   console.log(`gb: history +${added}/${want.length} day(s)`)
+
+  // Month days recorded before demandMW existed (v3) carry no demand field.
+  // INDO is a cheap standalone call, so patch them in place rather than
+  // re-baking the whole day — same self-heal the ENTSO-E baker runs (#24).
+  const needDemand = (readHistory(histPath)?.days ?? [])
+    .filter((r) => r.demandMW === undefined)
+    .map((r) => r.date)
+    .slice(0, backfillDays ?? 3)
+  let patched = 0
+  for (const date of needDemand) {
+    const indo = await getJson(
+      `${BASE}/demand/outturn?settlementDateFrom=${date}&settlementDateTo=${date}&format=json`,
+    ).catch(() => null)
+    const d = aggregateIndoDay(indo?.data)
+    if (patchHistoryDay(histPath, date, { demandMW: d ? Math.round(meanCovered(d)) : null }))
+      patched++
+  }
+  if (needDemand.length) console.log(`gb: demand patched ${patched}/${needDemand.length}`)
 }
 
 // Import-safe for tests: only run when invoked directly.

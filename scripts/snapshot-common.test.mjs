@@ -15,7 +15,6 @@ import {
   buildMixRows,
   buildStationDay,
   compactDate,
-  hourOfPosition,
   hoursCovered,
   importAvg,
   isoDaysAgo,
@@ -29,10 +28,21 @@ import {
 } from './snapshot-common.mjs'
 
 describe('BUCKET_META', () => {
-  it('covers the nine snapshot buckets with labels and hex colours', () => {
+  it('covers the ten snapshot buckets with labels and hex colours', () => {
     const keys = Object.keys(BUCKET_META)
     expect(keys.sort()).toEqual(
-      ['biomass', 'coal', 'gas', 'geothermal', 'hydro', 'nuclear', 'other', 'solar', 'wind'].sort(),
+      [
+        'biomass',
+        'coal',
+        'gas',
+        'geothermal',
+        'hydro',
+        'nuclear',
+        'other',
+        'solar',
+        'storage',
+        'wind',
+      ].sort(),
     )
     for (const meta of Object.values(BUCKET_META)) {
       expect(meta.label).toBeTruthy()
@@ -73,17 +83,6 @@ describe('hourly accumulator', () => {
   it('returns null for unknown keys', () => {
     expect(accSumSeries(makeHourlyAcc(), 'nope')).toBeNull()
     expect(accMeanSeries(makeHourlyAcc(), 'nope')).toBeNull()
-  })
-})
-
-describe('hourOfPosition', () => {
-  it('maps 1-based positions across resolutions', () => {
-    expect(hourOfPosition(1, 60)).toBe(0)
-    expect(hourOfPosition(24, 60)).toBe(23)
-    expect(hourOfPosition(1, 15)).toBe(0)
-    expect(hourOfPosition(5, 15)).toBe(1)
-    expect(hourOfPosition(96, 15)).toBe(23)
-    expect(hourOfPosition(48, 30)).toBe(23)
   })
 })
 

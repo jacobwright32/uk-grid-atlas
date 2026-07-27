@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
+import { slotLabel } from '../lib/format'
 
 interface Props {
-  /** Number of intervals in the metered day (48 half-hourly GB, 24 hourly EU). */
+  /** Intervals in the metered day (GB half-hours — 46/48/50 on clock-change
+   *  days (#5) — or 24 hourly EU). */
   len: number
   /** Current interval, or null when showing live/day-average (no scrub). */
   index: number | null
@@ -36,7 +38,8 @@ export default function TimeSlider({
   onReset,
 }: Props) {
   const week = weekDates ?? null
-  const stepMin = !week && len === 48 ? 30 : 60
+  // GB days are half-hourly; clock-change days run 46 or 50 periods (#5).
+  const stepMin = !week && len >= 46 && len <= 50 ? 30 : 60
   const i = index ?? 0
 
   // Playback loop — a week has ~7× the steps, so it plays ~2× faster.
@@ -54,9 +57,10 @@ export default function TimeSlider({
     return () => clearInterval(t)
   }, [playing, week])
 
-  const mins = (week ? i % 24 : i) * stepMin
-  const hh = String(Math.floor(mins / 60)).padStart(2, '0')
-  const mm = String(mins % 60).padStart(2, '0')
+  // Same helper MixStrip labels its scrub with, so the two readouts agree on
+  // clock-change days instead of the slider drifting an hour off (#5). Week
+  // mode is hourly EU slots within a day, so it takes the plain arithmetic path.
+  const clock = week ? slotLabel(i % 24, 60, null) : slotLabel(i, stepMin, meteredDate)
   const dateLabel = week
     ? fmtDay(week[Math.min(week.length - 1, Math.floor(i / 24))] ?? '')
     : meteredDate
@@ -85,11 +89,11 @@ export default function TimeSlider({
         step={1}
         value={i}
         aria-label={week ? 'Hour of the week' : 'Time of day'}
-        aria-valuetext={week ? `${dateLabel} ${hh}:${mm}` : `${hh}:${mm}`}
+        aria-valuetext={week ? `${dateLabel} ${clock}` : clock}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <span className="timeslider-label">
-        {dateLabel} · {index == null ? (week ? 'week view' : 'day view') : `${hh}:${mm}`}
+        {dateLabel} · {index == null ? (week ? 'week view' : 'day view') : clock}
       </span>
       {index != null && (
         <button

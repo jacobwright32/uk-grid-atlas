@@ -26,13 +26,36 @@ import type { GroupId, NetworkToggles } from './lib/types'
 import './App.css'
 
 const DEFAULT_TILES = import.meta.env.VITE_DEFAULT_TILES === '1'
-/** Single source for the phone/desktop breakpoint (#55). */
-const DESKTOP_MQ = '(min-width: 640px)'
+/**
+ * The one true phone/desktop breakpoint (#13, #55): **760px**, matching the
+ * `@media (max-width: 760px)` blocks in App.css that float the sidebar over
+ * the map. Three values used to disagree, so 640–760px wide got an
+ * overlaying sidebar with no scrim and no Escape. The `.01` makes this the
+ * exact complement of those CSS queries — a fractional viewport width can't
+ * be "phone" to the stylesheet and "desktop" to this module.
+ */
+const DESKTOP_MQ = '(min-width: 760.01px)'
+
+/**
+ * Live media-query match. The drawer's dialog semantics and focus trap have
+ * to follow the layout, so a mount-time snapshot isn't enough (#12).
+ */
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = () => setMatches(mq.matches)
+    onChange() // the query may have changed between mount and effect
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [query])
+  return matches
+}
 
 export default function App() {
   const [countryId, setCountryId] = useState<CountryId>(countryFromHash)
   const country = COUNTRIES[countryId]
-  const { data, error } = useGridData(countryId)
+  const { data, error, failures, total, retry } = useGridData(countryId)
   const { status: liveStatus, live, bmuMap } = useLiveData(country)
   const [enabled, setEnabled] = useState<Set<GroupId>>(allGroupIds)
   const [network, setNetwork] = useState<NetworkToggles>({
@@ -46,6 +69,18 @@ export default function App() {
   const [liveMode, setLiveMode] = useState(true)
   // Phones get the map first; the burger opens the legend over a scrim (#13).
   const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia(DESKTOP_MQ).matches)
+  const isDesktop = useMediaQuery(DESKTOP_MQ)
+  const burgerRef = useRef<HTMLButtonElement>(null)
+  /**
+   * Narrow viewports only (#12): the sidebar is a permanent side panel on
+   * desktop, so it gets dialog semantics, a focus trap and a scrim strictly
+   * while it floats over the map.
+   */
+  const sidebarAsDialog = sidebarOpen && !isDesktop
+  const closeSidebar = () => {
+    setSidebarOpen(false)
+    setResizeSignal((n) => n + 1)
+  }
   // The mix panel crowds small screens — start it collapsed on phones.
   const [mixOpen, setMixOpen] = useState(() => window.matchMedia(DESKTOP_MQ).matches)
   const [resizeSignal, setResizeSignal] = useState(0)
@@ -173,17 +208,31 @@ export default function App() {
     window.history.replaceState(null, '', h || window.location.pathname + window.location.search)
   }
 
-  // Escape closes the sidebar when it overlays the map on small screens.
+  // Escape closes the sidebar whenever it overlays the map — at the one
+  // breakpoint the scrim and the drawer layout also use (#13).
   useEffect(() => {
-    if (!sidebarOpen) return
+    if (!sidebarAsDialog) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !window.matchMedia(DESKTOP_MQ).matches) {
-        setSidebarOpen(false)
-      }
+      if (e.key === 'Escape') setSidebarOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [sidebarOpen])
+  }, [sidebarAsDialog])
+
+  // Closing the drawer hands focus back to the burger that opened it: the
+  // close button and the scrim both unmount, so focus would otherwise fall to
+  // <body>. This has to be an effect rather than part of the click handler —
+  // the topbar is still `inert` until React commits, so focusing the burger
+  // any earlier is a no-op. Focus that already landed somewhere real (e.g. a
+  // resize to desktop) is left alone (#12).
+  const wasDialog = useRef(false)
+  useEffect(() => {
+    if (wasDialog.current && !sidebarAsDialog) {
+      const active = document.activeElement
+      if (!active || active === document.body) burgerRef.current?.focus()
+    }
+    wasDialog.current = sidebarAsDialog
+  }, [sidebarAsDialog])
 
   const switchCountry = (id: CountryId) => {
     window.location.hash = id === DEFAULT_COUNTRY ? '' : id
@@ -244,8 +293,12 @@ export default function App() {
 
   return (
     <div className={`shell${sidebarOpen ? '' : ' shell--collapsed'}`}>
-      <header className="topbar">
+      {/* The drawer is modal on phones: everything the scrim covers goes
+          inert so Tab and screen-reader browse mode can't wander behind it
+          (React 19 takes `inert` as a boolean prop) (#12). */}
+      <header className="topbar" inert={sidebarAsDialog}>
         <button
+          ref={burgerRef}
           type="button"
           className="burger"
           aria-label={sidebarOpen ? 'Hide legend' : 'Show legend'}
@@ -266,13 +319,15 @@ export default function App() {
         <div
           className={`country-switch-wrap${switchFades.l ? ' fade-l' : ''}${switchFades.r ? ' fade-r' : ''}`}
         >
-          <div className="country-switch" role="tablist" aria-label="Country" ref={switchRef}>
+          {/* Toggle buttons rather than a tablist — see MixStrip: no tabpanel
+              to control and no arrow-key movement, so tab semantics would be
+              a promise the widget doesn't keep. */}
+          <div className="country-switch" role="group" aria-label="Country" ref={switchRef}>
             {Object.values(COUNTRIES).map((c) => (
               <button
                 key={c.id}
                 type="button"
-                role="tab"
-                aria-selected={c.id === countryId}
+                aria-pressed={c.id === countryId}
                 className={`country-btn${c.id === countryId ? ' country-btn--on' : ''}`}
                 onClick={() => switchCountry(c.id)}
                 title={c.name}
@@ -293,9 +348,20 @@ export default function App() {
             <span className="stat-label">recorded capacity</span>
           </div>
         </div>
+        {failures > 0 && (
+          <p className="grid-warn" role="status">
+            <span aria-hidden="true">⚠</span> {failures} of {total} grids didn’t load — showing the
+            rest.{' '}
+            <button type="button" className="grid-warn-retry" onClick={retry}>
+              retry
+            </button>
+          </p>
+        )}
       </header>
 
       <Sidebar
+        asDialog={sidebarAsDialog}
+        onClose={closeSidebar}
         country={country}
         stats={stats}
         enabled={enabled}
@@ -313,16 +379,23 @@ export default function App() {
         onLiveMode={setLiveMode}
       />
 
-      {sidebarOpen && (
+      {/* Rendered only while the drawer actually floats over the map — the
+          scrim used to be in the DOM on desktop too, hidden by CSS, which is
+          invisible to assistive tech but still a tab stop (#12, #13). It stays
+          a <button> for the cursor and click semantics but is hidden from
+          assistive tech: it does exactly what the drawer's ✕ and Escape
+          already do, and two controls sharing one name is just noise. */}
+      {sidebarAsDialog && (
         <button
           type="button"
           className="sidebar-scrim"
-          aria-label="Close the legend"
-          onClick={() => setSidebarOpen(false)}
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={closeSidebar}
         />
       )}
 
-      <main className="map-pane">
+      <main className="map-pane" inert={sidebarAsDialog}>
         <GridMap
           data={data}
           country={country}
@@ -383,6 +456,7 @@ export default function App() {
                 today={live.today}
                 prices={live.prices}
                 demandSeries={live.demandSeries}
+                meteredDate={live.meteredDate}
                 sourceLabel={live.sourceLabel}
                 range={mixRange}
                 onRange={setMixRange}

@@ -37,7 +37,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
   by live output (bright) over capacity (ghost).
 - **Scrub the metered day** — a time slider plays any grid's day back:
   station dots, the mix strip, HVDC flows and the wholesale-price line all
-  follow the slider. The default view shows *today so far*, hours old.
+  follow the slider. The default view shows _today so far_, hours old.
 - **Wholesale prices** — ENTSO-E day-ahead per bidding zone (averaged for
   multi-zone countries) and GB's market-index price, in the mix strip.
 - **Legend-as-filter** — toggle any fuel group or network class; headline
@@ -92,10 +92,13 @@ Pre-built GeoJSON ships in `src/data/`, so the app builds without network
 access. To refresh from source:
 
 ```bash
-npm run data:fetch -- gb    # download raw extracts from Overpass (mirrors, retried; gb | no | se | pl | es | it)
+npm run data:fetch -- gb    # download raw extracts from Overpass (mirrors, retried). Fourteen
+                            #   grids have queries: gb | no | se | pl | pt | fi | ch | at | cz |
+                            #   ee | lv | lt | es | it — or `all` to walk every one of them.
 node scripts/build-data.mjs gb   # → src/data/gb/*.json
-node scripts/build-data.mjs nl   # → src/data/nl/*.json (raw NL extracts via Overpass or
-                                 #   scripts/pbf-extract-lines.py on a Geofabrik .osm.pbf)
+node scripts/build-data.mjs nl   # → src/data/nl/*.json (nl is one of the eight grids with no
+                                 #   Overpass query — its raw extracts come from a Geofabrik
+                                 #   .osm.pbf, see "Extracting from a Geofabrik PBF" below)
 npm run data:slim                # shrink committed bundles (drop sub-threshold noise)
 npm run data:tiles               # → public/tiles/transmission.pmtiles (re-run after any
                                  #   build-data refresh; needs tippecanoe — macOS:
@@ -134,27 +137,85 @@ European grid via ENTSO-E snapshots (the Nordics and Italy are mix-only —
 their TSOs publish little per-unit data); Ontario per station via IESO's
 public report; Texas + New York fuel mixes via ERCOT and NYISO — every
 source free and key-less (only the workflow's ENTSO-E token needs a free
-account). Countries whose mappers tag single turbines instead of farms
-(FI/AT/EE) get synthetic wind-farm stations via
+account). Grids whose mappers tag single turbines instead of farms
+(FI/AT/EE/CA) get synthetic wind-farm stations via
 `scripts/pbf-extract-generators.py` + `scripts/cluster-wind.mjs`.
 
-| Layer                  | Source                                                       | Notes                                                                                                                                                                                   |
-| ---------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Generation sites       | OpenStreetMap `power=plant` via Overpass                     | UK admin area + offshore bounding boxes; near-duplicates de-duplicated by name; foreign offshore farms excluded by heuristic                                                            |
-| Wind on/offshore split | Computed                                                     | Point-in-polygon against Natural Earth 1:10m land                                                                                                                                       |
-| Transmission lines     | OpenStreetMap `power=line`                                   | `voltage` ≥ 275 kV UK-wide, ≥ 132 kV within Scotland; geometry simplified (RDP, ~25 m)                                                                                                  |
-| Interconnectors / HVDC | Curated (`scripts/interconnectors.mjs`)                      | OSM submarine coverage is patchy, so routes are schematic; capacities/status from operator publications — update there                                                                  |
-| Coastline              | Natural Earth 1:10m (via `world-atlas`)                      | Two region bundles (Europe/Africa + Americas), antimeridian-safe rectangle clip, simplified — regenerate with `npm run data:basemap`                                                    |
-| BMU → station map      | Elexon `reference/bmunits/all` + `scripts/build-bmu-map.mjs` | Fuzzy name match with fuel-type guards + manual overrides; ~87% of BM-registered capacity mapped (rest is mostly retired plant)                                                         |
-| Live output (GB)       | Elexon Insights API (browser-side)                           | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline |
-| Live output (EU)       | ENTSO-E Transparency API (scheduled workflow)                | A73 per-unit day series mapped to stations, A75 daily mix, A11 HVDC border flows → committed to `public/live/<cc>.json` every 6 h by `.github/workflows/live-snapshots.yml`             |
-| Live output (Canada)   | IESO Generator Output & Capability report (public, key-less) | Per-generator hourly XML → Ontario per-station day series + today-so-far mix, same snapshot shape as the EU                                                                             |
-| Live output (US)       | ERCOT fuel-mix JSON + NYISO rtfuelmix CSV (public, key-less) | Texas + New York hourly fuel mixes (≈⅓ of US generation), mix-only — no US ISO publishes per-plant output openly                                                                        |
-| Wholesale prices       | ENTSO-E A44 day-ahead + Elexon MID (GB)                      | Per bidding zone, averaged for multi-zone countries; today's prices ship with the snapshot (known since yesterday's auction)                                                            |
-| Transmission tiles     | `scripts/build-tiles.mjs` (tippecanoe → PMTiles)             | All 22 countries' lines in one committed range-requested archive; re-run after any `build-data` refresh                                                                                 |
+| Layer                    | Source                                                       | Notes                                                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generation sites         | OpenStreetMap `power=plant` via Overpass or PBF              | Admin area + offshore bounding boxes; near-duplicates de-duplicated by name; foreign offshore farms excluded by heuristic — every tag read is listed in [docs/osm-tags.md](docs/osm-tags.md) |
+| Wind farms (FI/AT/EE/CA) | OpenStreetMap `power=generator` via PBF                      | Individually mapped turbines clustered into synthetic farm stations (`cluster-wind.mjs`)                                                                                                     |
+| Wind on/offshore split   | Computed                                                     | Point-in-polygon against Natural Earth 1:10m land                                                                                                                                            |
+| Transmission lines       | OpenStreetMap `power=line`                                   | `voltage` ≥ 275 kV UK-wide, ≥ 132 kV within Scotland; per-country voltage ladders in [docs/osm-tags.md](docs/osm-tags.md); geometry simplified (RDP, ~25 m)                                  |
+| Interconnectors / HVDC   | Curated (`scripts/interconnectors.mjs`)                      | OSM submarine coverage is patchy, so routes are schematic; capacities/status from operator publications — update there                                                                       |
+| Coastline                | Natural Earth 1:10m (via `world-atlas`)                      | Two region bundles (Europe/Africa + Americas), antimeridian-safe rectangle clip, simplified — regenerate with `npm run data:basemap`                                                         |
+| BMU → station map        | Elexon `reference/bmunits/all` + `scripts/build-bmu-map.mjs` | Fuzzy name match with fuel-type guards + manual overrides; ~87% of BM-registered capacity mapped (rest is mostly retired plant)                                                              |
+| Live output (GB)         | Elexon Insights API (browser-side)                           | B1610 per-unit metered actuals (published ~a week behind), PN scheduled levels (now), `generation/outturn/summary` mix; snapshot baked by `scripts/fetch-live-snapshot.mjs` for offline      |
+| Live output (EU)         | ENTSO-E Transparency API (scheduled workflow)                | A73 per-unit day series mapped to stations, A75 daily mix, A11 HVDC border flows → committed to `public/live/<cc>.json` every 6 h by `.github/workflows/live-snapshots.yml`                  |
+| Live output (Canada)     | IESO Generator Output & Capability report (public, key-less) | Per-generator hourly XML → Ontario per-station day series + today-so-far mix, same snapshot shape as the EU                                                                                  |
+| Live output (US)         | ERCOT fuel-mix JSON + NYISO rtfuelmix CSV (public, key-less) | Texas + New York hourly fuel mixes (≈⅓ of US generation), mix-only — no US ISO publishes per-plant output openly                                                                             |
+| Wholesale prices         | ENTSO-E A44 day-ahead + Elexon MID (GB)                      | Per bidding zone, averaged for multi-zone countries; today's prices ship with the snapshot (known since yesterday's auction)                                                                 |
+| Transmission tiles       | `scripts/build-tiles.mjs` (tippecanoe → PMTiles)             | All 22 countries' lines in one committed range-requested archive; re-run after any `build-data` refresh                                                                                      |
 
 **Licences:** power data © OpenStreetMap contributors, ODbL; Natural Earth is
 public domain. Keep the attribution control visible if you deploy this.
+
+### Extracting from a Geofabrik PBF
+
+Overpass is the convenient path but not the universal one. Only fourteen of
+the twenty-two grids have queries in `scripts/fetch-overpass.mjs` — `gb`, `no`,
+`se`, `pl`, `pt`, `fi`, `ch`, `at`, `cz`, `ee`, `lv`, `lt`, `es`, `it`. The
+other eight — **`nl`, `be`, `ie`, `dk`, `fr`, `de`, `ca`, `us`** — have none at
+all: their grids are too big for public Overpass servers to hand out (the US
+alone is 36k line segments), so their raw extracts are cut locally from a
+Geofabrik country download. Several Overpass countries also carry a
+`plants_<cc>_pbf.json` alongside their query results, because a local extract
+catches plants the area query missed.
+
+The only prerequisite is [PyOsmium](https://osmcode.org/pyosmium/):
+
+```bash
+pip install osmium
+curl -O https://download.geofabrik.de/europe/netherlands-latest.osm.pbf
+```
+
+[download.geofabrik.de](https://download.geofabrik.de) publishes a daily
+`.osm.pbf` per country (and per US/Canada state or province). The three
+extractors each emit exactly the Overpass element shape `build-data.mjs`
+already consumes — `out tags center` for plants, `out tags geom` for lines —
+so nothing downstream knows or cares which path a file came from:
+
+```bash
+# plants: power=plant nodes, ways and relations, centroided
+python3 scripts/pbf-extract-plants.py netherlands-latest.osm.pbf ../data/nl_plants.json
+
+# lines: power=line ways, filtered by a voltage regex (3rd arg, required)
+python3 scripts/pbf-extract-lines.py netherlands-latest.osm.pbf \
+  ../data/nl_lines_pbf.json "380000|220000|150000|110000"
+
+# turbines: power=generator wind, for grids with no farm polygons (FI/AT/EE/CA)
+python3 scripts/pbf-extract-generators.py finland-latest.osm.pbf ../data/gens_fi_wind.json
+node scripts/build-data.mjs fi     # cluster-wind reads the stations it produces
+node scripts/cluster-wind.mjs fi   # → ../data/plants_fi_wind_clusters.json
+node scripts/build-data.mjs fi     # again, now folding the synthetic farms in
+```
+
+Filenames are a contract, not a convention: `build-data.mjs` looks for the
+literal names in each country's `plantFiles` / `seaFiles`, and for any file in
+the raw directory matching its `lineFile` regex. In practice that means
+`plants_<cc>_pbf.json` for plants, `<cc>_lines_pbf.json` for lines (GB is the
+odd one out — its regex wants `lines_*.json`), `gens_<cc>_wind.json` for
+turbines and `plants_<cc>_wind_clusters.json` for the clustered output. The
+Netherlands predates the convention and wants `nl_plants.json`. When in doubt,
+read the country's entry in `COUNTRIES` — that list _is_ the spec. The raw
+directory defaults to `../data` (a sibling of the repo, so multi-gigabyte PBFs
+never land in git); every script takes an override as its last positional
+argument.
+
+Pick the voltage regex from the country's `classify` ladder — everything it
+maps to a class, and nothing below. The per-country ladders are tabulated in
+[docs/osm-tags.md](docs/osm-tags.md#voltage--line-class--tier); for the US that
+is `"765000|500000|345000|230000"`, for Germany `"380000|220000"`.
 
 ### Improving the data (a note for OSM mappers)
 
@@ -170,8 +231,8 @@ tags the pipeline reads, in order of how much they help:
 3. **`plant:source`** — drives the fuel colour/filters (`wind`, `solar`,
    `hydro`, `gas`, `coal`, `nuclear`, `geothermal`, `biomass`, `waste`,
    `battery`, `oil`, `tidal`…).
-4. **`plant:method`** — `pumped-storage` gives hydro sites the white-ring
-   pumped marker; `photovoltaic` vs `thermal` disambiguates solar.
+4. **`plant:method`** — any value containing `pumped` moves a hydro site into
+   the pumped-storage class and gives it the white-ring marker.
 5. **`operator`** and **`start_date`** — shown on every hover card.
 6. **`voltage`** on `power=line` — the transmission layer keys entirely off
    this (semicolon-separated lists are handled).
@@ -181,13 +242,25 @@ capacity is two clicks away. The [MapYourGrid](https://mapyourgrid.org)
 initiative and [Open Infrastructure Map](https://openinframap.org) are good
 companions for grid-mapping conventions.
 
+That is the short list, ordered by leverage. **[docs/osm-tags.md](docs/osm-tags.md)
+is the full reference** — every Overpass selector, every tag key the builder
+reads and what it drives, the complete 27-value `plant:source` → fuel-group
+table, the `power=generator` family, the per-country voltage ladders, and
+exactly what degrades when a tag is missing.
+
 ### Known data caveats
 
 - OSM capacity tags (`plant:output:electricity`) are missing for some sites —
   GW totals understate reality and are labelled "recorded capacity".
-- A few wind farms exist in OSM as both an umbrella site and per-phase
-  entries under different names (e.g. "Walney" phases); exact-name
-  de-duplication keeps both, so site counts can slightly double-count phases.
+- A few wind farms exist in OSM as both an umbrella site and per-phase entries
+  under different names (e.g. "Walney" phases). The builder now folds phase and
+  variant spellings together ("Hornsea One" / "Hornsea 1" / "Hornsea Project
+  One") when the two features sit close enough to be the same site, summing
+  distinct builds ("Walney" + "Walney Extension") and counting mere aliases
+  once. Genuinely different phases stay separate, as do descriptive variants
+  ("Drax" vs "Drax Bioenergy"), so a little double-counting remains. The fold
+  happens at build time: the `src/data/**` bundles in the repo only pick it up
+  at the next rebuild.
 - Northern Ireland's 110 kV network and GB distribution (≤132 kV England &
   Wales) are intentionally out of scope.
 - Live per-station data exists only for BM-registered (mostly
@@ -240,6 +313,10 @@ src/
   data/                 pre-built GeoJSON (generated — do not hand-edit)
 scripts/
   fetch-overpass.mjs    reproducible raw-data download (mirrors, retries, cache)
+  pbf-extract-plants.py    power=plant → Overpass-shaped JSON, from a Geofabrik PBF
+  pbf-extract-lines.py     power=line (voltage-filtered) → Overpass-shaped JSON
+  pbf-extract-generators.py  power=generator wind turbines, for farm-less grids
+  cluster-wind.mjs      turbines → synthetic farm stations (FI/AT/EE/CA)
   build-data.mjs        raw → app GeoJSON (dedupe, classify, simplify)
   interconnectors.mjs   curated HVDC link registry
   basemap.mjs           region coastline builder (antimeridian-safe clipping)
@@ -249,6 +326,8 @@ scripts/
   fetch-live-snapshot.mjs     bake the offline GB snapshot
   build-bmu-map.mjs     GB BMU → station map
   pipeline-utils.mjs    pure helpers (unit-tested)
+docs/
+  osm-tags.md           every OSM tag the pipeline reads, and what it drives
 ```
 
 Design decisions worth knowing:
@@ -272,22 +351,27 @@ Design decisions worth knowing:
 
 ## Scripts
 
-| Command                             | What it does                                                        |
-| ----------------------------------- | ------------------------------------------------------------------- |
-| `npm run dev`                       | Vite dev server with HMR                                            |
-| `npm run build`                     | Type-check + production build                                       |
-| `npm run build:single`              | Self-contained single-file build                                    |
-| `npm run test`                      | Vitest unit tests (lib + pipeline)                                  |
-| `npm run lint`                      | oxlint                                                              |
-| `npm run format`                    | Prettier                                                            |
-| `npm run data:fetch` / `data:build` | Refresh the dataset                                                 |
-| `npm run data:basemap`              | Rebuild just the coastline bundles from Natural Earth               |
-| `npm run data:bmumap`               | Rebuild the GB BMU → station map (Elexon registry)                  |
-| `npm run data:snapshot`             | Bake the offline GB live snapshot                                   |
-| `npm run live:snapshots`            | Fetch ENTSO-E snapshots for all EU countries (needs `ENTSOE_TOKEN`) |
-| `npm run data:snapshot:ca` / `:us`  | Bake the Ontario (IESO) and Texas+New York (ERCOT+NYISO) snapshots  |
-| `npm run data:history:gb`           | Bake GB mix/price history from Elexon (key-less)                    |
-| `npm run data:slim` / `data:tiles`  | Shrink bundles / rebuild the PMTiles transmission archive           |
+| Command                                                            | What it does                                                                                                                                 |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                                                      | Vite dev server with HMR                                                                                                                     |
+| `npm run build`                                                    | Type-check + production build                                                                                                                |
+| `npm run build:single`                                             | Self-contained single-file build                                                                                                             |
+| `npm run test`                                                     | Vitest unit tests (lib + pipeline)                                                                                                           |
+| `npm run lint`                                                     | oxlint                                                                                                                                       |
+| `npm run format`                                                   | Prettier                                                                                                                                     |
+| `npm run data:fetch` / `data:build`                                | Refresh the dataset                                                                                                                          |
+| `python3 scripts/pbf-extract-plants.py <pbf> <out>`                | `power=plant` out of a Geofabrik `.osm.pbf` (needs `pip install osmium`)                                                                     |
+| `python3 scripts/pbf-extract-lines.py <pbf> <out> <voltage-regex>` | `power=line` at the given voltages, same PBF prerequisite                                                                                    |
+| `python3 scripts/pbf-extract-generators.py <pbf> <out>`            | Wind `power=generator` turbines, for `cluster-wind.mjs`                                                                                      |
+| `node scripts/cluster-wind.mjs <cc>`                               | Cluster those turbines into synthetic farm stations                                                                                          |
+| `npm run data:basemap`                                             | Rebuild just the coastline bundles from Natural Earth                                                                                        |
+| `npm run data:bmumap`                                              | Rebuild the GB BMU → station map (Elexon registry)                                                                                           |
+| `npm run data:snapshot`                                            | Bake the offline GB live snapshot                                                                                                            |
+| `npm run live:snapshots`                                           | Fetch ENTSO-E snapshots for all EU countries (needs `ENTSOE_TOKEN`)                                                                          |
+| `npm run data:snapshot:ca` / `:us`                                 | Bake the Ontario (IESO) and Texas+New York (ERCOT+NYISO) snapshots                                                                           |
+| `npm run data:history:gb`                                          | Bake GB mix/price history from Elexon (key-less)                                                                                             |
+| `npm run data:slim` / `data:tiles`                                 | Shrink bundles / rebuild the PMTiles transmission archive                                                                                    |
+| `node shot-batch1.mjs`                                             | Regenerate the social card `public/og.png` — needs `npm run preview` running first, since it screenshots `localhost:4173` (no npm alias yet) |
 
 ## Environment
 

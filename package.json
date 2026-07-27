@@ -9,6 +9,7 @@
     "build:single": "SINGLE_FILE=1 vite build",
     "preview": "vite preview",
     "lint": "oxlint",
+    "typecheck": "tsc -b",
     "format": "prettier -w .",
     "test": "vitest run",
     "test:e2e": "node scripts/e2e-smoke.mjs",

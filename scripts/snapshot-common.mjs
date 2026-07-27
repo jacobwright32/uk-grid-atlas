@@ -27,6 +27,7 @@ export const BUCKET_META = {
   geothermal: { label: 'Geothermal', color: '#bd5fd1' },
   biomass: { label: 'Biomass & waste', color: '#d95926' },
   hydro: { label: 'Hydro & pumped', color: '#1899ac' },
+  storage: { label: 'Battery storage', color: '#d55181' },
   other: { label: 'Oil & other', color: '#e66767' },
 }
 export const FALLBACK_COLOR = '#898781'
@@ -79,8 +80,10 @@ export function accMeanSeries(acc, key) {
 }
 export const accKeys = (acc) => [...acc.keys()]
 
-/** Position→hour for ENTSO-E period points (position is 1-based). */
-export const hourOfPosition = (position, stepMin) => Math.floor(((position - 1) * stepMin) / 60)
+// hourOfPosition used to live here — position→hour on the assumption that a
+// Period starts at midnight and every point covers one slot. Both halves are
+// wrong (see expandSeries in entsoe.mjs), so it's gone rather than left
+// around to be reached for again.
 
 // ------------------------------------------------------------- day math
 /** Mean of the non-null slots (0 when none) — partial-day-correct. */
@@ -222,6 +225,21 @@ export function readHistory(path) {
 /** Dates already recorded in a history file's days (empty on missing/corrupt). */
 export function historyDates(path) {
   return (readHistory(path)?.days ?? []).map((d) => d.date)
+}
+
+/**
+ * Patch fields onto an existing month day in place, leaving its mix rows
+ * alone. Cheap self-heal for fields added after a day was first recorded
+ * (demandMW landed in v3), so old days gain them without a full re-bake.
+ * Returns false when the day isn't in the file.
+ */
+export function patchHistoryDay(histPath, date, fields) {
+  const h = readHistory(histPath)
+  const rec = h?.days?.find((r) => r.date === date)
+  if (!rec) return false
+  Object.assign(rec, fields)
+  writeFileSync(histPath, JSON.stringify(h))
+  return true
 }
 
 /**

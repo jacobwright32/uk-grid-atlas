@@ -17,7 +17,9 @@ import {
   EntsoeClient,
   FLOW_BORDERS,
   PSR_BUCKETS,
+  dayStartMs,
   dayWindow,
+  expandSeries,
   matchByName,
   orientFlow,
   parsePriceSeries,
@@ -34,7 +36,6 @@ import {
   buildDayRecord,
   buildMixRows,
   historyDates,
-  hourOfPosition,
   hourlyDates,
   importAvg,
   isoDaysAgo,
@@ -43,6 +44,7 @@ import {
   mergeHistory,
   missingDates,
   priceAvg,
+  patchHistoryDay,
   readHistory,
   stationSeriesOnly,
   throughHour,
@@ -118,7 +120,7 @@ async function fetchUnitsDay(cfg, date) {
  * the cached registry, so a hand-mapping added after a wrong fuzzy match
  * takes effect immediately (not at the 30-day rebuild).
  */
-function stationsFromUnits(unitSeries, index, overrides, registry) {
+function stationsFromUnits(unitSeries, index, overrides, registry, day) {
   const byStation = new Map()
   let unmappedMW = 0
   let registryDirty = false
@@ -140,7 +142,7 @@ function stationsFromUnits(unitSeries, index, overrides, registry) {
   }
   const perStation = {}
   for (const [stationId, list] of byStation) {
-    const d = stationDayFromSeries(list)
+    const d = stationDayFromSeries(list, day ? dayStartMs(day) : null)
     if (d) perStation[stationId] = d
   }
   return { perStation, unmappedMW, registryDirty }
@@ -155,6 +157,7 @@ async function fetchMixAndFlows(cc, cfg, day) {
   // Energy-weighted hourly accumulator: portion = stepMin/60, so four
   // quarter-hour points average into one hourly MW figure.
   const mixAcc = makeHourlyAcc()
+  const originMs = dayStartMs(day)
   for (const domain of cfg.mixDomains) {
     const doc = await client.get({
       documentType: 'A75',
@@ -167,8 +170,8 @@ async function fetchMixAndFlows(cc, cfg, day) {
       const bucket = PSR_BUCKETS[s.psrType]
       if (!bucket) continue
       const portion = s.stepMin / 60
-      for (const p of s.points) {
-        accAdd(mixAcc, bucket[0], hourOfPosition(p.position, s.stepMin), p.mw, portion)
+      for (const { hour, value } of expandSeries(s, originMs)) {
+        accAdd(mixAcc, bucket[0], hour, value, portion)
       }
     }
   }
@@ -202,10 +205,8 @@ async function fetchMixAndFlows(cc, cfg, day) {
       })
       for (const s of parseSeries(doc ?? {})) {
         const perHour = 60 / s.stepMin
-        for (const p of s.points) {
-          const hour = hourOfPosition(p.position, s.stepMin)
-          if (hour < 0 || hour > 23 || !Number.isFinite(p.mw)) continue
-          netHours[hour] = (netHours[hour] ?? 0) + (sign * p.mw) / perHour
+        for (const { hour, value } of expandSeries(s, originMs)) {
+          netHours[hour] = (netHours[hour] ?? 0) + (sign * value) / perHour
         }
       }
     }
@@ -240,7 +241,9 @@ async function fetchMixAndFlows(cc, cfg, day) {
  */
 async function fetchDemandDay(cfg, day) {
   const acc = makeHourlyAcc()
-  for (const domain of cfg.mixDomains) {
+  // Load lives on control areas, generation on bidding zones; they're the same
+  // domain everywhere except Ireland. See ENTSOE_COUNTRIES.ie.
+  for (const domain of cfg.loadDomains ?? cfg.mixDomains) {
     const doc = await client.get({
       documentType: 'A65',
       processType: 'A16',
@@ -249,8 +252,8 @@ async function fetchDemandDay(cfg, day) {
     })
     for (const s of parseSeries(doc ?? {})) {
       const portion = s.stepMin / 60
-      for (const p of s.points) {
-        accAdd(acc, 'demand', hourOfPosition(p.position, s.stepMin), p.mw, portion)
+      for (const { hour, value } of expandSeries(s, dayStartMs(day))) {
+        accAdd(acc, 'demand', hour, value, portion)
       }
     }
   }
@@ -258,16 +261,6 @@ async function fetchDemandDay(cfg, day) {
   return series?.some((v) => v != null)
     ? series.map((v) => (v == null ? null : Math.round(v)))
     : null
-}
-
-/** Patch one existing history day record in place (cheap demand backfill). */
-function patchHistoryDay(histPath, date, fields) {
-  const h = readHistory(histPath)
-  const rec = h?.days?.find((r) => r.date === date)
-  if (!rec) return false
-  Object.assign(rec, fields)
-  writeFileSync(histPath, JSON.stringify(h))
-  return true
 }
 
 /**
@@ -290,8 +283,8 @@ async function fetchPrices(cfg, day) {
     let currency = null
     for (const s of parsePriceSeries(doc ?? {})) {
       currency ??= s.currency
-      for (const p of s.points) {
-        accAdd(acc, 'price', hourOfPosition(p.position, s.stepMin), p.price)
+      for (const { hour, value } of expandSeries(s, dayStartMs(day), 'price')) {
+        accAdd(acc, 'price', hour, value)
       }
     }
     const series = accMeanSeries(acc, 'price')
@@ -336,7 +329,7 @@ async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
   let perStation = pre?.perStation ?? null
   if (!perStation && ctx) {
     const units = await fetchUnitsDay(cfg, date).catch(() => [])
-    const r = stationsFromUnits(units, ctx.index, ctx.overrides, ctx.registry)
+    const r = stationsFromUnits(units, ctx.index, ctx.overrides, ctx.registry, date)
     perStation = r.perStation
     if (r.registryDirty) writeFileSync(ctx.mapPath, JSON.stringify(ctx.registry, null, 1))
   }
@@ -435,6 +428,7 @@ for (const cc of countryIds) {
       index,
       overrides,
       registry,
+      day,
     )
     if (registryDirty) writeFileSync(mapPath, JSON.stringify(registry, null, 1))
 

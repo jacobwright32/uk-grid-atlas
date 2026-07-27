@@ -10,8 +10,10 @@ import {
   currentSettlement,
   daysBefore,
   aggregateMID,
+  londonDayStartMs,
   parseOutturn,
   parseOutturnDay,
+  periodsInDay,
 } from './live-core.mjs'
 import type {
   B1610Row,
@@ -22,10 +24,15 @@ import type {
   StationDay,
 } from './live-core.mjs'
 import { foldMixDay } from './fleet'
+import { pooled } from './pool'
 
 const API = 'https://data.elexon.co.uk/bmrs/api/v1'
 const UNIT_BATCH = 30
 const MAX_LOOKBACK_DAYS = 16
+/** In-flight requests per fan-out — 13 unit batches used to go out at once (#9). */
+const FETCH_POOL = 5
+/** Metered-day probes in flight; see findLatestMeteredDay (#9). */
+const PROBE_POOL = 3
 
 export interface BmuMap {
   byUnit: Record<string, string>
@@ -137,24 +144,30 @@ function b1610StreamUrl(date: string, units: string[]): string {
   return `${API}/datasets/B1610/stream?from=${from}&to=${to}${unitParams}`
 }
 
-/** Find the newest settlement day with metered data (probes run in parallel). */
+/**
+ * Find the newest settlement day with metered data. Probed newest-first in
+ * PROBE_POOL-wide windows, stopping at the first window that yields a hit: the
+ * answer is nearly always day 1 or 2, so the old 16-way parallel fan-out was
+ * almost entirely wasted requests, while a strictly serial walk would cost 16
+ * round trips when nothing is metered at all (#9). MAX_LOOKBACK_DAYS still
+ * bounds the search.
+ */
 export async function findLatestMeteredDay(sentinels: string[]): Promise<string | null> {
   const { settlementDate } = currentSettlement()
   const days = Array.from({ length: MAX_LOOKBACK_DAYS }, (_, i) =>
     daysBefore(settlementDate, i + 1),
   )
-  const probes = await Promise.allSettled(
-    days.map(async (date) => {
-      const rows = await getJSON<B1610Row[]>(b1610StreamUrl(date, sentinels), 15_000)
-      const hit =
-        Array.isArray(rows) &&
-        rows.some((r) => (r as { settlementDate?: string }).settlementDate === date)
-      return hit ? date : null
-    }),
-  )
-  for (let i = 0; i < probes.length; i++) {
-    const p = probes[i]
-    if (p?.status === 'fulfilled' && p.value) return p.value // days[] is newest-first
+  const probe = async (date: string) => {
+    const rows = await getJSON<B1610Row[]>(b1610StreamUrl(date, sentinels), 15_000)
+    const hit =
+      Array.isArray(rows) &&
+      rows.some((r) => (r as { settlementDate?: string }).settlementDate === date)
+    return hit ? date : null
+  }
+  for (let i = 0; i < days.length; i += PROBE_POOL) {
+    const probes = await pooled(days.slice(i, i + PROBE_POOL), PROBE_POOL, probe)
+    // Window results stay in input order, so the first hit is the newest day.
+    for (const p of probes) if (p.status === 'fulfilled' && p.value) return p.value
   }
   return null
 }
@@ -165,10 +178,8 @@ export async function fetchMeteredDay(
 ): Promise<Map<string, StationDay>> {
   const units = Object.keys(bmuMap.byUnit)
   const batches = chunk(units, UNIT_BATCH)
-  const settled = await Promise.allSettled(
-    batches.map((batch) =>
-      getJSON<(B1610Row & { settlementDate: string })[]>(b1610StreamUrl(date, batch)),
-    ),
+  const settled = await pooled(batches, FETCH_POOL, (batch) =>
+    getJSON<(B1610Row & { settlementDate: string })[]>(b1610StreamUrl(date, batch)),
   )
   const rows: B1610Row[] = []
   let failures = 0
@@ -178,7 +189,8 @@ export async function fetchMeteredDay(
     } else failures++
   }
   if (failures === batches.length) throw new Error('all B1610 batches failed')
-  return aggregateDay(rows, bmuMap.byUnit)
+  // Pass the date so a clock-change day keeps all 46/50 of its periods (#5).
+  return aggregateDay(rows, bmuMap.byUnit, date)
 }
 
 export async function fetchScheduledNow(bmuMap: BmuMap): Promise<{
@@ -188,14 +200,12 @@ export async function fetchScheduledNow(bmuMap: BmuMap): Promise<{
   const { settlementDate, settlementPeriod } = currentSettlement()
   const units = Object.keys(bmuMap.byUnit)
   const batches = chunk(units, UNIT_BATCH)
-  const settled = await Promise.allSettled(
-    batches.map((batch) => {
-      const unitParams = batch.map((u) => `&bmUnit=${encodeURIComponent(u)}`).join('')
-      return getJSON<{ data: PNRow[] }>(
-        `${API}/datasets/PN?settlementDate=${settlementDate}&settlementPeriod=${settlementPeriod}${unitParams}`,
-      )
-    }),
-  )
+  const settled = await pooled(batches, FETCH_POOL, (batch) => {
+    const unitParams = batch.map((u) => `&bmUnit=${encodeURIComponent(u)}`).join('')
+    return getJSON<{ data: PNRow[] }>(
+      `${API}/datasets/PN?settlementDate=${settlementDate}&settlementPeriod=${settlementPeriod}${unitParams}`,
+    )
+  })
   const rows: PNRow[] = []
   let ok = 0
   for (const s of settled) {
@@ -211,20 +221,32 @@ export async function fetchScheduledNow(bmuMap: BmuMap): Promise<{
   }
 }
 
+/**
+ * UTC window covering exactly one GB settlement day. These endpoints filter on
+ * instants, so a naive `${date}T00:00:00Z`…`T23:59:59Z` window sits an hour out
+ * through BST — it drops SP 1-2 and drags in the next day's first periods, and
+ * on the clocks-back day it would also cut SP 49/50 (#5).
+ */
+function settlementDayWindow(date: string): { from: string; to: string } {
+  const start = londonDayStartMs(date)
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 19) + 'Z'
+  return { from: iso(start), to: iso(start + periodsInDay(date) * 1_800_000 - 1000) }
+}
+
 /** Volume-weighted market-index prices for one settlement day (£/MWh). */
 export async function fetchPricesDay(date: string): Promise<PriceDay | null> {
-  const rows = await getJSON<unknown>(
-    `${API}/datasets/MID/stream?from=${date}T00:00:00Z&to=${date}T23:59:59Z`,
-  )
-  return aggregateMID(rows)
+  const { from, to } = settlementDayWindow(date)
+  const rows = await getJSON<unknown>(`${API}/datasets/MID/stream?from=${from}&to=${to}`)
+  return aggregateMID(rows, date)
 }
 
 /** Half-hourly FUELINST series for one settlement day (#17 mix scrub). */
 export async function fetchMixDay(date: string): Promise<MixDaySeries | null> {
+  const { from, to } = settlementDayWindow(date)
   const payload = await getJSON<unknown>(
-    `${API}/generation/outturn/summary?startTime=${date}T00:00:00Z&endTime=${date}T23:59:59Z`,
+    `${API}/generation/outturn/summary?startTime=${from}&endTime=${to}`,
   )
-  return parseOutturnDay(payload)
+  return parseOutturnDay(payload, date)
 }
 
 export async function fetchMixNow(): Promise<MixSnapshot | null> {

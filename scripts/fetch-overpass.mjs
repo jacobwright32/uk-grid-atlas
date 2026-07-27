@@ -13,12 +13,11 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const target = process.argv[2] ?? 'gb'
 const RAW_DIR = process.argv[3] ?? join(__dirname, '..', '..', 'data')
-mkdirSync(RAW_DIR, { recursive: true })
 
 const MIRRORS = [
   'https://overpass-api.de/api/interpreter',
@@ -162,26 +161,40 @@ out tags geom;`,
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+/**
+ * A response is only data when it carries at least one element. Busy mirrors
+ * answer `{"elements":[]}` with HTTP 200 — the read side always rejected
+ * that, the write side used to cache it and report a clean run (#15).
+ */
+export function hasElements(parsed) {
+  return Array.isArray(parsed?.elements) && parsed.elements.length > 0
+}
+
 function cached(path) {
   if (!existsSync(path)) return false
   try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8'))
-    return Array.isArray(parsed.elements) && parsed.elements.length > 0
+    return hasElements(JSON.parse(readFileSync(path, 'utf8')))
   } catch {
     return false
   }
 }
 
-async function fetchOne(name, query) {
-  const path = join(RAW_DIR, name)
+/**
+ * Download one query into RAW_DIR, walking mirrors with backoff. `opts` only
+ * exists so tests can drive it without the network or the real waits — the
+ * defaults are the production settings.
+ */
+export async function fetchOne(name, query, opts = {}) {
+  const { rawDir = RAW_DIR, mirrors = MIRRORS, attempts = 8, doFetch = fetch, wait = sleep } = opts
+  const path = join(rawDir, name)
   if (cached(path)) {
     console.log(`✓ ${name} (cached)`)
     return true
   }
-  for (let attempt = 1; attempt <= 8; attempt++) {
-    for (const url of MIRRORS) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    for (const url of mirrors) {
       try {
-        const res = await fetch(url, {
+        const res = await doFetch(url, {
           method: 'POST',
           headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
           body: `data=${encodeURIComponent(query)}`,
@@ -190,40 +203,56 @@ async function fetchOne(name, query) {
         if (res.ok) {
           const text = await res.text()
           const parsed = JSON.parse(text)
-          if (Array.isArray(parsed.elements)) {
+          if (hasElements(parsed)) {
             writeFileSync(path, text)
             console.log(
               `✓ ${name} — ${(text.length / 1024).toFixed(0)} kB via ${new URL(url).host}`,
             )
             return true
           }
+          // Empty answer: never cached, so the remaining mirrors/attempts get
+          // their turn and an all-empty query still fails the run (#15).
+          console.warn(
+            `… ${name} 0 elements via ${new URL(url).host} (attempt ${attempt}) — not cached`,
+          )
+        } else {
+          console.warn(`… ${name} HTTP ${res.status} via ${new URL(url).host} (attempt ${attempt})`)
         }
-        console.warn(`… ${name} HTTP ${res.status} via ${new URL(url).host} (attempt ${attempt})`)
       } catch (err) {
         console.warn(`… ${name} ${err.message} via ${new URL(url).host} (attempt ${attempt})`)
       }
-      await sleep(15_000)
+      await wait(15_000)
     }
-    await sleep(30_000)
+    await wait(30_000)
   }
   console.error(`✗ ${name} — all attempts failed`)
   return false
 }
 
-const countryIds = target === 'all' ? Object.keys(QUERIES) : [target]
-let allOk = true
-for (const cc of countryIds) {
-  const queries = QUERIES[cc]
-  if (!queries) {
-    console.error(
-      `Unknown country "${cc}" — expected one of: ${Object.keys(QUERIES).join(', ')}, all`,
-    )
-    process.exit(1)
+async function main() {
+  mkdirSync(RAW_DIR, { recursive: true })
+  const countryIds = target === 'all' ? Object.keys(QUERIES) : [target]
+  let allOk = true
+  for (const cc of countryIds) {
+    const queries = QUERIES[cc]
+    if (!queries) {
+      console.error(
+        `Unknown country "${cc}" — expected one of: ${Object.keys(QUERIES).join(', ')}, all`,
+      )
+      process.exit(1)
+    }
+    for (const [name, query] of Object.entries(queries)) {
+      const ok = await fetchOne(name, query)
+      allOk &&= ok
+      await sleep(5_000)
+    }
   }
-  for (const [name, query] of Object.entries(queries)) {
-    const ok = await fetchOne(name, query)
-    allOk &&= ok
-    await sleep(5_000)
-  }
+  // A query that never came back with elements (empty or failed) is a failed
+  // run, not a clean one (#15).
+  process.exit(allOk ? 0 : 1)
 }
-process.exit(allOk ? 0 : 1)
+
+// Import-safe for tests: only run when invoked directly.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main()
+}

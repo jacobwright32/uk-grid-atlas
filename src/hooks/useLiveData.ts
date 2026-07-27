@@ -18,6 +18,10 @@ const IDLE: State = { status: 'unavailable', live: null, bmuMap: null }
 // Failures are cached only briefly so a transient blip retries instead of
 // wedging the whole session (#4).
 const FAIL_TTL = 60_000
+// Successful ENTSO-E snapshots expire too (#4): the workflow re-bakes every
+// 6 h, so a session longer than that used to sit on the day it opened with.
+// 15 min re-checks pick the new bake up promptly for one cheap request.
+const SNAPSHOT_TTL = 15 * 60_000
 const MIX_REFRESH = 5 * 60_000
 const entsoeCache = new Map<string, { live: LiveData | null; at: number }>()
 let elexonCache: { state: State; at: number } | null = null
@@ -43,15 +47,25 @@ export function useLiveData(country: CountryConfig): State {
 
     if (kind === 'entsoe') {
       const cached = entsoeCache.get(country.id)
-      const fresh = cached && (cached.live !== null || Date.now() - cached.at < FAIL_TTL)
-      if (cached && fresh) {
-        setState(cached.live ? { status: 'live', live: cached.live, bmuMap: null } : IDLE)
-        return
-      }
-      setState({ status: 'loading', live: null, bmuMap: null })
+      // Successes and failures both expire, just on very different clocks.
+      const ttl = cached?.live ? SNAPSHOT_TTL : FAIL_TTL
+      const fresh = cached != null && Date.now() - cached.at < ttl
+      // Show the cached snapshot immediately even when it's stale —
+      // revalidation happens behind it instead of blanking a working view.
+      setState(
+        cached?.live
+          ? { status: 'live', live: cached.live, bmuMap: null }
+          : cached
+            ? IDLE
+            : { status: 'loading', live: null, bmuMap: null },
+      )
+      if (fresh) return
       loadEntsoeSnapshot(country.id).then((live) => {
-        entsoeCache.set(country.id, { live, at: Date.now() })
-        if (!cancelled) setState(live ? { status: 'live', live, bmuMap: null } : IDLE)
+        // A failed re-check keeps the stale snapshot on screen; only its
+        // timestamp advances, so the next attempt is another TTL away (#4).
+        const next = live ?? cached?.live ?? null
+        entsoeCache.set(country.id, { live: next, at: Date.now() })
+        if (!cancelled) setState(next ? { status: 'live', live: next, bmuMap: null } : IDLE)
       })
       return () => {
         cancelled = true

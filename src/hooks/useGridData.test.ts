@@ -69,10 +69,14 @@ describe('loadAllProgressive (#60)', () => {
   it('skips a failed country, renders the rest, and never caches the partial', async () => {
     const { load, settle } = controlledLoader(new Set(['de']))
     const sizes: number[] = []
+    const counts: number[] = []
     let errored = false
     const cache = new Map<string, GridData>()
     const run = loadAllProgressive(
-      (d) => sizes.push(d.stations.features.length),
+      (d, failures) => {
+        sizes.push(d.stations.features.length)
+        counts.push(failures)
+      },
       () => {
         errored = true
       },
@@ -83,7 +87,44 @@ describe('loadAllProgressive (#60)', () => {
     expect(sizes).toHaveLength(ids.length - 1)
     expect(Math.max(...sizes)).toBe(ids.length - 1)
     expect(errored).toBe(false) // partial success is success (#3)
+    // …but the UI has to be told, so it can own up to a partial map (#3).
+    expect(counts.at(-1)).toBe(1)
     expect(cache.has('all')).toBe(false) // transient failure must heal next visit
+  })
+
+  it('re-announces the settled count when the failure lands after the last arrival (#3)', async () => {
+    const { load, settle } = controlledLoader(new Set(['de']))
+    const counts: number[] = []
+    const cache = new Map<string, GridData>()
+    const run = loadAllProgressive(
+      (_d, failures) => counts.push(failures),
+      () => {},
+      { load, cache },
+    )
+    // Every success first, the failure last: without the post-settle
+    // re-announce, every onUpdate would have carried failures = 0 and the
+    // notice would never appear.
+    for (const id of ids.filter((i) => i !== 'de')) await settle(id)
+    await settle('de')
+    await run
+    expect(counts).toHaveLength(ids.length) // 21 arrivals + 1 re-announce
+    expect(counts.slice(0, -1).every((c) => c === 0)).toBe(true)
+    expect(counts.at(-1)).toBe(1)
+  })
+
+  it('reports zero failures on a clean load, so the notice stays hidden (#3)', async () => {
+    const { load, settle } = controlledLoader()
+    const counts: number[] = []
+    const cache = new Map<string, GridData>()
+    const run = loadAllProgressive(
+      (_d, failures) => counts.push(failures),
+      () => {},
+      { load, cache },
+    )
+    for (const id of ids) await settle(id)
+    await run
+    expect(counts).toHaveLength(ids.length)
+    expect(counts.every((c) => c === 0)).toBe(true)
   })
 
   it('reports the first error when every bundle fails', async () => {

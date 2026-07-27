@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { bucketOrder, buildWeekScrub, shortDate, stitchHourly } from './history'
+import {
+  HISTORY_BUCKETS,
+  bucketOrder,
+  buildWeekScrub,
+  shortDate,
+  stitchHourly,
+} from './history'
 import type { HistoryDay, HistoryHourly } from './history'
+import { BUCKET_META } from '../../scripts/snapshot-common.mjs'
 
 const hourly = (
   date: string,
@@ -119,5 +126,18 @@ describe('bucketOrder', () => {
 describe('shortDate', () => {
   it('renders compact axis labels', () => {
     expect(shortDate('2026-07-24')).toBe('24 Jul')
+  })
+})
+
+describe('HISTORY_BUCKETS', () => {
+  // History files carry bucket keys only, so the client keeps its own copy of
+  // the palette the bakers write. Nothing links the two, and a bucket added
+  // on the script side (B25 → storage) renders grey and unlabelled until
+  // someone remembers this file. That's what this catches.
+  it('mirrors BUCKET_META in scripts/snapshot-common.mjs exactly', () => {
+    expect(Object.keys(HISTORY_BUCKETS).sort()).toEqual(Object.keys(BUCKET_META).sort())
+    for (const [key, meta] of Object.entries(BUCKET_META)) {
+      expect(HISTORY_BUCKETS[key], `bucket ${key}`).toEqual(meta)
+    }
   })
 })

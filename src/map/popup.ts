@@ -36,7 +36,11 @@ function card(): HTMLElement {
   return el('div', 'hovercard')
 }
 
-/** Tiny inline SVG sparkline of a 48-period day (null-safe). */
+/**
+ * Tiny inline SVG sparkline of one metered day (null-safe). The geometry is
+ * length-agnostic — GB half-hours (46/48/50 across the clock changes, #5) and
+ * hourly EU snapshots both fit — so only the narration needs to know which.
+ */
 function sparkline(day: StationDay, color: string): SVGSVGElement {
   const W = 224
   const H = 40
@@ -45,7 +49,13 @@ function sparkline(day: StationDay, color: string): SVGSVGElement {
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
   svg.setAttribute('class', 'card-spark')
   svg.setAttribute('role', 'img')
-  svg.setAttribute('aria-label', `Half-hourly output, peak ${fmtMW(day.peakMW)}`)
+  // Said "Half-hourly" for every grid, so EU cards narrated a cadence twice
+  // the one they actually plot.
+  const cadence = day.series.length >= 46 ? 'Half-hourly' : day.series.length === 24 ? 'Hourly' : ''
+  svg.setAttribute(
+    'aria-label',
+    `${cadence ? `${cadence} output` : 'Output'}, peak ${fmtMW(day.peakMW)}`,
+  )
   const max = Math.max(day.peakMW, 1)
   const n = Math.max(day.series.length - 1, 1)
   const x = (i: number) => (i / n) * (W - 2) + 1

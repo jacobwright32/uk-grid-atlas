@@ -2,22 +2,30 @@ import { describe, expect, it } from 'vitest'
 import { FUEL_COLOR, FUEL_LABEL, FUEL_TO_GROUP, GROUPS, fuelColorExpression } from './fuels'
 import type { FuelId } from './types'
 
-const ALL_FUELS: FuelId[] = [
-  'gas',
-  'nuclear',
-  'wind_offshore',
-  'wind_onshore',
-  'solar',
-  'hydro',
-  'pumped',
-  'marine',
-  'bioenergy',
-  'waste',
-  'storage',
-  'oil',
-  'coal',
-  'other',
-]
+/**
+ * Derived, never hand-listed (#39): `satisfies Record<FuelId, true>` makes a
+ * missing key a type error, so adding a fuel to `FuelId` can't silently skip
+ * the exhaustiveness checks below the way 'geothermal' did.
+ */
+const FUEL_IDS = {
+  gas: true,
+  nuclear: true,
+  wind_offshore: true,
+  wind_onshore: true,
+  solar: true,
+  hydro: true,
+  pumped: true,
+  marine: true,
+  bioenergy: true,
+  waste: true,
+  storage: true,
+  oil: true,
+  coal: true,
+  geothermal: true,
+  other: true,
+} satisfies Record<FuelId, true>
+
+const ALL_FUELS = Object.keys(FUEL_IDS) as FuelId[]
 
 describe('fuel taxonomy integrity', () => {
   it('every granular fuel maps to a display group', () => {

@@ -142,6 +142,38 @@
   margin-left: auto;
 }
 
+/* Partial ALL-view load (#3): a quiet chip beside the headline stats. The map
+   is still useful, so this must not read like an error page — amber, not red. */
+.grid-warn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #e8c37a;
+  background: rgba(201, 133, 0, 0.14);
+  border: 1px solid rgba(201, 133, 0, 0.4);
+  border-radius: 999px;
+}
+
+.grid-warn-retry {
+  flex: 0 0 auto;
+  padding: 0 2px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.grid-warn-retry:hover {
+  color: var(--accent);
+}
+
 .stat {
   display: flex;
   flex-direction: column;
@@ -171,6 +203,24 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+/* Rendered only while the drawer is a modal dialog (#12): the burger that
+   opened it is behind the scrim, so the drawer needs its own way out. The
+   negative bottom margin cancels the column gap it would otherwise add. */
+.sidebar-close {
+  align-self: flex-end;
+  margin: -4px -2px -14px 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ink-2);
+}
+
+.sidebar-close:hover {
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .section-head {
@@ -331,6 +381,14 @@
   position: absolute;
   inset: 0;
   background: #0b0f14;
+}
+
+/* MapLibre puts the tabindex on the <canvas>, so that's what gets the ring.
+   Drawn inside the edges — the canvas fills the pane, and the global +2px
+   offset would put half the ring off-screen (#12). */
+.maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
 }
 
 /* MapLibre chrome, re-skinned dark */
@@ -852,21 +910,18 @@
 }
 
 /* ------------------------------------------------- mobile sidebar scrim */
+/* No media query of its own any more (#13): App renders the scrim only while
+   the drawer floats, gated on the same 760px breakpoint as the mobile block
+   above. It used to be `display: none` until 639px, which meant 640–760px got
+   an overlaying sidebar with nothing behind it to dismiss. */
 .sidebar-scrim {
-  display: none;
-}
-
-@media (max-width: 639px) {
-  .sidebar-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 7; /* above the map, below the sidebar */
-    background: rgba(0, 0, 0, 0.45);
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-  }
+  position: fixed;
+  inset: 0;
+  z-index: 7; /* above the map, below the sidebar */
+  background: rgba(0, 0, 0, 0.45);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 /* ------------------------------------------------- OSM edit link in cards */
@@ -1014,7 +1069,9 @@
   color: var(--ink);
 }
 
-@media (max-width: 639px) {
+/* Same 760px breakpoint as everything else (#13): below it the mix panel starts
+   collapsed, so the reopen chip is what the dock has to clear. */
+@media (max-width: 760px) {
   .timeslider-dock {
     bottom: 76px; /* clear the mix chip */
   }
@@ -1022,4 +1079,24 @@
 
 .mixstrip-carbon {
   color: var(--ink-2);
+}
+
+/* ------------------------------------------------------- reduced motion */
+/* Matches what the JS already honours (App's scroll-into-view, GridMap's
+   fitBounds and flyTo) (#12). Last in the file so it wins on source order.
+   Nothing here hides an element: a "live" dot that disappeared would take its
+   meaning with it, so the pulse stops at full opacity instead. */
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .boot-bolt {
+    animation: none;
+    opacity: 1;
+  }
+
+  /* Decorative scroll-edge fades on the country switcher still appear — they
+     just stop cross-fading. */
+  .country-switch-wrap::before,
+  .country-switch-wrap::after {
+    transition: none;
+  }
 }

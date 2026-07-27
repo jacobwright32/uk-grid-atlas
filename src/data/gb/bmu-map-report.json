@@ -1,0 +1,4901 @@
+{
+ "builtAt": "2026-07-27T11:12:36.292Z",
+ "unitCount": 557,
+ "matchedCount": 379,
+ "fuzzyCount": 157,
+ "overrideCount": 222,
+ "unmatchedCount": 178,
+ "matchRatio": 0.68,
+ "stationCount": 220,
+ "capacityMW": {
+  "mapped": 80625,
+  "total": 92250
+ },
+ "thresholds": {
+  "minScore": 0.55,
+  "broadMinScore": 0.7,
+  "nearTieDelta": 0.05
+ },
+ "unknownFuelTypes": {},
+ "nearTies": [
+  {
+   "b": "E_HRHLW-1",
+   "name": "Hare Hill Extension Windfarm",
+   "fuel": "WIND",
+   "mw": 30,
+   "won": {
+    "station": "relation/6972691",
+    "name": "Hare Hill Wind Farm",
+    "score": 0.667
+   },
+   "runnerUp": {
+    "station": "relation/8406124",
+    "name": "Hare Hill",
+    "score": 0.667
+   },
+   "delta": 0
+  }
+ ],
+ "matches": [
+  {
+   "b": "E_ABERDARE",
+   "name": "Aberdare Power Station",
+   "fuel": null,
+   "mw": 15,
+   "station": "way/1353839293",
+   "stationName": "Aberdare Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_ABRTW-1",
+   "name": "Auchrobert Wind Farm",
+   "fuel": "WIND",
+   "mw": 36,
+   "station": "relation/9599155",
+   "stationName": "Auchrobert",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_AIRSW-1",
+   "name": "Airies",
+   "fuel": "WIND",
+   "mw": 38,
+   "station": "relation/9346423",
+   "stationName": "Airies Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_ARBRB-1",
+   "name": "Arbroath Battery Storage",
+   "fuel": "OTHER",
+   "mw": 35,
+   "station": "way/1148898112",
+   "stationName": "Arbroath Battery",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_ASHWW-1",
+   "name": "Andershaw Wind Farm",
+   "fuel": "WIND",
+   "mw": 35,
+   "station": "relation/8835792",
+   "stationName": "Andershaw Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_ASLVW-1",
+   "name": "Assel Valley Wind Farm",
+   "fuel": "WIND",
+   "mw": 26,
+   "station": "relation/9418764",
+   "stationName": "Assel Valley Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BABAW-1",
+   "name": "Baillie Wind Farm",
+   "fuel": "WIND",
+   "mw": 53,
+   "station": "relation/8087058",
+   "stationName": "Baillie Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BARNB-1",
+   "name": "Hunningley Stairfoot BESS",
+   "fuel": null,
+   "mw": 44,
+   "station": "way/1149297467",
+   "stationName": "Hunningley Stairfoot BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BERKB-1",
+   "name": "Berkeley BESS",
+   "fuel": null,
+   "mw": 52,
+   "station": "way/1512575413",
+   "stationName": "Berkeley BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BERKB-2",
+   "name": "Berkeley BESS",
+   "fuel": null,
+   "mw": 52,
+   "station": "way/1512575413",
+   "stationName": "Berkeley BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BNWKW-1",
+   "name": "Burn of Whilk Windfarm",
+   "fuel": "WIND",
+   "mw": 23,
+   "station": "relation/9584471",
+   "stationName": "Burn of Whilk Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BRDUW-1",
+   "name": "Braes of Doune",
+   "fuel": "WIND",
+   "mw": 74,
+   "station": "relation/7872124",
+   "stationName": "Braes of Doune Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BRETB-1",
+   "name": "Brentwood BESS",
+   "fuel": null,
+   "mw": 52,
+   "station": "relation/20254637",
+   "stationName": "Brentwood Farm BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BRETB-2",
+   "name": "Brentwood BESS",
+   "fuel": null,
+   "mw": 52,
+   "station": "relation/20254637",
+   "stationName": "Brentwood Farm BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BRGG-1",
+   "name": "Glanford Brigg",
+   "fuel": "CCGT",
+   "mw": 50,
+   "station": "way/208495234",
+   "stationName": "Glanford Brigg Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BRNLW-1",
+   "name": "Brownieleys",
+   "fuel": "WIND",
+   "mw": 8,
+   "station": "relation/12863969",
+   "stationName": "Brownieleys Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BROAB-1",
+   "name": "Broadditch Battery",
+   "fuel": null,
+   "mw": 11,
+   "station": "way/1159868562",
+   "stationName": "Broadditch Battery",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BRYBW-1",
+   "name": "Berry Burn Wind Farm",
+   "fuel": "WIND",
+   "mw": 63,
+   "station": "relation/8836281",
+   "stationName": "Berry Burn Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BTNHL-1",
+   "name": "Barton Hill",
+   "fuel": null,
+   "mw": 21,
+   "station": "way/944261153",
+   "stationName": "Barton Hill STOR",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_BTUIW-2",
+   "name": "Beinn An Tuirc 2",
+   "fuel": "WIND",
+   "mw": 44,
+   "station": "relation/6949470",
+   "stationName": "Beinn an Tuirc",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BTUIW-3",
+   "name": "Beinn an Tuirc III Windfarm",
+   "fuel": "WIND",
+   "mw": 52,
+   "station": "relation/15016558",
+   "stationName": "Beinn an Tuirc III Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_BURBO",
+   "name": "Burbo Offshore Wind",
+   "fuel": "WIND",
+   "mw": 90,
+   "station": "relation/19905799",
+   "stationName": "Burbo Bank Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_BURGH-1",
+   "name": "Burghfield Power Station",
+   "fuel": null,
+   "mw": 48,
+   "station": "way/843940771",
+   "stationName": "Burghfield Generation Plant",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_BURWB-3",
+   "name": "Burwell 2",
+   "fuel": null,
+   "mw": 30,
+   "station": "way/1475040946",
+   "stationName": "Burwell 2 BESS",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_CHICK-1",
+   "name": "Chickerell Power Station",
+   "fuel": null,
+   "mw": 48,
+   "station": "way/1149497116",
+   "stationName": "Chickerell Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_CHTRY-1",
+   "name": "Chatterley",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/938140160",
+   "stationName": "Chatterley Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_CLAC-1",
+   "name": "Clachan G1",
+   "fuel": "NPSHYD",
+   "mw": 43,
+   "station": "way/264087413",
+   "stationName": "Clachan Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_CLFLW-1",
+   "name": "Clachan Flats",
+   "fuel": "WIND",
+   "mw": 15,
+   "station": "relation/9316516",
+   "stationName": "Clachan Flats",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_CMSTW-2",
+   "name": "Camster II",
+   "fuel": "WIND",
+   "mw": 36,
+   "station": "relation/19465832",
+   "stationName": "Camster II Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_CNCLW-1",
+   "name": "Coire Na Cloiche WF",
+   "fuel": "WIND",
+   "mw": 31,
+   "station": "relation/11522312",
+   "stationName": "Coire Na Cloiche Wind Farm",
+   "how": "fuzzy",
+   "score": 0.75
+  },
+  {
+   "b": "E_CONTB-1",
+   "name": "Contego Battery",
+   "fuel": null,
+   "mw": 36,
+   "station": "way/1148934860",
+   "stationName": "Contego Battery",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_CORB-1",
+   "name": "CORBY POWER LIMITED",
+   "fuel": "CCGT",
+   "mw": 240,
+   "station": "way/97744299",
+   "stationName": "Corby Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_CWMD-1",
+   "name": "Cwm Dyli",
+   "fuel": null,
+   "mw": 10,
+   "station": "way/230560199",
+   "stationName": "Cwm Dyli Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_DALSW-1",
+   "name": "Dalswinton Windfarm",
+   "fuel": "WIND",
+   "mw": 30,
+   "station": "relation/8412487",
+   "stationName": "Dalswinton Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_DIDC1G",
+   "name": "Didcot OCGT Unit 1",
+   "fuel": "OCGT",
+   "mw": 25,
+   "station": "way/945296993",
+   "stationName": "Didcot OCGT",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_DIDC2G",
+   "name": "Didcot OCGT Unit 2",
+   "fuel": "OCGT",
+   "mw": 25,
+   "station": "way/945296993",
+   "stationName": "Didcot OCGT",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_DIDC3G",
+   "name": "Didcot OCGT Unit 3",
+   "fuel": "OCGT",
+   "mw": 25,
+   "station": "way/945296993",
+   "stationName": "Didcot OCGT",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_DIDC4G",
+   "name": "Didcot OCGT Unit 4",
+   "fuel": "OCGT",
+   "mw": 25,
+   "station": "way/945296993",
+   "stationName": "Didcot OCGT",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_DOLLB-1",
+   "name": "Dollymans Storage",
+   "fuel": "OTHER",
+   "mw": 102,
+   "station": "relation/20679002",
+   "stationName": "Dollymans Battery Storage",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_ERSKB-1",
+   "name": "Erskine BESS",
+   "fuel": null,
+   "mw": 30,
+   "station": "way/1475625561",
+   "stationName": "Erskine BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_FASN-3",
+   "name": "Fasnakyle  G3",
+   "fuel": "NPSHYD",
+   "mw": 24,
+   "station": "way/239248123",
+   "stationName": "Fasnakyle Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_FASN-4",
+   "name": "Fasnakyle G4",
+   "fuel": "NPSHYD",
+   "mw": 8,
+   "station": "way/239248123",
+   "stationName": "Fasnakyle Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_FAWN-1",
+   "name": "Fawley Cogen",
+   "fuel": "CCGT",
+   "mw": 155,
+   "station": "way/1433382874",
+   "stationName": "Fawley National Power Cogen (NPC) power station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_GFLDW-1",
+   "name": "Goole Fields Wind Farm",
+   "fuel": null,
+   "mw": 33,
+   "station": "relation/8394724",
+   "stationName": "Goole Fields Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_GLCHW-1",
+   "name": "Glenchamber",
+   "fuel": "WIND",
+   "mw": 27,
+   "station": "relation/12862507",
+   "stationName": "Glenchamber Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_GLOFW-1",
+   "name": "Glens of Foudland",
+   "fuel": "WIND",
+   "mw": 27,
+   "station": "relation/8835818",
+   "stationName": "Glens of Foudland",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_GOSHS-1",
+   "name": "Goose House Lane",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/1153082218",
+   "stationName": "Goose House Lane Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_GRCRB-1",
+   "name": "Gerrards Cross BESS",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/1475218524",
+   "stationName": "Gerrards Cross BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_GRGRW-1",
+   "name": "Greengairs East WF-1",
+   "fuel": "WIND",
+   "mw": 38,
+   "station": "relation/17984890",
+   "stationName": "Greengairs East Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "E_GYAR-1",
+   "name": "Great Yarmouth Power Limited",
+   "fuel": "CCGT",
+   "mw": 402,
+   "station": "way/201993701",
+   "stationName": "Great Yarmouth Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_HLGLW-1",
+   "name": "Hill of Glaschyle",
+   "fuel": "WIND",
+   "mw": 28,
+   "station": "relation/9584653",
+   "stationName": "Hill of Glaschyle Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_HLTWW-1",
+   "name": "Hill of Towie",
+   "fuel": "WIND",
+   "mw": 48,
+   "station": "relation/8836282",
+   "stationName": "Hill of Towie Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_HRHLW-1",
+   "name": "Hare Hill Extension Windfarm",
+   "fuel": "WIND",
+   "mw": 30,
+   "station": "relation/6972691",
+   "stationName": "Hare Hill Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "E_KHLLW-1",
+   "name": "Kirk Hill WF",
+   "fuel": "WIND",
+   "mw": 19,
+   "station": "relation/17969494",
+   "stationName": "Kirk Hill Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "E_KINCW-1",
+   "name": "Kincardine Offshore Windfarm",
+   "fuel": "WIND",
+   "mw": 50,
+   "station": "way/998559908",
+   "stationName": "Kincardine Offshore Windfarm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_KLYN-A-1",
+   "name": "Kings Lynn A",
+   "fuel": "CCGT",
+   "mw": 392,
+   "station": "way/28390306",
+   "stationName": "King's Lynn Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_LYNE1",
+   "name": "LYNEMOUTH GENERATOR 1",
+   "fuel": "BIOMASS",
+   "mw": 140,
+   "station": "way/90009908",
+   "stationName": "Lynemouth Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_LYNE2",
+   "name": "LYNEMOUTH GENERATOR 2",
+   "fuel": "BIOMASS",
+   "mw": 140,
+   "station": "way/90009908",
+   "stationName": "Lynemouth Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_LYNE3",
+   "name": "LYNEMOUTH GENERATOR 3",
+   "fuel": "BIOMASS",
+   "mw": 140,
+   "station": "way/90009908",
+   "stationName": "Lynemouth Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_MARK-1",
+   "name": "Rothes Bio-Plant CHP1",
+   "fuel": "BIOMASS",
+   "mw": 86,
+   "station": "way/955984192",
+   "stationName": "Rothes Bio-Plant",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "E_MDLWH-1",
+   "name": "Middlewich",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/1134093224",
+   "stationName": "Middlewich Power Generation Plant",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_MINSW-1",
+   "name": "Minsca Wind Farm",
+   "fuel": "WIND",
+   "mw": 38,
+   "station": "relation/8836112",
+   "stationName": "Minsca Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_MORFL-1",
+   "name": "Moorfield Drive",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/1152989938",
+   "stationName": "Moorfield Drive Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_MOYEW-1",
+   "name": "Moy Windfarm",
+   "fuel": "WIND",
+   "mw": 60,
+   "station": "relation/9590773",
+   "stationName": "Moy",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_NEWPB-1",
+   "name": "Newport BESS",
+   "fuel": null,
+   "mw": 21,
+   "station": "way/1474381139",
+   "stationName": "Field Newport BESS",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_NEWTB-1",
+   "name": "Newton wood BESS",
+   "fuel": null,
+   "mw": 52,
+   "station": "way/1110596984",
+   "stationName": "Newton Wood Farm BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_NTAWB-1",
+   "name": "North Tawton BESS",
+   "fuel": null,
+   "mw": 32,
+   "station": "way/1512627537",
+   "stationName": "North Tawton BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_OVRHB-1",
+   "name": "Overhill BESS",
+   "fuel": "OTHER",
+   "mw": 49,
+   "station": "way/1484128931",
+   "stationName": "Overhill BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_PETEM1",
+   "name": "Peterborough",
+   "fuel": "CCGT",
+   "mw": 245,
+   "station": "way/711002156",
+   "stationName": "Peterborough Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_PETEM3",
+   "name": "Peterborough Power 3",
+   "fuel": "OTHER",
+   "mw": 49,
+   "station": "way/711002156",
+   "stationName": "Peterborough Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_PIBUW-1",
+   "name": "Pines Burn Wind Farm",
+   "fuel": "WIND",
+   "mw": 36,
+   "station": "relation/20157713",
+   "stationName": "Pines Burn Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_PILLB-1",
+   "name": "Pillswood 1 Battery Storage",
+   "fuel": null,
+   "mw": 50,
+   "station": "way/1116566266",
+   "stationName": "Pillswood Battery Storage",
+   "how": "fuzzy",
+   "score": 0.75
+  },
+  {
+   "b": "E_PILLB-2",
+   "name": "Pillswood 2 Battery Storage",
+   "fuel": null,
+   "mw": 50,
+   "station": "way/1116566266",
+   "stationName": "Pillswood Battery Storage",
+   "how": "fuzzy",
+   "score": 0.75
+  },
+  {
+   "b": "E_POTES-1",
+   "name": "Port of Tyne Energy Storage",
+   "fuel": null,
+   "mw": 35,
+   "station": "way/956010231",
+   "stationName": "Port of Tyne Battery Storage",
+   "how": "fuzzy",
+   "score": 0.8
+  },
+  {
+   "b": "E_RAKE-1",
+   "name": "Rake Lane",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/1152991020",
+   "stationName": "Rake Lane Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_RDFRB-1",
+   "name": "Redfield Road B",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/951785974",
+   "stationName": "Redfield Road Gas Generation Plant",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_RDFRD-1",
+   "name": "Redfield Road",
+   "fuel": null,
+   "mw": 21,
+   "station": "way/951785974",
+   "stationName": "Redfield Road Gas Generation Plant",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_SHOS-1",
+   "name": "Shoreham Power Station",
+   "fuel": "CCGT",
+   "mw": 460,
+   "station": "way/352871114",
+   "stationName": "Shoreham Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "E_SKELB-1",
+   "name": "Skelmersdale Battery",
+   "fuel": null,
+   "mw": 50,
+   "station": "way/1476437942",
+   "stationName": "Skelmersdale Battery",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_STRHW-1",
+   "name": "Strathrory Wind Farm",
+   "fuel": "WIND",
+   "mw": 36,
+   "station": "relation/20157404",
+   "stationName": "Strathrory Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_TDRVE-1",
+   "name": "The Drove",
+   "fuel": "OTHER",
+   "mw": 6,
+   "station": "way/1149233319",
+   "stationName": "The Drove Power Plant",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_TGP1",
+   "name": "Tilbury Green Power One",
+   "fuel": null,
+   "mw": 43,
+   "station": "way/687448641",
+   "stationName": "Tilbury Green Power",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_TLYMW-1",
+   "name": "Tullymurdoch Wind Farm",
+   "fuel": "WIND",
+   "mw": 14,
+   "station": "relation/12815226",
+   "stationName": "Tullymurdoch Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_TULWW-1",
+   "name": "Tullo Windfarm",
+   "fuel": "WIND",
+   "mw": 17,
+   "station": "relation/8849887",
+   "stationName": "Tullo Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_VKING-2",
+   "name": "Viking",
+   "fuel": null,
+   "mw": 50,
+   "station": "relation/15748078",
+   "stationName": "Viking Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_WHTBB-1",
+   "name": "Whitebirk BESS",
+   "fuel": null,
+   "mw": 25,
+   "station": "way/1476530724",
+   "stationName": "Whitebirk BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "E_WOLVB-1",
+   "name": "Wolverhampton West BESS",
+   "fuel": null,
+   "mw": 56,
+   "station": "way/1512631595",
+   "stationName": "Wolverhampton West BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "M_SLOY-1",
+   "name": "Sloy G1",
+   "fuel": "NPSHYD",
+   "mw": 50,
+   "station": "way/24409061",
+   "stationName": "Sloy Power station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "M_SLOY-4",
+   "name": "Sloy G4",
+   "fuel": "NPSHYD",
+   "mw": 40,
+   "station": "way/24409061",
+   "stationName": "Sloy Power station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_AFTOW-1",
+   "name": "Afton Wind Farm",
+   "fuel": "WIND",
+   "mw": 50,
+   "station": "relation/9298886",
+   "stationName": "Afton Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_AKGLW-2",
+   "name": "AIKENGALL II",
+   "fuel": "WIND",
+   "mw": 64,
+   "station": "relation/11561414",
+   "stationName": "Aikengall II Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_AKGLW-3",
+   "name": "AIKENGALL2A-W",
+   "fuel": "WIND",
+   "mw": 163,
+   "station": "relation/11561414",
+   "stationName": "Aikengall II Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_ANSUW-1",
+   "name": "An Suidhe 1",
+   "fuel": "WIND",
+   "mw": 19,
+   "station": "relation/6949563",
+   "stationName": "An Suidhe",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_ARCHW-1",
+   "name": "Arecleoch",
+   "fuel": "WIND",
+   "mw": 114,
+   "station": "relation/7872032",
+   "stationName": "Arecleoch Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_BDCHW-1",
+   "name": "Bad a Cheo Wind Farm",
+   "fuel": "WIND",
+   "mw": 270,
+   "station": "relation/9954065",
+   "stationName": "Bad a Cheo Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_BEATO-1",
+   "name": "Beatrice Offshore WF 1",
+   "fuel": "WIND",
+   "mw": 184,
+   "station": "way/690325130",
+   "stationName": "Beatrice Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BEATO-2",
+   "name": "Beatrice Offshore WF 2",
+   "fuel": "WIND",
+   "mw": 166,
+   "station": "way/690325130",
+   "stationName": "Beatrice Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BEATO-3",
+   "name": "Beatrice Offshore WF 3",
+   "fuel": "WIND",
+   "mw": 166,
+   "station": "way/690325130",
+   "stationName": "Beatrice Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BEATO-4",
+   "name": "Beatrice Offshore WF 4",
+   "fuel": "WIND",
+   "mw": 166,
+   "station": "way/690325130",
+   "stationName": "Beatrice Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BEINW-1",
+   "name": "Beinneun Wind farm",
+   "fuel": "WIND",
+   "mw": 109,
+   "station": "relation/9353227",
+   "stationName": "Beinneun Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_BHLAW-1",
+   "name": "Bhlaraidh Windfarm 1",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "relation/8039767",
+   "stationName": "Bhlaraidh Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_BLKWW-1",
+   "name": "Blackcraig Windfarm",
+   "fuel": "WIND",
+   "mw": 56,
+   "station": "relation/9599113",
+   "stationName": "Blackcraig Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_BLLA-2",
+   "name": "Black Law Windfarm Extension",
+   "fuel": "WIND",
+   "mw": 69,
+   "station": "relation/2321400",
+   "stationName": "Black Law Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_BLPFS-1",
+   "name": "Bulphan Fen Warley Green Solar",
+   "fuel": null,
+   "mw": 50,
+   "station": "relation/19313332",
+   "stationName": "Bulphan Fen Solar Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BLWNB-1",
+   "name": "Thornton Battery",
+   "fuel": "OTHER",
+   "mw": 200,
+   "station": "way/332532014",
+   "stationName": "Thornton Greener Grid Park",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BOWLW-1",
+   "name": "Barrow Offshore Wind",
+   "fuel": "WIND",
+   "mw": 90,
+   "station": "way/550474153",
+   "stationName": "Barrow Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BRBEO-1",
+   "name": "BURBO_EXTENSION",
+   "fuel": "WIND",
+   "mw": 258,
+   "station": "relation/19905799",
+   "stationName": "Burbo Bank Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_BREDB-1",
+   "name": "BREDBURY BESS",
+   "fuel": "OTHER",
+   "mw": 50,
+   "station": "way/1476857822",
+   "stationName": "Bredbury BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_BROCW-1",
+   "name": "Broken Cross WF",
+   "fuel": "WIND",
+   "mw": 48,
+   "station": "relation/19412289",
+   "stationName": "Broken Cross Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_CARR-1",
+   "name": "Carrington Power Ltd - Unit 1",
+   "fuel": "CCGT",
+   "mw": 470,
+   "station": "way/70311216",
+   "stationName": "Carrington Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CARR-2",
+   "name": "Carrington Power Ltd - Unit 2",
+   "fuel": "CCGT",
+   "mw": 470,
+   "station": "way/70311216",
+   "stationName": "Carrington Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CDCL-1",
+   "name": "T_CDCL-1",
+   "fuel": "CCGT",
+   "mw": 445,
+   "station": "way/402566315",
+   "stationName": "Cottam Development Centre",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CLDCW-1",
+   "name": "Clyde Central",
+   "fuel": "WIND",
+   "mw": 200,
+   "station": "relation/6949277",
+   "stationName": "Clyde Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CLDNW-1",
+   "name": "Clyde North",
+   "fuel": "WIND",
+   "mw": 200,
+   "station": "relation/6949277",
+   "stationName": "Clyde Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CLDSW-1",
+   "name": "Clyde South",
+   "fuel": "WIND",
+   "mw": 150,
+   "station": "relation/6949277",
+   "stationName": "Clyde Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CLVHS-1",
+   "name": "Cleve Hill Solar 1",
+   "fuel": "OTHER",
+   "mw": 112,
+   "station": "way/810479966",
+   "stationName": "Cleve Hill Solar Park",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CLVHS-2",
+   "name": "Cleve Hill Solar 2",
+   "fuel": "OTHER",
+   "mw": 205,
+   "station": "way/810479966",
+   "stationName": "Cleve Hill Solar Park",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CNQPS-1",
+   "name": "T_CNQPS-1",
+   "fuel": "CCGT",
+   "mw": 351,
+   "station": "way/26427510",
+   "stationName": "Connahs Quay Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CNQPS-2",
+   "name": "T_CNQPS-2",
+   "fuel": "CCGT",
+   "mw": 352,
+   "station": "way/26427510",
+   "stationName": "Connahs Quay Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CNQPS-3",
+   "name": "T_CNQPS-3",
+   "fuel": "CCGT",
+   "mw": 352,
+   "station": "way/26427510",
+   "stationName": "Connahs Quay Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CNQPS-4",
+   "name": "T_CNQPS-4",
+   "fuel": "CCGT",
+   "mw": 352,
+   "station": "way/26427510",
+   "stationName": "Connahs Quay Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_COSO-1",
+   "name": "Coryton Power Station",
+   "fuel": "CCGT",
+   "mw": 856,
+   "station": "way/913945639",
+   "stationName": "Coryton Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_COUWW-1",
+   "name": "Cour Wind Farm",
+   "fuel": "WIND",
+   "mw": 21,
+   "station": "relation/9319182",
+   "stationName": "Cour Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CREAW-1",
+   "name": "Creag Riabhach Wind Farm",
+   "fuel": "WIND",
+   "mw": 93,
+   "station": "relation/15073556",
+   "stationName": "Creag Riabhach Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CRGHW-1",
+   "name": "Carraig Gheal Wind Farm",
+   "fuel": "WIND",
+   "mw": 46,
+   "station": "relation/8117328",
+   "stationName": "Carraig Gheal",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CRMLW-1",
+   "name": "Corriemoillie",
+   "fuel": "WIND",
+   "mw": 48,
+   "station": "relation/9953388",
+   "stationName": "Corriemoillie",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CRUA-1",
+   "name": "T_CRUA-1",
+   "fuel": "PS",
+   "mw": 123,
+   "station": "way/449382367",
+   "stationName": "Cruachan Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CRUA-2",
+   "name": "T_CRUA-2",
+   "fuel": "PS",
+   "mw": 125,
+   "station": "way/449382367",
+   "stationName": "Cruachan Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CRUA-3",
+   "name": "T_CRUA-3",
+   "fuel": "PS",
+   "mw": 101,
+   "station": "way/449382367",
+   "stationName": "Cruachan Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CRUA-4",
+   "name": "T_CRUA-4",
+   "fuel": "PS",
+   "mw": 104,
+   "station": "way/449382367",
+   "stationName": "Cruachan Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CRYRW-2",
+   "name": "Crystal Rig II Windfarm",
+   "fuel": "WIND",
+   "mw": 151,
+   "station": "relation/20113969",
+   "stationName": "Crystal Rig II",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CRYRW-3",
+   "name": "Crystal Rig III",
+   "fuel": "WIND",
+   "mw": 14,
+   "station": "relation/13616456",
+   "stationName": "Crystal Rig III wind farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CRYRW-4",
+   "name": "Crystal Rig IV Wind Farm",
+   "fuel": "WIND",
+   "mw": 48,
+   "station": "relation/7872001",
+   "stationName": "Crystal Rig Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_CUMHW-1",
+   "name": "Cumberhead wind energy limited",
+   "fuel": "WIND",
+   "mw": 52,
+   "station": "relation/17296061",
+   "stationName": "Cumberhead Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_CUMHW-2",
+   "name": "T_CUMHW-2",
+   "fuel": "WIND",
+   "mw": 126,
+   "station": "relation/17296061",
+   "stationName": "Cumberhead Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DALQW-1",
+   "name": "Dalquhandy  Wind Farm",
+   "fuel": "WIND",
+   "mw": 43,
+   "station": "relation/19405084",
+   "stationName": "Dalquhandy Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_DAMC-1",
+   "name": "Damhead Creek Ltd.",
+   "fuel": "CCGT",
+   "mw": 820,
+   "station": "way/814351698",
+   "stationName": "Damhead Creek Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBAWO-1",
+   "name": "Dogger Bank A Offshore WF 1",
+   "fuel": "WIND",
+   "mw": 302,
+   "station": "way/889977926",
+   "stationName": "Dogger Bank A Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBAWO-2",
+   "name": "Dogger Bank A Offshore WF 2",
+   "fuel": "WIND",
+   "mw": 304,
+   "station": "way/889977926",
+   "stationName": "Dogger Bank A Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBAWO-3",
+   "name": "Dogger Bank A Offshore WF 3",
+   "fuel": "WIND",
+   "mw": 303,
+   "station": "way/889977926",
+   "stationName": "Dogger Bank A Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBAWO-4",
+   "name": "Dogger Bank A Offshore WF 4",
+   "fuel": "WIND",
+   "mw": 153,
+   "station": "way/889977926",
+   "stationName": "Dogger Bank A Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBAWO-5",
+   "name": "Dogger Bank A Offshore WF 5",
+   "fuel": "WIND",
+   "mw": 138,
+   "station": "way/889977926",
+   "stationName": "Dogger Bank A Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBBWO-1",
+   "name": "Dogger Bank B Offshore WF 1",
+   "fuel": "WIND",
+   "mw": 302,
+   "station": "way/1157893250",
+   "stationName": "Dogger Bank B Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBBWO-2",
+   "name": "Dogger Bank B Offshore WF 2",
+   "fuel": "WIND",
+   "mw": 304,
+   "station": "way/1157893250",
+   "stationName": "Dogger Bank B Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBBWO-3",
+   "name": "Dogger Bank B Offshore WF 3",
+   "fuel": "WIND",
+   "mw": 302,
+   "station": "way/1157893250",
+   "stationName": "Dogger Bank B Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBBWO-4",
+   "name": "Dogger Bank B Offshore WF 4",
+   "fuel": "WIND",
+   "mw": 152,
+   "station": "way/1157893250",
+   "stationName": "Dogger Bank B Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DBBWO-5",
+   "name": "Dogger Bank B Offshore WF 5",
+   "fuel": "WIND",
+   "mw": 139,
+   "station": "way/1157893250",
+   "stationName": "Dogger Bank B Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DDGNO-1",
+   "name": "Dudgeon Generator BMU 1",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "way/415308338",
+   "stationName": "Dudgeon Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DDGNO-2",
+   "name": "Dudgeon Generator BMU 2",
+   "fuel": "WIND",
+   "mw": 90,
+   "station": "way/415308338",
+   "stationName": "Dudgeon Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DDGNO-3",
+   "name": "Dudgeon Generator BMU 3",
+   "fuel": "WIND",
+   "mw": 102,
+   "station": "way/415308338",
+   "stationName": "Dudgeon Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DDGNO-4",
+   "name": "Dudgeon Generator BMU 4",
+   "fuel": "WIND",
+   "mw": 102,
+   "station": "way/415308338",
+   "stationName": "Dudgeon Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DIDCB5",
+   "name": "Didcot B main unit 5",
+   "fuel": "CCGT",
+   "mw": 770,
+   "station": "way/945296994",
+   "stationName": "Didcot B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DIDCB6",
+   "name": "Didcot B main unit 6",
+   "fuel": "CCGT",
+   "mw": 720,
+   "station": "way/945296994",
+   "stationName": "Didcot B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DINO-1",
+   "name": "Dinorwig 1",
+   "fuel": "PS",
+   "mw": 320,
+   "station": "relation/6901664",
+   "stationName": "Dinorwig Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DINO-2",
+   "name": "Dinorwig 2",
+   "fuel": "PS",
+   "mw": 320,
+   "station": "relation/6901664",
+   "stationName": "Dinorwig Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DINO-3",
+   "name": "Dinorwig 3",
+   "fuel": "PS",
+   "mw": 320,
+   "station": "relation/6901664",
+   "stationName": "Dinorwig Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DINO-4",
+   "name": "Dinorwig 4",
+   "fuel": "PS",
+   "mw": 320,
+   "station": "relation/6901664",
+   "stationName": "Dinorwig Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DINO-5",
+   "name": "Dinorwig 5",
+   "fuel": "PS",
+   "mw": 320,
+   "station": "relation/6901664",
+   "stationName": "Dinorwig Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DINO-6",
+   "name": "Dinorwig 6",
+   "fuel": "PS",
+   "mw": 320,
+   "station": "relation/6901664",
+   "stationName": "Dinorwig Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DOREW-1",
+   "name": "Dorenell Wind Farm One",
+   "fuel": "WIND",
+   "mw": 157,
+   "station": "relation/9590825",
+   "stationName": "Dorenell Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_DOREW-2",
+   "name": "Dorenell Wind Farm Two",
+   "fuel": "WIND",
+   "mw": 157,
+   "station": "relation/9590825",
+   "stationName": "Dorenell Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_DRAXX-1",
+   "name": "T_DRAXX-1",
+   "fuel": "BIOMASS",
+   "mw": 665,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-10G",
+   "name": "T_DRAXX-10G",
+   "fuel": "OCGT",
+   "mw": 33,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-12G",
+   "name": "T_DRAXX-12G",
+   "fuel": "OCGT",
+   "mw": 32,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-2",
+   "name": "T_DRAXX-2",
+   "fuel": "BIOMASS",
+   "mw": 669,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-3",
+   "name": "T_DRAXX-3",
+   "fuel": "BIOMASS",
+   "mw": 661,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-4",
+   "name": "T_DRAXX-4",
+   "fuel": "BIOMASS",
+   "mw": 645,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-5",
+   "name": "T_DRAXX-5",
+   "fuel": "COAL",
+   "mw": 645,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-6",
+   "name": "T_DRAXX-6",
+   "fuel": "COAL",
+   "mw": 645,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRAXX-9G",
+   "name": "T_DRAXX-9G",
+   "fuel": "OCGT",
+   "mw": 32,
+   "station": "way/34383063",
+   "stationName": "Drax Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DRSLW-1",
+   "name": "Dersalloch Windfarm",
+   "fuel": "WIND",
+   "mw": 71,
+   "station": "relation/12426013",
+   "stationName": "Dersalloch Windfarm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_DUNGW-1",
+   "name": "Dunmglass Windfarm 1",
+   "fuel": "WIND",
+   "mw": 100,
+   "station": "relation/9584535",
+   "stationName": "Dunmaglass Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_DWEXW-1",
+   "name": "Douglas West Extension",
+   "fuel": "WIND",
+   "mw": 66,
+   "station": "relation/19405446",
+   "stationName": "Douglas West Wind Farm Extension",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_EAAO-1",
+   "name": "East Anglia One Offshore 1",
+   "fuel": "WIND",
+   "mw": 358,
+   "station": "way/518314314",
+   "stationName": "East Anglia ONE",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_EAAO-2",
+   "name": "East Anglia One Offshore 2",
+   "fuel": "WIND",
+   "mw": 367,
+   "station": "way/518314314",
+   "stationName": "East Anglia ONE",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_EDINW-1",
+   "name": "Edinbane Windfarm",
+   "fuel": "WIND",
+   "mw": 41,
+   "station": "relation/8041182",
+   "stationName": "Edinbane",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_EECL-1",
+   "name": "Enfield Energy Centre Ltd BMU1",
+   "fuel": "CCGT",
+   "mw": 444,
+   "station": "way/264378992",
+   "stationName": "Enfield Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_ENHLW-1",
+   "name": "Enoch Hill Wind Farm",
+   "fuel": "WIND",
+   "mw": 70,
+   "station": "relation/19453343",
+   "stationName": "Enoch Hill Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_EWHLW-1",
+   "name": "Ewe Hill II Windfarm",
+   "fuel": "WIND",
+   "mw": 38,
+   "station": "relation/9301579",
+   "stationName": "Ewe Hill",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FALGW-1",
+   "name": "Fallago Rig Wind Farm",
+   "fuel": "WIND",
+   "mw": 144,
+   "station": "relation/8185279",
+   "stationName": "Fallago Rig Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FARR-1",
+   "name": "Farr Unit 1",
+   "fuel": "WIND",
+   "mw": 92,
+   "station": "relation/7872100",
+   "stationName": "Farr",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FARR-2",
+   "name": "Farr Unit 2",
+   "fuel": "WIND",
+   "mw": 92,
+   "station": "relation/7872100",
+   "stationName": "Farr",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FASN-1",
+   "name": "Fasnakyle G1",
+   "fuel": "NPSHYD",
+   "mw": 23,
+   "station": "way/239248123",
+   "stationName": "Fasnakyle Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FASN-2",
+   "name": "Fasnakyle  G2",
+   "fuel": "NPSHYD",
+   "mw": 23,
+   "station": "way/239248123",
+   "stationName": "Fasnakyle Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FERRB-1",
+   "name": "Ferrybridge BESS BMU-1",
+   "fuel": "OTHER",
+   "mw": 76,
+   "station": "way/1476906510",
+   "stationName": "Ferrybridge BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FERRB-2",
+   "name": "Ferrybridge BESS BMU-2",
+   "fuel": "OTHER",
+   "mw": 76,
+   "station": "way/1476906510",
+   "stationName": "Ferrybridge BESS",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FFES-1",
+   "name": "Ffestioniog 1",
+   "fuel": "PS",
+   "mw": 91,
+   "station": "way/402796795",
+   "stationName": "Ffestiniog Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_FFES-2",
+   "name": "Ffestioniog 2",
+   "fuel": "PS",
+   "mw": 92,
+   "station": "way/402796795",
+   "stationName": "Ffestiniog Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_FFES-3",
+   "name": "Ffestioniog 3",
+   "fuel": "PS",
+   "mw": 91,
+   "station": "way/402796795",
+   "stationName": "Ffestiniog Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_FFES-4",
+   "name": "Ffestioniog 4",
+   "fuel": "PS",
+   "mw": 91,
+   "station": "way/402796795",
+   "stationName": "Ffestiniog Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_FINL-1",
+   "name": "Finlarig",
+   "fuel": "NPSHYD",
+   "mw": 86,
+   "station": "way/207523493",
+   "stationName": "Finlarig Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_FOYE-1",
+   "name": "Foyers G1",
+   "fuel": "PS",
+   "mw": 160,
+   "station": "way/449382772",
+   "stationName": "Foyers Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_FOYE-2",
+   "name": "Foyers G2",
+   "fuel": "PS",
+   "mw": 160,
+   "station": "way/449382772",
+   "stationName": "Foyers Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_FSDLW-1",
+   "name": "Freasdail Wind Farm",
+   "fuel": "WIND",
+   "mw": 22,
+   "station": "relation/9584763",
+   "stationName": "Freasdail",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GANW-11",
+   "name": "Galloper OSP 11",
+   "fuel": "WIND",
+   "mw": 88,
+   "station": "relation/13386799",
+   "stationName": "Galloper Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GANW-13",
+   "name": "Galloper OSP 13",
+   "fuel": "WIND",
+   "mw": 88,
+   "station": "relation/13386799",
+   "stationName": "Galloper Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GANW-22",
+   "name": "Galloper OSP 22",
+   "fuel": "WIND",
+   "mw": 386,
+   "station": "relation/13386799",
+   "stationName": "Galloper Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GANW-24",
+   "name": "Galloper OSP 24",
+   "fuel": "WIND",
+   "mw": 88,
+   "station": "relation/13386799",
+   "stationName": "Galloper Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GLNDO-1",
+   "name": "Glendoe Generator 1",
+   "fuel": "NPSHYD",
+   "mw": 100,
+   "station": "way/219813087",
+   "stationName": "Glendoe Hydro Scheme",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GLNKW-1",
+   "name": "GLEN KYLLACHY WINDFARM",
+   "fuel": "WIND",
+   "mw": 52,
+   "station": "relation/14924868",
+   "stationName": "Glen Kyllachy Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GLWSW-1",
+   "name": "Galawhistle Wind Farm",
+   "fuel": "WIND",
+   "mw": 55,
+   "station": "relation/13615670",
+   "stationName": "Galawhistle wind farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GNAPW-1",
+   "name": "Glen App Windfarm",
+   "fuel": "WIND",
+   "mw": 22,
+   "station": "relation/9599112",
+   "stationName": "Glen App Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GNFSW-1",
+   "name": "Gunfleet Sands 1",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "relation/2932605",
+   "stationName": "Gunfleet Sands Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GNFSW-2",
+   "name": "Gunfleet Sands 2",
+   "fuel": "WIND",
+   "mw": 64,
+   "station": "relation/2932605",
+   "stationName": "Gunfleet Sands Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GORDW-2",
+   "name": "Gordonbush WF Extension",
+   "fuel": "WIND",
+   "mw": 59,
+   "station": "relation/13615192",
+   "stationName": "Gordonbush Extension wind farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_GRAI-6",
+   "name": "T_GRAI-6",
+   "fuel": "CCGT",
+   "mw": 468,
+   "station": "way/677933700",
+   "stationName": "Grain CHP",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRAI-7",
+   "name": "T_GRAI-7",
+   "fuel": "CCGT",
+   "mw": 468,
+   "station": "way/677933700",
+   "stationName": "Grain CHP",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRAI-8",
+   "name": "T_GRAI-8",
+   "fuel": "CCGT",
+   "mw": 468,
+   "station": "way/677933700",
+   "stationName": "Grain CHP",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRAI1G",
+   "name": "T_GRAI1G",
+   "fuel": "OCGT",
+   "mw": 30,
+   "station": "way/677933700",
+   "stationName": "Grain CHP",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRAI4G",
+   "name": "T_GRAI4G",
+   "fuel": "OCGT",
+   "mw": 29,
+   "station": "way/677933700",
+   "stationName": "Grain CHP",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRGBW-1",
+   "name": "Greater Gabbard Module 1",
+   "fuel": "WIND",
+   "mw": 240,
+   "station": "relation/13386800",
+   "stationName": "Greater Gabbard Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRGBW-2",
+   "name": "Greater Gabbard Module 2",
+   "fuel": "WIND",
+   "mw": 240,
+   "station": "relation/13386800",
+   "stationName": "Greater Gabbard Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRGBW-3",
+   "name": "Greater Gabbard Module 3",
+   "fuel": "WIND",
+   "mw": 240,
+   "station": "relation/13386800",
+   "stationName": "Greater Gabbard Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GRIFW-1",
+   "name": "Griffin Wind Farm 1",
+   "fuel": "WIND",
+   "mw": 102,
+   "station": "relation/6949300",
+   "stationName": "Griffin Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GRIFW-2",
+   "name": "Griffin Wind Farm 2",
+   "fuel": "WIND",
+   "mw": 104,
+   "station": "relation/6949300",
+   "stationName": "Griffin Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_GYMR-15",
+   "name": "GyM OSPE 15",
+   "fuel": "WIND",
+   "mw": 148,
+   "station": "relation/5474028",
+   "stationName": "Gwynt y Môr Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GYMR-17",
+   "name": "GyM OSPE 17",
+   "fuel": "WIND",
+   "mw": 148,
+   "station": "relation/5474028",
+   "stationName": "Gwynt y Môr Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GYMR-26",
+   "name": "GyM OSPW 26",
+   "fuel": "WIND",
+   "mw": 148,
+   "station": "relation/5474028",
+   "stationName": "Gwynt y Môr Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_GYMR-28",
+   "name": "GyM OSPW 28",
+   "fuel": "WIND",
+   "mw": 148,
+   "station": "relation/5474028",
+   "stationName": "Gwynt y Môr Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HADHW-1",
+   "name": "Hadyard Hill Wind Farm",
+   "fuel": "WIND",
+   "mw": 130,
+   "station": "relation/6949332",
+   "stationName": "Hadyard Hill Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_HALSW-1",
+   "name": "Halsary Windfarm",
+   "fuel": "WIND",
+   "mw": 30,
+   "station": "relation/12863091",
+   "stationName": "Halsary Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_HEYM11",
+   "name": "Heysham 1 Generator 1",
+   "fuel": "NUCLEAR",
+   "mw": 610,
+   "station": "way/310488542",
+   "stationName": "Heysham Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HEYM12",
+   "name": "Heysham 1 Generator 2",
+   "fuel": "NUCLEAR",
+   "mw": 585,
+   "station": "way/310488542",
+   "stationName": "Heysham Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HEYM27",
+   "name": "Heysham 2 Generator 7",
+   "fuel": "NUCLEAR",
+   "mw": 660,
+   "station": "way/310488542",
+   "stationName": "Heysham Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HEYM28",
+   "name": "Heysham 2 Generator 8",
+   "fuel": "NUCLEAR",
+   "mw": 676,
+   "station": "way/310488542",
+   "stationName": "Heysham Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HMGTO-1",
+   "name": "Humber Offshore Wind Farm BMU1",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "way/331863739",
+   "stationName": "Humber Gateway Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HMGTO-2",
+   "name": "Humber Offshore Wind Farm BMU2",
+   "fuel": "WIND",
+   "mw": 111,
+   "station": "way/331863739",
+   "stationName": "Humber Gateway Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HOWAO-1",
+   "name": "HORNSEA_1A",
+   "fuel": "WIND",
+   "mw": 400,
+   "station": "relation/11894296",
+   "stationName": "Hornsea 1 Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HOWAO-2",
+   "name": "HORNSEA_1B",
+   "fuel": "WIND",
+   "mw": 400,
+   "station": "relation/11894296",
+   "stationName": "Hornsea 1 Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HOWAO-3",
+   "name": "HORNSEA_1C",
+   "fuel": "WIND",
+   "mw": 400,
+   "station": "relation/11894296",
+   "stationName": "Hornsea 1 Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HOWBO-1",
+   "name": "HORNSEA_WF_2A",
+   "fuel": "WIND",
+   "mw": 440,
+   "station": "relation/11343101",
+   "stationName": "Hornsea 2 Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HOWBO-2",
+   "name": "HORNSEA_WF_2B",
+   "fuel": "WIND",
+   "mw": 440,
+   "station": "relation/11343101",
+   "stationName": "Hornsea 2 Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HOWBO-3",
+   "name": "HORNSEA_WF_2C",
+   "fuel": "WIND",
+   "mw": 440,
+   "station": "relation/11343101",
+   "stationName": "Hornsea 2 Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HRSTW-1",
+   "name": "Harestanes",
+   "fuel": "WIND",
+   "mw": 142,
+   "station": "relation/9396198",
+   "stationName": "Harestanes Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_HRTL-1",
+   "name": "Hartlepool Generator 1",
+   "fuel": "NUCLEAR",
+   "mw": 620,
+   "station": "way/4800321",
+   "stationName": "Hartlepool Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HRTL-2",
+   "name": "Hartlepool Generator 2",
+   "fuel": "NUCLEAR",
+   "mw": 620,
+   "station": "way/4800321",
+   "stationName": "Hartlepool Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HUMR-1",
+   "name": "HUMR-1",
+   "fuel": "CCGT",
+   "mw": 1283,
+   "station": "way/208757000",
+   "stationName": "Immingham Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HUMR-2",
+   "name": "HUMR-2",
+   "fuel": null,
+   "mw": 50,
+   "station": "way/208757000",
+   "stationName": "Immingham Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_HUMRD-1",
+   "name": "HUMRD-1",
+   "fuel": null,
+   "mw": 20,
+   "station": "way/208757000",
+   "stationName": "Immingham Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_INDQ-1",
+   "name": "Gas Turbine",
+   "fuel": "OCGT",
+   "mw": 140,
+   "station": "way/143791247",
+   "stationName": "Indian Queens Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_INDQB-1",
+   "name": "INDIAN QUEENS BESS",
+   "fuel": null,
+   "mw": 48,
+   "station": "way/143791247",
+   "stationName": "Indian Queens Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_IRNAB-1",
+   "name": "Iron Acton",
+   "fuel": "OTHER",
+   "mw": 121,
+   "station": "way/1512652328",
+   "stationName": "Iron Acton BESS",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KEAD-1",
+   "name": "KGL CCGT 1",
+   "fuel": "CCGT",
+   "mw": 764,
+   "station": "way/1149621575",
+   "stationName": "Keadby Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KEAD-2",
+   "name": "Keadby-2 Main",
+   "fuel": "CCGT",
+   "mw": 890,
+   "station": "way/58736682",
+   "stationName": "Keadby 2 Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KEADGT-3",
+   "name": "KGL GT 3",
+   "fuel": "OCGT",
+   "mw": 30,
+   "station": "way/1149621575",
+   "stationName": "Keadby Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KENNW-1",
+   "name": "Kennoxhead Wind Farm",
+   "fuel": "WIND",
+   "mw": 60,
+   "station": "relation/15073682",
+   "stationName": "Kennoxhead Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_KILLPG-1",
+   "name": "T_KILLPG-1",
+   "fuel": "CCGT",
+   "mw": 311,
+   "station": "way/205132626",
+   "stationName": "Killingholme B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KILLPG-2",
+   "name": "T_KILLPG-2",
+   "fuel": "CCGT",
+   "mw": 316,
+   "station": "way/205132626",
+   "stationName": "Killingholme B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KLGLW-1",
+   "name": "Kilgallioch Windfarm",
+   "fuel": "WIND",
+   "mw": 253,
+   "station": "relation/9396275",
+   "stationName": "Kilgallioch Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KLGLW-2",
+   "name": "T_KLGLW-2",
+   "fuel": null,
+   "mw": 225,
+   "station": "relation/9396275",
+   "stationName": "Kilgallioch Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_KPMRW-1",
+   "name": "KYPE MUIR WIND FARM",
+   "fuel": "WIND",
+   "mw": 89,
+   "station": "relation/12863929",
+   "stationName": "Kype Muir Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_KYPEW-1",
+   "name": "KYPE MUIR EXT WIND FARM",
+   "fuel": "WIND",
+   "mw": 67,
+   "station": "relation/12863929",
+   "stationName": "Kype Muir Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_LAGA-1",
+   "name": "Langage Power Station",
+   "fuel": "CCGT",
+   "mw": 905,
+   "station": "way/178884128",
+   "stationName": "Langage Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LARKB-1",
+   "name": "Larks Green Battery Storage",
+   "fuel": "OTHER",
+   "mw": 52,
+   "station": "way/1442566922",
+   "stationName": "Larks Green Solar Farm Battery Storage",
+   "how": "fuzzy",
+   "score": 0.8
+  },
+  {
+   "b": "T_LARKS-1",
+   "name": "Larks Green Solar",
+   "fuel": "OTHER",
+   "mw": 50,
+   "station": "way/1168494496",
+   "stationName": "Larks Green Solar Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_LARYW-1",
+   "name": "London Array BMU1",
+   "fuel": "WIND",
+   "mw": 171,
+   "station": "way/218433470",
+   "stationName": "London Array Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LARYW-2",
+   "name": "London Array BMU2",
+   "fuel": "WIND",
+   "mw": 171,
+   "station": "way/218433470",
+   "stationName": "London Array Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LARYW-3",
+   "name": "London Array BMU3",
+   "fuel": "WIND",
+   "mw": 171,
+   "station": "way/218433470",
+   "stationName": "London Array Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LARYW-4",
+   "name": "London Array BMU4",
+   "fuel": "WIND",
+   "mw": 191,
+   "station": "way/218433470",
+   "stationName": "London Array Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LBAR-1",
+   "name": "Little Barford main unit 1",
+   "fuel": "CCGT",
+   "mw": 750,
+   "station": "way/38211225",
+   "stationName": "Little Barford Power Station",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_LBAR-1G",
+   "name": "Little Barford OCGT",
+   "fuel": "OCGT",
+   "mw": 25,
+   "station": "way/38211225",
+   "stationName": "Little Barford Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_LCLTW-1",
+   "name": "Lochluichart Windfarm",
+   "fuel": "WIND",
+   "mw": 69,
+   "station": "relation/8085418",
+   "stationName": "Lochluichart",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_LIMKW-1",
+   "name": "Limekiln Wind Farm",
+   "fuel": "WIND",
+   "mw": 106,
+   "station": "relation/18617264",
+   "stationName": "Limekiln Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_LKSDB-1",
+   "name": "Lakeside  BESS",
+   "fuel": "OTHER",
+   "mw": 105,
+   "station": "way/1364038290",
+   "stationName": "Lakeside Energy Park",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LNCSW-1",
+   "name": "Lincs wind farm offshore BMU1",
+   "fuel": "WIND",
+   "mw": 150,
+   "station": "way/550699358",
+   "stationName": "Lincs Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_LNCSW-2",
+   "name": "Lincs wind farm offshore BMU2",
+   "fuel": "WIND",
+   "mw": 150,
+   "station": "way/550699358",
+   "stationName": "Lincs Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MEDP-1",
+   "name": "Medway Power",
+   "fuel": "CCGT",
+   "mw": 750,
+   "station": "way/150780483",
+   "stationName": "Medway Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MIDMW-1",
+   "name": "MIDDLE MUIR WIND FARM",
+   "fuel": "WIND",
+   "mw": 51,
+   "station": "relation/12862506",
+   "stationName": "Middle Muir Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_MKHLW-1",
+   "name": "Mark Hill",
+   "fuel": "WIND",
+   "mw": 54,
+   "station": "relation/7998314",
+   "stationName": "Mark Hill Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_MOWEO-1",
+   "name": "Moray East OWF1",
+   "fuel": "WIND",
+   "mw": 300,
+   "station": "way/895177754",
+   "stationName": "Moray East Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MOWEO-2",
+   "name": "Moray East OWF2",
+   "fuel": "WIND",
+   "mw": 300,
+   "station": "way/895177754",
+   "stationName": "Moray East Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MOWEO-3",
+   "name": "Moray East OWF3",
+   "fuel": "WIND",
+   "mw": 300,
+   "station": "way/895177754",
+   "stationName": "Moray East Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MOWWO-1",
+   "name": "Moray West OWF1",
+   "fuel": "WIND",
+   "mw": 215,
+   "station": "way/1254849361",
+   "stationName": "Moray West Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MOWWO-2",
+   "name": "Moray West OWF2",
+   "fuel": "WIND",
+   "mw": 215,
+   "station": "way/1254849361",
+   "stationName": "Moray West Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MOWWO-3",
+   "name": "Moray West OWF3",
+   "fuel": "WIND",
+   "mw": 143,
+   "station": "way/1254849361",
+   "stationName": "Moray West Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MOWWO-4",
+   "name": "Moray West OWF4",
+   "fuel": "WIND",
+   "mw": 287,
+   "station": "way/1254849361",
+   "stationName": "Moray West Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MRWD-1",
+   "name": "Marchwood Power Ltd",
+   "fuel": "CCGT",
+   "mw": 920,
+   "station": "way/204595889",
+   "stationName": "Marchwood Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_MYGPW-1",
+   "name": "Minnygap Wind Farm",
+   "fuel": "WIND",
+   "mw": 25,
+   "station": "relation/9343313",
+   "stationName": "Minnygap Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_NANT-1",
+   "name": "Nant",
+   "fuel": "NPSHYD",
+   "mw": 20,
+   "station": "way/570076477",
+   "stationName": "Nant Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_NNGAO-1",
+   "name": "Neart Na Gaiothe WF 1",
+   "fuel": "WIND",
+   "mw": 224,
+   "station": "way/895608597",
+   "stationName": "Neart na Gaoithe Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_NNGAO-2",
+   "name": "Neart Na Gaiothe WF 2",
+   "fuel": "WIND",
+   "mw": 224,
+   "station": "way/895608597",
+   "stationName": "Neart na Gaoithe Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_NOKYW-1",
+   "name": "North Kyle Wind Farm-1",
+   "fuel": "WIND",
+   "mw": 106,
+   "station": "relation/19453061",
+   "stationName": "North Kyle Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_NOKYW-2",
+   "name": "North Kyle Wind Farm-2",
+   "fuel": "WIND",
+   "mw": 106,
+   "station": "relation/19453061",
+   "stationName": "North Kyle Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_NTRVB-1",
+   "name": "Native River",
+   "fuel": null,
+   "mw": 57,
+   "station": "way/1419436615",
+   "stationName": "Native River BESS",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_NURSB-1",
+   "name": "Nursling Battery Storage",
+   "fuel": null,
+   "mw": 48,
+   "station": "way/1148939839",
+   "stationName": "Nursling Battery Storage",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_OMNDW-1",
+   "name": "Ormonde Energy Limited 1",
+   "fuel": "WIND",
+   "mw": 151,
+   "station": "way/550474159",
+   "stationName": "Ormonde Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PEHE-1",
+   "name": "Peterhead Block 1",
+   "fuel": "CCGT",
+   "mw": 1200,
+   "station": "way/133329765",
+   "stationName": "Peterhead Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PEMB-11",
+   "name": "Pembroke Unit 11",
+   "fuel": "CCGT",
+   "mw": 475,
+   "station": "way/16075498",
+   "stationName": "Pembroke Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PEMB-21",
+   "name": "Pembroke Unit 21",
+   "fuel": "CCGT",
+   "mw": 475,
+   "station": "way/16075498",
+   "stationName": "Pembroke Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PEMB-31",
+   "name": "Pembroke Unit 31",
+   "fuel": "CCGT",
+   "mw": 475,
+   "station": "way/16075498",
+   "stationName": "Pembroke Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PEMB-41",
+   "name": "Pembroke Unit 41",
+   "fuel": "CCGT",
+   "mw": 475,
+   "station": "way/16075498",
+   "stationName": "Pembroke Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PEMB-51",
+   "name": "Pembroke Unit 51",
+   "fuel": "CCGT",
+   "mw": 475,
+   "station": "way/16075498",
+   "stationName": "Pembroke Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_PNYCB-1",
+   "name": "Pen y Cymoedd Battery",
+   "fuel": null,
+   "mw": 22,
+   "station": "relation/7906469",
+   "stationName": "Pen y Cymoedd",
+   "how": "fuzzy",
+   "score": 0.75
+  },
+  {
+   "b": "T_PNYCW-1",
+   "name": "PNYCW-1 Export",
+   "fuel": "WIND",
+   "mw": 228,
+   "station": "relation/7906469",
+   "stationName": "Pen y Cymoedd",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_RCBKO-1",
+   "name": "RACE_BANK_Z01",
+   "fuel": "WIND",
+   "mw": 284,
+   "station": "way/565030207",
+   "stationName": "Race Bank Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_RCBKO-2",
+   "name": "RACE_BANK_Z02",
+   "fuel": "WIND",
+   "mw": 290,
+   "station": "way/565030207",
+   "stationName": "Race Bank Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_RICHB-1",
+   "name": "Richborough Energy Park 1",
+   "fuel": "OTHER",
+   "mw": 50,
+   "station": "way/771093003",
+   "stationName": "Richborough Energy Park",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_RICHB-2",
+   "name": "Richborough Energy Park 2",
+   "fuel": "OTHER",
+   "mw": 50,
+   "station": "way/771093003",
+   "stationName": "Richborough Energy Park",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_RMPNO-1",
+   "name": "Rampion Offshore Wind BMU 1",
+   "fuel": "WIND",
+   "mw": 200,
+   "station": "relation/12617390",
+   "stationName": "Rampion Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_RMPNO-2",
+   "name": "Rampion Offshore Wind BMU 2",
+   "fuel": "WIND",
+   "mw": 200,
+   "station": "relation/12617390",
+   "stationName": "Rampion Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_ROCK-1",
+   "name": "Rocksavage Power Station",
+   "fuel": "CCGT",
+   "mw": 810,
+   "station": "way/29083166",
+   "stationName": "Rocksavage Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_RYHPS-1",
+   "name": "T_RYHPS-1",
+   "fuel": "CCGT",
+   "mw": 721,
+   "station": "way/55955507",
+   "stationName": "Rye House Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SAKNW-1",
+   "name": "Sandy Knowe Wind Farm",
+   "fuel": "WIND",
+   "mw": 87,
+   "station": "relation/15520957",
+   "stationName": "Sandy Knowe Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_SCCL-1",
+   "name": "Unit 1",
+   "fuel": "CCGT",
+   "mw": 408,
+   "station": "way/312992167",
+   "stationName": "Saltend Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SCCL-2",
+   "name": "Unit 2",
+   "fuel": "CCGT",
+   "mw": 409,
+   "station": "way/312992167",
+   "stationName": "Saltend Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SCCL-3",
+   "name": "Unit 3",
+   "fuel": "CCGT",
+   "mw": 409,
+   "station": "way/312992167",
+   "stationName": "Saltend Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SEAB-1",
+   "name": "Seabank Power Module",
+   "fuel": "CCGT",
+   "mw": 830,
+   "station": "way/4911067",
+   "stationName": "Seabank Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SEAB-2",
+   "name": "Seabank Power Module 2",
+   "fuel": "CCGT",
+   "mw": 406,
+   "station": "way/4911067",
+   "stationName": "Seabank Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SEEL-1",
+   "name": "Spalding Energy Expansion Ltd",
+   "fuel": "OCGT",
+   "mw": 300,
+   "station": "way/143902275",
+   "stationName": "Spalding Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SGRWO-1",
+   "name": "Seagreen1 Offshore WF 1",
+   "fuel": "WIND",
+   "mw": 431,
+   "station": "relation/19268061",
+   "stationName": "Seagreen Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SGRWO-2",
+   "name": "Seagreen1 Offshore WF 2",
+   "fuel": "WIND",
+   "mw": 220,
+   "station": "relation/19268061",
+   "stationName": "Seagreen Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SGRWO-3",
+   "name": "Seagreen1 Offshore WF 3",
+   "fuel": "WIND",
+   "mw": 375,
+   "station": "relation/19268061",
+   "stationName": "Seagreen Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SGRWO-4",
+   "name": "Seagreen1 Offshore WF 4",
+   "fuel": "WIND",
+   "mw": 140,
+   "station": "relation/19268061",
+   "stationName": "Seagreen Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SGRWO-5",
+   "name": "Seagreen1 Offshore WF 5",
+   "fuel": "WIND",
+   "mw": 300,
+   "station": "relation/19268061",
+   "stationName": "Seagreen Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SGRWO-6",
+   "name": "Seagreen1 Offshore WF 6",
+   "fuel": "WIND",
+   "mw": 525,
+   "station": "relation/19268061",
+   "stationName": "Seagreen Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SHBA-1",
+   "name": "SOUTH HUMBER BANK P/S PHASE 1",
+   "fuel": "CCGT",
+   "mw": 821,
+   "station": "way/204918278",
+   "stationName": "South Humber Bank Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SHBA-2",
+   "name": "SOUTH HUMBER BANK P/S PHASE 2",
+   "fuel": "CCGT",
+   "mw": 580,
+   "station": "way/204918278",
+   "stationName": "South Humber Bank Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SHRSW-1",
+   "name": "Sheringham Shoal Unit 1",
+   "fuel": "WIND",
+   "mw": 158,
+   "station": "way/545681226",
+   "stationName": "Sheringham Shoal Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SHRSW-2",
+   "name": "Sheringham Shoal Unit 2",
+   "fuel": "WIND",
+   "mw": 158,
+   "station": "way/545681226",
+   "stationName": "Sheringham Shoal Offshore Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SIZB-1",
+   "name": "Sizewell B Genrator 1",
+   "fuel": "NUCLEAR",
+   "mw": 657,
+   "station": "way/27625744",
+   "stationName": "Sizewell B Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SIZB-2",
+   "name": "Sizewell B Genrator 2",
+   "fuel": "NUCLEAR",
+   "mw": 630,
+   "station": "way/27625744",
+   "stationName": "Sizewell B Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SLOY-2",
+   "name": "Sloy G2",
+   "fuel": "NPSHYD",
+   "mw": 41,
+   "station": "way/24409061",
+   "stationName": "Sloy Power station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_SLOY-3",
+   "name": "Sloy G3",
+   "fuel": "NPSHYD",
+   "mw": 41,
+   "station": "way/24409061",
+   "stationName": "Sloy Power station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_SOFOW-11",
+   "name": "Sofia Offshore Wind BMU 1",
+   "fuel": null,
+   "mw": 457,
+   "station": "way/1157893252",
+   "stationName": "Sofia Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SOFOW-12",
+   "name": "Sofia Offshore Wind BMU 2",
+   "fuel": null,
+   "mw": 457,
+   "station": "way/1157893252",
+   "stationName": "Sofia Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SOFOW-21",
+   "name": "Sofia Offshore Wind BMU 3",
+   "fuel": null,
+   "mw": 457,
+   "station": "way/1157893252",
+   "stationName": "Sofia Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SOFOW-22",
+   "name": "Sofia Offshore Wind BMU 4",
+   "fuel": null,
+   "mw": 457,
+   "station": "way/1157893252",
+   "stationName": "Sofia Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SOKYW-1",
+   "name": "South Kyle Wind Farm",
+   "fuel": "WIND",
+   "mw": 427,
+   "station": "relation/17577116",
+   "stationName": "South Kyle Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_SPLN-1",
+   "name": "Spalding Power Station",
+   "fuel": "CCGT",
+   "mw": 950,
+   "station": "way/143902275",
+   "stationName": "Spalding Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_STAY-1",
+   "name": "Staythorpe Unit 1",
+   "fuel": "CCGT",
+   "mw": 464,
+   "station": "way/229449727",
+   "stationName": "Staythorpe C Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_STAY-2",
+   "name": "Staythorpe Unit 2",
+   "fuel": "CCGT",
+   "mw": 464,
+   "station": "way/229449727",
+   "stationName": "Staythorpe C Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_STAY-3",
+   "name": "Staythorpe Unit 3",
+   "fuel": "CCGT",
+   "mw": 464,
+   "station": "way/229449727",
+   "stationName": "Staythorpe C Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_STAY-4",
+   "name": "Staythorpe Unit 4",
+   "fuel": "CCGT",
+   "mw": 464,
+   "station": "way/229449727",
+   "stationName": "Staythorpe C Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_STLGW-1",
+   "name": "Stronelairg Windfarm 1",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "relation/9584598",
+   "stationName": "Stronelairg Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_STLGW-2",
+   "name": "Stronelairg Windfarm 2",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "relation/9584598",
+   "stationName": "Stronelairg Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_STLGW-3",
+   "name": "Stronelairg Windfarm 3",
+   "fuel": "WIND",
+   "mw": 108,
+   "station": "relation/9584598",
+   "stationName": "Stronelairg Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_STRNW-1",
+   "name": "Strathy North Wind Farm 1",
+   "fuel": "WIND",
+   "mw": 70,
+   "station": "relation/8087274",
+   "stationName": "Strathy North Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_SUTB-1",
+   "name": "BMUid for Sutton Bridge Power",
+   "fuel": "CCGT",
+   "mw": 850,
+   "station": "way/51698894",
+   "stationName": "Sutton Bridge Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SUTBS-1",
+   "name": "Sutton Bridge Solar Farm",
+   "fuel": "OTHER",
+   "mw": 49,
+   "station": "way/51698894",
+   "stationName": "Sutton Bridge Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SVRP-10",
+   "name": "Dong Energy Severn Power Ut 10",
+   "fuel": "CCGT",
+   "mw": 425,
+   "station": "way/981224694",
+   "stationName": "Severn Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_SVRP-20",
+   "name": "Dong Energy Severn Power Ut 20",
+   "fuel": "CCGT",
+   "mw": 425,
+   "station": "way/981224694",
+   "stationName": "Severn Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TDBNW-1",
+   "name": "Toddleburn",
+   "fuel": "WIND",
+   "mw": 32,
+   "station": "relation/6949310",
+   "stationName": "Toddleburn",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_THNTO-1",
+   "name": "Thanet Offshore Wind Limited 1",
+   "fuel": "WIND",
+   "mw": 288,
+   "station": "way/113739834",
+   "stationName": "Thanet Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_THNTO-2",
+   "name": "Thanet Offshore Wind Limited 2",
+   "fuel": "WIND",
+   "mw": 230,
+   "station": "way/113739834",
+   "stationName": "Thanet Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_THUPG-1",
+   "name": "T_THUPG-1",
+   "fuel": "OTHER",
+   "mw": 180,
+   "station": "relation/19849605",
+   "stationName": "Thurrock Storage",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_THUPG-2",
+   "name": "T_THUPG-2",
+   "fuel": "OTHER",
+   "mw": 170,
+   "station": "relation/19849605",
+   "stationName": "Thurrock Storage",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_THURB-1",
+   "name": "T_THURB-1",
+   "fuel": null,
+   "mw": 100,
+   "station": "way/1122855054",
+   "stationName": "Thurcroft Battery Storage",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_THURB-2",
+   "name": "T_THURB-2",
+   "fuel": null,
+   "mw": 100,
+   "station": "way/1122855054",
+   "stationName": "Thurcroft Battery Storage",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_THURB-3",
+   "name": "T_THURB-3",
+   "fuel": null,
+   "mw": 100,
+   "station": "way/1122855054",
+   "stationName": "Thurcroft Battery Storage",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TKNEW-1",
+   "name": "Triton Knoll OSP East 1",
+   "fuel": "WIND",
+   "mw": 412,
+   "station": "way/790946237",
+   "stationName": "Triton Knoll Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TKNWW-1",
+   "name": "Triton Knoll OSP west 1",
+   "fuel": "WIND",
+   "mw": 412,
+   "station": "way/790946237",
+   "stationName": "Triton Knoll Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TORN-1",
+   "name": "Torness Generator 1",
+   "fuel": "NUCLEAR",
+   "mw": 652,
+   "station": "way/91104903",
+   "stationName": "Torness Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TORN-2",
+   "name": "Torness Generator 2",
+   "fuel": "NUCLEAR",
+   "mw": 700,
+   "station": "way/91104903",
+   "stationName": "Torness Nuclear Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TSREP-1",
+   "name": "MGT TEESIDE TEESREP MAIN",
+   "fuel": "BIOMASS",
+   "mw": 285,
+   "station": "way/100095758",
+   "stationName": "Teesport Renewable Energy Plant",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_TYLNS-1",
+   "name": "Tye Lane Solar",
+   "fuel": "OTHER",
+   "mw": 50,
+   "station": "relation/19293473",
+   "stationName": "Tye Lane - Solar Power Station",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_VKNGW-1",
+   "name": "Viking Energy Windfarm BMU-1",
+   "fuel": "WIND",
+   "mw": 122,
+   "station": "relation/15748078",
+   "stationName": "Viking Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_VKNGW-2",
+   "name": "Viking Energy Windfarm BMU-2",
+   "fuel": "WIND",
+   "mw": 122,
+   "station": "relation/15748078",
+   "stationName": "Viking Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_VKNGW-3",
+   "name": "Viking Energy Windfarm BMU-3",
+   "fuel": "WIND",
+   "mw": 122,
+   "station": "relation/15748078",
+   "stationName": "Viking Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_VKNGW-4",
+   "name": "Viking Energy Windfarm BMU-4",
+   "fuel": "WIND",
+   "mw": 122,
+   "station": "relation/15748078",
+   "stationName": "Viking Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_WBUGT-1",
+   "name": "West Burton GT 01",
+   "fuel": "OCGT",
+   "mw": 22,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_WBUGT-4",
+   "name": "West Burton GT 04",
+   "fuel": "OCGT",
+   "mw": 21,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_WBURB-1",
+   "name": "West Burton B Unit 1",
+   "fuel": "CCGT",
+   "mw": 470,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WBURB-2",
+   "name": "West Burton B Unit 2",
+   "fuel": "CCGT",
+   "mw": 470,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WBURB-3",
+   "name": "West Burton B Unit 3",
+   "fuel": "CCGT",
+   "mw": 470,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WBURB-41",
+   "name": "West Burton B Battery",
+   "fuel": "OTHER",
+   "mw": 31,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WBURB-43",
+   "name": "West Burton B Battery",
+   "fuel": "OTHER",
+   "mw": 31,
+   "station": "way/160279522",
+   "stationName": "West Burton B Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WDNSO-1",
+   "name": "West of Duddon Sands Offshore1",
+   "fuel": "WIND",
+   "mw": 197,
+   "station": "way/635728029",
+   "stationName": "West of Duddon Sands Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WDNSO-2",
+   "name": "West of Duddon Sands Offshore2",
+   "fuel": "WIND",
+   "mw": 201,
+   "station": "way/635728029",
+   "stationName": "West of Duddon Sands Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WDRGW-1",
+   "name": "Windy Rig Wind Farm",
+   "fuel": "WIND",
+   "mw": 43,
+   "station": "relation/15015645",
+   "stationName": "Windy Rig Wind Farm",
+   "how": "fuzzy",
+   "score": 1
+  },
+  {
+   "b": "T_WHIHW-1",
+   "name": "Whiteside Hill WF",
+   "fuel": "WIND",
+   "mw": 28,
+   "station": "relation/9599092",
+   "stationName": "Whiteside Hill Wind Farm",
+   "how": "fuzzy",
+   "score": 0.667
+  },
+  {
+   "b": "T_WHILW-1",
+   "name": "T_WHILW-1",
+   "fuel": "WIND",
+   "mw": 309,
+   "station": "relation/2593160",
+   "stationName": "Whitelee Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WHILW-2",
+   "name": "Whitelee Extension",
+   "fuel": "WIND",
+   "mw": 206,
+   "station": "relation/2593160",
+   "stationName": "Whitelee Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WILCT-1",
+   "name": "ETOL - Wilton Site",
+   "fuel": "BIOMASS",
+   "mw": 182,
+   "station": "way/77471728",
+   "stationName": "Wilton Power Station",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WLNYO-2",
+   "name": "WALNEY_2",
+   "fuel": "WIND",
+   "mw": 184,
+   "station": "relation/8829625",
+   "stationName": "Walney Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WLNYO-3",
+   "name": "WALNEY_3",
+   "fuel": "WIND",
+   "mw": 330,
+   "station": "relation/8829625",
+   "stationName": "Walney Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WLNYO-4",
+   "name": "WALNEY_4",
+   "fuel": "WIND",
+   "mw": 330,
+   "station": "relation/8829625",
+   "stationName": "Walney Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WLNYO-4",
+   "name": "WALNEY_4",
+   "fuel": "WIND",
+   "mw": 330,
+   "station": "relation/8829625",
+   "stationName": "Walney Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WLNYW-1",
+   "name": "WALNEY_1",
+   "fuel": "WIND",
+   "mw": 182,
+   "station": "relation/8829625",
+   "stationName": "Walney Wind Farm",
+   "how": "override",
+   "score": null
+  },
+  {
+   "b": "T_WTMSO-1",
+   "name": "WESTERMOST_ROUGH",
+   "fuel": "WIND",
+   "mw": 205,
+   "station": "way/341804043",
+   "stationName": "Westermost Rough Wind Farm",
+   "how": "override",
+   "score": null
+  }
+ ],
+ "unmatched": [
+  {
+   "b": "T_HUNB-7",
+   "name": "Hunterston B Generator 7",
+   "fuel": "NUCLEAR",
+   "mw": 510
+  },
+  {
+   "b": "T_HUNB-8",
+   "name": "Hunterston B Generator 8",
+   "fuel": "NUCLEAR",
+   "mw": 510
+  },
+  {
+   "b": "T_WBUPS-2",
+   "name": "West Burton Unit 02",
+   "fuel": "COAL",
+   "mw": 504
+  },
+  {
+   "b": "T_WBUPS-3",
+   "name": "West Burton Unit 03",
+   "fuel": "COAL",
+   "mw": 503
+  },
+  {
+   "b": "T_BAGE-1",
+   "name": "BAGE-1",
+   "fuel": "CCGT",
+   "mw": 500
+  },
+  {
+   "b": "T_WBUPS-4",
+   "name": "West Burton Unit 04",
+   "fuel": "COAL",
+   "mw": 489
+  },
+  {
+   "b": "T_WBUPS-1",
+   "name": "West Burton Unit 01",
+   "fuel": "COAL",
+   "mw": 484
+  },
+  {
+   "b": "T_HIRWN-1",
+   "name": "Hirwaun 1",
+   "fuel": "OCGT",
+   "mw": 299
+  },
+  {
+   "b": "E_DERW-1",
+   "name": "Derwent Cogeneration Ltd",
+   "fuel": null,
+   "mw": 218
+  },
+  {
+   "b": "E_FELL-1",
+   "name": "E_FELL-1",
+   "fuel": "CCGT",
+   "mw": 140
+  },
+  {
+   "b": "T_BLLA-1",
+   "name": "T_BLLA-1",
+   "fuel": "WIND",
+   "mw": 118
+  },
+  {
+   "b": "T_RREW-1",
+   "name": "T_RREW-1",
+   "fuel": "WIND",
+   "mw": 114
+  },
+  {
+   "b": "T_COALB-4",
+   "name": "COALBURN1 BMU-4",
+   "fuel": null,
+   "mw": 104
+  },
+  {
+   "b": "T_COALB-1",
+   "name": "COALBURN1 BMU-1",
+   "fuel": null,
+   "mw": 103
+  },
+  {
+   "b": "T_COALB-3",
+   "name": "COALBURN1 BMU-3",
+   "fuel": null,
+   "mw": 102
+  },
+  {
+   "b": "T_COALB-2",
+   "name": "COALBURN1 BMU-2",
+   "fuel": null,
+   "mw": 102
+  },
+  {
+   "b": "T_COALB-5",
+   "name": "COALBURN1 BMU-5",
+   "fuel": null,
+   "mw": 101
+  },
+  {
+   "b": "T_ABRBO-1",
+   "name": "ABRBO-1",
+   "fuel": "WIND",
+   "mw": 99
+  },
+  {
+   "b": "E_FDUN-1",
+   "name": "Fort Dunlop",
+   "fuel": null,
+   "mw": 99
+  },
+  {
+   "b": "M_CAS-CON01",
+   "name": "Conon Cascade",
+   "fuel": "NPSHYD",
+   "mw": 95
+  },
+  {
+   "b": "M_CAS-BEU01",
+   "name": "Beauly Cascade",
+   "fuel": "NPSHYD",
+   "mw": 94
+  },
+  {
+   "b": "T_RRWW-1",
+   "name": "T_RRWW-1",
+   "fuel": "WIND",
+   "mw": 91
+  },
+  {
+   "b": "T_GORDW-1",
+   "name": "Gordon Bush",
+   "fuel": "WIND",
+   "mw": 87
+  },
+  {
+   "b": "T_PLOEW-1",
+   "name": "PENCLOE WIND 1",
+   "fuel": "WIND",
+   "mw": 81
+  },
+  {
+   "b": "E_STALB-1",
+   "name": "KXP Immingham BESS",
+   "fuel": null,
+   "mw": 81
+  },
+  {
+   "b": "M_CAS-CLU01",
+   "name": "Clunie Cascade",
+   "fuel": "NPSHYD",
+   "mw": 76
+  },
+  {
+   "b": "M_CAS-MOR01",
+   "name": "Moriston Cascade",
+   "fuel": "NPSHYD",
+   "mw": 74
+  },
+  {
+   "b": "E_TAYL2G",
+   "name": "E_TAYL2G",
+   "fuel": "OCGT",
+   "mw": 73
+  },
+  {
+   "b": "E_TAYL3G",
+   "name": "E_TAYL3G",
+   "fuel": "OCGT",
+   "mw": 72
+  },
+  {
+   "b": "M_CAS-KIL01",
+   "name": "Killin Cascade",
+   "fuel": "NPSHYD",
+   "mw": 70
+  },
+  {
+   "b": "T_CASKD-1",
+   "name": "Castner Kellner",
+   "fuel": null,
+   "mw": 70
+  },
+  {
+   "b": "E_COWE1",
+   "name": "Cowes Main Unit 1",
+   "fuel": "OCGT",
+   "mw": 70
+  },
+  {
+   "b": "E_COWE2",
+   "name": "Cowes Main Unit 2",
+   "fuel": "OCGT",
+   "mw": 70
+  },
+  {
+   "b": "T_CGTHW-1",
+   "name": "Corriegarth WF",
+   "fuel": "WIND",
+   "mw": 69
+  },
+  {
+   "b": "T_KILBW-1",
+   "name": "KILBW",
+   "fuel": "WIND",
+   "mw": 69
+  },
+  {
+   "b": "T_FIDL-1",
+   "name": "Fiddler's Ferry 1",
+   "fuel": null,
+   "mw": 68
+  },
+  {
+   "b": "T_BENBW-1",
+   "name": "Benbrack WF",
+   "fuel": "WIND",
+   "mw": 67
+  },
+  {
+   "b": "T_MILWW-1",
+   "name": "MILWW",
+   "fuel": "WIND",
+   "mw": 65
+  },
+  {
+   "b": "E_MANXENR-1",
+   "name": "ENRON MANX",
+   "fuel": null,
+   "mw": 64
+  },
+  {
+   "b": "T_WISTW-2",
+   "name": "Brockloch Rig 2 WF Exp A",
+   "fuel": "WIND",
+   "mw": 62
+  },
+  {
+   "b": "T_OCHLB-1",
+   "name": "Ocker Hill",
+   "fuel": null,
+   "mw": 58
+  },
+  {
+   "b": "T_TYLNB-1",
+   "name": "Tye Lane BESS",
+   "fuel": "OTHER",
+   "mw": 58
+  },
+  {
+   "b": "T_WTGTB-1",
+   "name": "Whitegate",
+   "fuel": null,
+   "mw": 58
+  },
+  {
+   "b": "T_USKMB-2",
+   "name": "Uskmouth Battery Unit 2",
+   "fuel": "OTHER",
+   "mw": 58
+  },
+  {
+   "b": "T_USKMB-3",
+   "name": "Uskmouth Battery Unit 3",
+   "fuel": "OTHER",
+   "mw": 58
+  },
+  {
+   "b": "T_USKMB-4",
+   "name": "Uskmouth Battery Unit 4",
+   "fuel": "OTHER",
+   "mw": 58
+  },
+  {
+   "b": "T_USKMB-5",
+   "name": "Uskmouth Battery Unit 5",
+   "fuel": "OTHER",
+   "mw": 58
+  },
+  {
+   "b": "T_CAPNB-1",
+   "name": "Capenhurst",
+   "fuel": null,
+   "mw": 57
+  },
+  {
+   "b": "T_ENDRB-1",
+   "name": "Enderby BESS",
+   "fuel": "OTHER",
+   "mw": 57
+  },
+  {
+   "b": "T_MKFRB-1",
+   "name": "Monk Fryston",
+   "fuel": "OTHER",
+   "mw": 57
+  },
+  {
+   "b": "T_SZJNB-1",
+   "name": "Sizing John",
+   "fuel": null,
+   "mw": 57
+  },
+  {
+   "b": "T_BLPFB-1",
+   "name": "Bulphan Fen Warley Green BESS",
+   "fuel": null,
+   "mw": 57
+  },
+  {
+   "b": "E_DERBY-1",
+   "name": "DERBY",
+   "fuel": null,
+   "mw": 56
+  },
+  {
+   "b": "T_BLHLB-4",
+   "name": "T_BLHLB-4",
+   "fuel": "OTHER",
+   "mw": 54
+  },
+  {
+   "b": "T_BLHLB-3",
+   "name": "T_BLHLB-3",
+   "fuel": "OTHER",
+   "mw": 54
+  },
+  {
+   "b": "T_KILSB-3",
+   "name": "T_KILSB-3",
+   "fuel": null,
+   "mw": 54
+  },
+  {
+   "b": "T_KILSB-1",
+   "name": "T_KILSB-1",
+   "fuel": null,
+   "mw": 53
+  },
+  {
+   "b": "T_BUSTB-1",
+   "name": "Pivot Power Bustleholme",
+   "fuel": "OTHER",
+   "mw": 52
+  },
+  {
+   "b": "E_BROFB-1",
+   "name": "Brook Farm BESS",
+   "fuel": null,
+   "mw": 52
+  },
+  {
+   "b": "E_BURWB-2",
+   "name": "Burwell 1",
+   "fuel": null,
+   "mw": 52
+  },
+  {
+   "b": "T_HRSTB-1",
+   "name": "T_HRSTB-1",
+   "fuel": null,
+   "mw": 52
+  },
+  {
+   "b": "T_KILSB-4",
+   "name": "T_KILSB-4",
+   "fuel": null,
+   "mw": 52
+  },
+  {
+   "b": "T_KILSB-2",
+   "name": "T_KILSB-2",
+   "fuel": null,
+   "mw": 52
+  },
+  {
+   "b": "E_HBHDW-1",
+   "name": "HARBURNHEADWF",
+   "fuel": "WIND",
+   "mw": 52
+  },
+  {
+   "b": "T_HAGHW-2",
+   "name": "Hagshaw Repower 2",
+   "fuel": null,
+   "mw": 51
+  },
+  {
+   "b": "T_KILSB-6",
+   "name": "T_KILSB-6",
+   "fuel": null,
+   "mw": 51
+  },
+  {
+   "b": "T_WISHB-1",
+   "name": "Wishaw BESS",
+   "fuel": "OTHER",
+   "mw": 51
+  },
+  {
+   "b": "T_KILSB-5",
+   "name": "T_KILSB-5",
+   "fuel": null,
+   "mw": 51
+  },
+  {
+   "b": "E_BURWB-1",
+   "name": "Burwell Weirs Drove BESS",
+   "fuel": "OTHER",
+   "mw": 51
+  },
+  {
+   "b": "T_COVNB-1",
+   "name": "Pivot Power Coventry",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_COWB-1",
+   "name": "Cowley",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_BLHLB-2",
+   "name": "T_BLHLB-2",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_SUNDB-1",
+   "name": "SUNDON BESS",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_WHLWB-1",
+   "name": "Whitelee 1 Battery",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_CHAPB-1",
+   "name": "Chapel Farm BESS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "T_BLHLB-1",
+   "name": "T_BLHLB-1",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_BRCHS-1",
+   "name": "T_BRCHS-1",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "E_BROXB-1",
+   "name": "BroxburnBattery",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_COYLB-1",
+   "name": "Coylton  Greener Grid  Park",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "E_CROYD-2",
+   "name": "Croydon PS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_EXETR-2",
+   "name": "Exeter",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "T_LIONB-1",
+   "name": "Wilton BESS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "T_LIONB-2",
+   "name": "Wilton BESS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "T_LIONB-3",
+   "name": "Wilton BESS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_LITRB-1",
+   "name": "Little Raith BESS",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "T_NLSTB-1",
+   "name": "Neilston Battery 1",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "E_RHEI-1",
+   "name": "E_RHEI-1",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_ROARB-1",
+   "name": "Roaring Hill BESS",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "E_THRNL-1",
+   "name": "THORNHILL PS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "T_BURWS-1",
+   "name": "Beechgreen Energy Farm",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "E_CATHB-1",
+   "name": "CathkinBattery",
+   "fuel": "OTHER",
+   "mw": 50
+  },
+  {
+   "b": "E_CLAYB-1",
+   "name": "ClayTye Farm 1 Battery Storage",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_CLAYB-2",
+   "name": "ClayTye Farm 2 Battery Storage",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_ILMEB-1",
+   "name": "Ilmer Lane BESS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_THMRB-1",
+   "name": "Thame Road  BESS",
+   "fuel": null,
+   "mw": 50
+  },
+  {
+   "b": "E_ARNKB-2",
+   "name": "Hutton Battery Storage",
+   "fuel": null,
+   "mw": 49
+  },
+  {
+   "b": "E__MDRX001",
+   "name": "E__MDRX001",
+   "fuel": null,
+   "mw": 49
+  },
+  {
+   "b": "E_RASSP-1",
+   "name": "Rassau Sync Con  Set",
+   "fuel": null,
+   "mw": 49
+  },
+  {
+   "b": "E_ROOSB-1",
+   "name": "Roosecote BESS",
+   "fuel": null,
+   "mw": 49
+  },
+  {
+   "b": "E_TOLLB-1",
+   "name": "Tollgate Energy Storage",
+   "fuel": null,
+   "mw": 49
+  },
+  {
+   "b": "T_TEBWS-1",
+   "name": "Tebworth PV Power Park",
+   "fuel": "OTHER",
+   "mw": 46
+  },
+  {
+   "b": "T_DOUGW-1",
+   "name": "T-DOUGW-1",
+   "fuel": "WIND",
+   "mw": 45
+  },
+  {
+   "b": "T_ACHRW-1",
+   "name": "AChruach Wind Farm",
+   "fuel": "WIND",
+   "mw": 43
+  },
+  {
+   "b": "E_ARNKB-1",
+   "name": "AR0006-BLOX",
+   "fuel": null,
+   "mw": 42
+  },
+  {
+   "b": "E_CUPAB-1",
+   "name": "Coupar Battery Storage",
+   "fuel": "OTHER",
+   "mw": 41
+  },
+  {
+   "b": "E_ALCOA-1",
+   "name": "Alcoa",
+   "fuel": null,
+   "mw": 41
+  },
+  {
+   "b": "T_KEMB-1",
+   "name": "Pivot Power Kemsley",
+   "fuel": "OTHER",
+   "mw": 40
+  },
+  {
+   "b": "M_CAS-GAR01",
+   "name": "Garry Cascade",
+   "fuel": "NPSHYD",
+   "mw": 40
+  },
+  {
+   "b": "E_RDSCR-1",
+   "name": "Redscar",
+   "fuel": null,
+   "mw": 40
+  },
+  {
+   "b": "E_SHILB-1",
+   "name": "Shilton Lane BESS",
+   "fuel": "OTHER",
+   "mw": 40
+  },
+  {
+   "b": "E_SUDME-1",
+   "name": "Sudmeadow",
+   "fuel": null,
+   "mw": 40
+  },
+  {
+   "b": "T_TEBWB-1",
+   "name": "Tebworth BESS Power Park",
+   "fuel": null,
+   "mw": 40
+  },
+  {
+   "b": "E_CLDRW-1",
+   "name": "CLDRW-1",
+   "fuel": "WIND",
+   "mw": 39
+  },
+  {
+   "b": "T_TWSHW-1",
+   "name": "Twenty Shilling Wind Farm",
+   "fuel": "WIND",
+   "mw": 38
+  },
+  {
+   "b": "E_BLARW-1",
+   "name": "E_BLARW-1",
+   "fuel": "WIND",
+   "mw": 35
+  },
+  {
+   "b": "E_SWBKW-1",
+   "name": "Solwaybank WF",
+   "fuel": "WIND",
+   "mw": 34
+  },
+  {
+   "b": "T_SANQW-1",
+   "name": "SANQUHAR",
+   "fuel": "WIND",
+   "mw": 32
+  },
+  {
+   "b": "T_BAGE-2",
+   "name": "BAGE-2",
+   "fuel": "CCGT",
+   "mw": 32
+  },
+  {
+   "b": "T_HAHAW-1",
+   "name": "Hagshaw Repower 1",
+   "fuel": "WIND",
+   "mw": 30
+  },
+  {
+   "b": "E_HYWDW-1",
+   "name": "Hywind Generator BMU1",
+   "fuel": "WIND",
+   "mw": 30
+  },
+  {
+   "b": "E_JAMBB-1",
+   "name": "Jamesfield 1 Battery Storage",
+   "fuel": "OTHER",
+   "mw": 30
+  },
+  {
+   "b": "E_BETHW-1",
+   "name": "BETHW-1",
+   "fuel": "WIND",
+   "mw": 30
+  },
+  {
+   "b": "T_DNLWW-1",
+   "name": "Dunlaw Extension",
+   "fuel": "WIND",
+   "mw": 30
+  },
+  {
+   "b": "T_PINFB-1",
+   "name": "T_PINFB-1",
+   "fuel": "OTHER",
+   "mw": 27
+  },
+  {
+   "b": "T_PINFB-2",
+   "name": "T_PINFB-2",
+   "fuel": "OTHER",
+   "mw": 26
+  },
+  {
+   "b": "T_PINFB-3",
+   "name": "T_PINFB-3",
+   "fuel": "OTHER",
+   "mw": 26
+  },
+  {
+   "b": "T_PINFB-4",
+   "name": "T_PINFB-4",
+   "fuel": "OTHER",
+   "mw": 26
+  },
+  {
+   "b": "T_ERRO-3",
+   "name": "Errochty G3",
+   "fuel": "NPSHYD",
+   "mw": 26
+  },
+  {
+   "b": "E_BLKPB-1",
+   "name": "Blackpool",
+   "fuel": null,
+   "mw": 25
+  },
+  {
+   "b": "T_ERRO-1",
+   "name": "Errochty G1",
+   "fuel": "NPSHYD",
+   "mw": 25
+  },
+  {
+   "b": "T_ERRO-2",
+   "name": "Errochty G2",
+   "fuel": "NPSHYD",
+   "mw": 25
+  },
+  {
+   "b": "E_TULWW-2",
+   "name": "Tullo Extension",
+   "fuel": "WIND",
+   "mw": 25
+  },
+  {
+   "b": "T_CRDEW-1",
+   "name": "Crossdykes WF-1",
+   "fuel": "WIND",
+   "mw": 24
+  },
+  {
+   "b": "T_CRDEW-2",
+   "name": "Crossdykes WF-2",
+   "fuel": "WIND",
+   "mw": 24
+  },
+  {
+   "b": "E_PGSOUT",
+   "name": "E_PGSOUT",
+   "fuel": null,
+   "mw": 24
+  },
+  {
+   "b": "E_TORQB-1",
+   "name": "Torquay",
+   "fuel": null,
+   "mw": 22
+  },
+  {
+   "b": "T_MEADD-1",
+   "name": "Caledonian Paper",
+   "fuel": null,
+   "mw": 22
+  },
+  {
+   "b": "E_DOWL-1",
+   "name": "Dowlais II",
+   "fuel": "OTHER",
+   "mw": 21
+  },
+  {
+   "b": "E_KINCS-1",
+   "name": "Kincraig",
+   "fuel": "OTHER",
+   "mw": 21
+  },
+  {
+   "b": "E_PGLLAN",
+   "name": "E_PGLLAN",
+   "fuel": null,
+   "mw": 21
+  },
+  {
+   "b": "E_PGEXTR",
+   "name": "E_PGEXTR",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_PGBARY",
+   "name": "E_PGBARY",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_BSPHM-1",
+   "name": "Bispham",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_CRSSB-1",
+   "name": "Carnegie Road 1",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_DBFRM-1",
+   "name": "Down Barn Farm",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_FARNB-1",
+   "name": "Farnham BESS",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "T_FIDL-2",
+   "name": "Fiddler's Ferry 2",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "T_FIDL-3",
+   "name": "Fiddler's Ferry 3",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "T_FIDLST1",
+   "name": "Fiddler's Ferry ST1",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_HAWKB-1",
+   "name": "HawkersHill  Battery",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_OLDHB-1",
+   "name": "Oldham BESS",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_PGBRKL",
+   "name": "E_PGBRKL",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_PGFARE",
+   "name": "E_PGFARE",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_PGHVNT",
+   "name": "E_PGHVNT",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_PGPETE",
+   "name": "Peakgen Power 2",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_WTRLN-1",
+   "name": "Water Lane",
+   "fuel": null,
+   "mw": 20
+  },
+  {
+   "b": "E_JAMBB-2",
+   "name": "Jamesfield 2 Battery Storage",
+   "fuel": "OTHER",
+   "mw": 19
+  },
+  {
+   "b": "E_SWDNB-1",
+   "name": "Swindon",
+   "fuel": null,
+   "mw": 19
+  },
+  {
+   "b": "T_TRLGW-1",
+   "name": "T_TRLGW-1",
+   "fuel": "WIND",
+   "mw": 19
+  },
+  {
+   "b": "E_SOLUTIA",
+   "name": "Solutia Power Station",
+   "fuel": null,
+   "mw": 16
+  },
+  {
+   "b": "E_LCHWT-1",
+   "name": "Letchworth",
+   "fuel": null,
+   "mw": 15
+  },
+  {
+   "b": "E_PLYRK-1",
+   "name": "Plymouth Rock",
+   "fuel": "OTHER",
+   "mw": 15
+  },
+  {
+   "b": "E_TRFPK-1",
+   "name": "Trafalgar Park",
+   "fuel": null,
+   "mw": 14
+  },
+  {
+   "b": "T_USKM-13",
+   "name": "Uskmouth 13",
+   "fuel": "BIOMASS",
+   "mw": 14
+  },
+  {
+   "b": "E_GDSTW-1",
+   "name": "Gordonstown",
+   "fuel": "WIND",
+   "mw": 13
+  },
+  {
+   "b": "T_JGPR-1",
+   "name": "High Marnham JGPEARS",
+   "fuel": "BIOMASS",
+   "mw": 13
+  },
+  {
+   "b": "E_LSTWY-1",
+   "name": "Lester Way",
+   "fuel": null,
+   "mw": 13
+  },
+  {
+   "b": "E_SEVINGTN",
+   "name": "Sevington District Energy",
+   "fuel": null,
+   "mw": 10
+  },
+  {
+   "b": "E_BRIDGWTR",
+   "name": "Bridgwater Power Station",
+   "fuel": null,
+   "mw": 10
+  },
+  {
+   "b": "T_PGBIW-1",
+   "name": "Pogbie WF",
+   "fuel": "WIND",
+   "mw": 10
+  },
+  {
+   "b": "E_BHOLB-1",
+   "name": "Holes Bay Battery",
+   "fuel": null,
+   "mw": 7
+  },
+  {
+   "b": "E_PGHAYD",
+   "name": "E_PGHAYD",
+   "fuel": null,
+   "mw": 6
+  },
+  {
+   "b": "T_DNGB-D",
+   "name": "Dungeness B Station Demand",
+   "fuel": null,
+   "mw": 6
+  },
+  {
+   "b": "E_PGCOVE",
+   "name": "E_PGCOVE",
+   "fuel": null,
+   "mw": 6
+  },
+  {
+   "b": "E_PGDIDC",
+   "name": "E_PGDIDC",
+   "fuel": null,
+   "mw": 6
+  },
+  {
+   "b": "E_PGHATF",
+   "name": "E_PGHATF",
+   "fuel": null,
+   "mw": 6
+  },
+  {
+   "b": "T_POOBD-1",
+   "name": "T_POOBD-1",
+   "fuel": null,
+   "mw": 6
+  },
+  {
+   "b": "T_FERGD-1",
+   "name": "NR Ferguslie 1",
+   "fuel": null,
+   "mw": 5
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 /**
  * fetch-live-snapshot.mjs — bake a recent metered day + mix instant into
- * src/data/live-snapshot.json so the single-file/offline build still
+ * src/data/gb/live-snapshot.json so the single-file/offline build still
  * demonstrates the live layer (clearly labelled as a snapshot).
  *
  *   node scripts/fetch-live-snapshot.mjs
@@ -17,7 +17,10 @@ import {
 } from '../src/lib/live-core.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DATA_DIR = join(__dirname, '..', 'src', 'data')
+// GB's data moved to src/data/gb in 1e608ba (the Netherlands commit) and this
+// pointed at the old root, so the bmu-map read below threw before the script
+// could reach the network. Same stale path as build-bmu-map.mjs had.
+const DATA_DIR = join(__dirname, '..', 'src', 'data', 'gb')
 const API = 'https://data.elexon.co.uk/bmrs/api/v1'
 
 const bmuMap = JSON.parse(readFileSync(join(DATA_DIR, 'bmu-map.json'), 'utf8'))
@@ -55,7 +58,10 @@ for (const batch of chunk(units, 30)) {
 }
 console.log(` ${rows.length} rows`)
 
-const per = aggregateDay(rows, bmuMap.byUnit)
+// Pass the date: without it aggregateDay assumes a 48-period day, so a
+// snapshot baked on an October clocks-back day (50 periods) reads an hour
+// short and every reading after 01:00 lands in the wrong hour (#5).
+const per = aggregateDay(rows, bmuMap.byUnit, date)
 
 // mix instant
 let mix = null

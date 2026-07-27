@@ -52,6 +52,7 @@ export const HISTORY_BUCKETS: Record<string, { label: string; color: string }> =
   geothermal: { label: 'Geothermal', color: '#bd5fd1' },
   biomass: { label: 'Biomass & waste', color: '#d95926' },
   hydro: { label: 'Hydro & pumped', color: '#1899ac' },
+  storage: { label: 'Battery storage', color: '#d55181' },
   other: { label: 'Oil & other', color: '#e66767' },
 }
 export const HISTORY_FALLBACK_COLOR = '#898781'

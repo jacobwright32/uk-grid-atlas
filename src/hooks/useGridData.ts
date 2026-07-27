@@ -243,6 +243,16 @@ async function fetchJSON<T>(url: string): Promise<T> {
 interface State {
   data: GridData | null
   error: string | null
+  /** ALL view (#3): bundles that failed while the rest rendered — 0 normally. */
+  failures: number
+  /** Bundles attempted; the denominator of the partial-failure notice (#3). */
+  total: number
+}
+
+export interface GridDataResult extends State {
+  /** Re-run the load. Arrived bundles are cached per country, so a retry only
+   *  re-fetches what actually failed (#3). */
+  retry: () => void
 }
 
 const cache = new Map<CountryId, GridData>()
@@ -284,11 +294,14 @@ async function loadCountry(id: RealCountryId): Promise<GridData> {
  * gracefully — a failed bundle is skipped (#3) and only complete merges are
  * cached, so transient failures heal on the next visit.
  *
+ * `onUpdate` carries the failure count so the UI can own up to a partial map
+ * instead of quietly showing 20 of 22 grids (#3).
+ *
  * `deps` is dependency-injected for the race tests (#60): the ordering and
  * failure semantics live HERE, not in the per-country fetch plumbing.
  */
 export async function loadAllProgressive(
-  onUpdate: (data: GridData) => void,
+  onUpdate: (data: GridData, failures: number) => void,
   onError: (err: unknown) => void,
   deps: {
     load: (id: RealCountryId) => Promise<GridData>
@@ -297,18 +310,21 @@ export async function loadAllProgressive(
 ): Promise<void> {
   const cached = deps.cache.get('all')
   if (cached) {
-    onUpdate(cached)
+    onUpdate(cached, 0)
     return
   }
   const arrived: GridData[] = []
   let failures = 0
+  /** Failure count the most recent onUpdate carried. */
+  let announced = 0
   let firstError: unknown = null
   await Promise.all(
     REAL_COUNTRY_IDS.map(async (id) => {
       try {
         const bundle = await deps.load(id)
         arrived.push(bundle)
-        onUpdate(mergeGridData(arrived))
+        announced = failures
+        onUpdate(mergeGridData(arrived), failures)
       } catch (err) {
         failures++
         firstError ??= err
@@ -322,39 +338,52 @@ export async function loadAllProgressive(
   }
   if (failures === 0) {
     deps.cache.set('all', mergeGridData(arrived))
+  } else if (announced !== failures) {
+    // Bundles that failed *after* the last arrival would otherwise never be
+    // mentioned: the count the UI has is whatever it was mid-flight (#3).
+    onUpdate(mergeGridData(arrived), failures)
   }
 }
 
+const IDLE_STATE: Omit<State, 'data'> = { error: null, failures: 0, total: 0 }
+
 /** Loads a country's GeoJSON bundles ('all' merges every country, cached). */
-export function useGridData(country: CountryId): State {
-  const [state, setState] = useState<State>({ data: cache.get(country) ?? null, error: null })
+export function useGridData(country: CountryId): GridDataResult {
+  const [state, setState] = useState<State>({ data: cache.get(country) ?? null, ...IDLE_STATE })
+  // Bumped by `retry` to re-run the effect after a partial ALL load (#3).
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     const cached = cache.get(country)
     if (cached) {
-      setState({ data: cached, error: null })
+      setState({ data: cached, ...IDLE_STATE })
       return
     }
     let cancelled = false
     const fail = (err: unknown) => {
       if (!cancelled)
-        setState({ data: null, error: err instanceof Error ? err.message : String(err) })
+        setState({
+          data: null,
+          error: err instanceof Error ? err.message : String(err),
+          failures: 0,
+          total: 0,
+        })
     }
     if (country === 'all') {
-      loadAllProgressive((data) => {
-        if (!cancelled) setState({ data, error: null })
+      loadAllProgressive((data, failures) => {
+        if (!cancelled) setState({ data, error: null, failures, total: REAL_COUNTRY_IDS.length })
       }, fail).catch(fail)
     } else {
       loadCountry(country)
         .then((data) => {
-          if (!cancelled) setState({ data, error: null })
+          if (!cancelled) setState({ data, ...IDLE_STATE, total: 1 })
         })
         .catch(fail)
     }
     return () => {
       cancelled = true
     }
-  }, [country])
+  }, [country, attempt])
 
-  return state
+  return { ...state, retry: () => setAttempt((n) => n + 1) }
 }

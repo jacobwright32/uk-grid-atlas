@@ -4,7 +4,7 @@ import type { EntsoeToday } from '../lib/live'
 import type { HistoryFile } from '../lib/history'
 import type { MixSnapshot, PriceDay } from '../lib/live-core.mjs'
 import MixHistory from './MixHistory'
-import { fmtGW, fmtPrice } from '../lib/format'
+import { fmtGW, fmtPrice, slotLabel } from '../lib/format'
 import { fmtIntensity, intensityOf } from '../lib/carbon'
 import { sourceMetaFor } from '../lib/sources'
 
@@ -33,6 +33,9 @@ interface Props {
   prices: PriceDay | null
   /** Actual total load over the metered day (#24). */
   demandSeries: (number | null)[] | null
+  /** Settlement date the series belong to — anchors the scrub labels to real
+   *  London wall-clock across the clock-change days (#5). */
+  meteredDate: string | null
   /** Data-source label for the legend ("ENTSO-E" unless the snapshot says). */
   sourceLabel: string | null
   /** Mix time range (#64): day = the classic strip, week/month = history. */
@@ -62,6 +65,7 @@ export default function MixStrip({
   today,
   prices,
   demandSeries,
+  meteredDate,
   sourceLabel,
   range,
   onRange,
@@ -99,14 +103,14 @@ export default function MixStrip({
       ? today.totalMW + Math.max(0, today.importMW)
       : mix.totalMW + Math.max(0, mix.importMW)
 
-  const stepMin = len === 48 ? 30 : 60
-  const scrubMins = (timeIndex ?? 0) * stepMin
-  const scrubHH = String(Math.floor(scrubMins / 60)).padStart(2, '0')
-  const scrubMM = String(scrubMins % 60).padStart(2, '0')
+  // Half-hourly GB days run 46/48/50 periods across the clock changes, so an
+  // exact 48 is the wrong test — 46 and 50 were being labelled hourly (#5).
+  const stepMin = len >= 46 && len <= 50 ? 30 : 60
+  const scrubLabel = slotLabel(timeIndex ?? 0, stepMin, meteredDate)
 
   const when = new Date(mix.time)
   const subtitle = scrubbing
-    ? `${scrubHH}:${scrubMM}`
+    ? scrubLabel
     : showToday
       ? `today · through ${String(today.throughHour).padStart(2, '0')}:00`
       : mode === 'daily'
@@ -129,8 +133,7 @@ export default function MixStrip({
     if (scrubbing) {
       const scale = priceSource.series.length === len ? 1 : priceSource.series.length / len
       const v = priceSource.series[Math.floor(timeIndex * scale)]
-      if (v != null)
-        priceText = `${label} · ${fmtPrice(v, priceSource.currency)} at ${scrubHH}:${scrubMM}`
+      if (v != null) priceText = `${label} · ${fmtPrice(v, priceSource.currency)} at ${scrubLabel}`
     } else {
       const avg = priceAvg(priceSource)
       if (avg != null) {
@@ -170,13 +173,15 @@ export default function MixStrip({
           {title} · {historyView ? (range === 'week' ? 'past week' : 'past month') : subtitle}
         </span>
         {!historyView && <span className="mixstrip-total">{fmtGW(totalNow)}</span>}
-        <span className="mixstrip-range" role="tablist" aria-label="Mix time range">
+        {/* Toggle buttons, not tabs: role="tab" promises a tabpanel to point
+            aria-controls at and arrow-key movement within the tablist, and
+            these have neither. aria-pressed describes what they actually do. */}
+        <span className="mixstrip-range" role="group" aria-label="Mix time range">
           {(['day', 'week', 'month'] as const).map((r) => (
             <button
               key={r}
               type="button"
-              role="tab"
-              aria-selected={range === r}
+              aria-pressed={range === r}
               className={range === r ? 'on' : undefined}
               onClick={() => onRange(r)}
             >
@@ -212,8 +217,7 @@ export default function MixStrip({
           showToday={showToday}
           mode={mode}
           sourceLabel={sourceLabel}
-          scrubHH={scrubHH}
-          scrubMM={scrubMM}
+          scrubLabel={scrubLabel}
           priceText={priceText}
           intensity={intensity}
           demandText={demandText}
@@ -230,8 +234,7 @@ interface DayProps {
   showToday: boolean
   mode: 'live' | 'snapshot' | 'daily'
   sourceLabel: string | null
-  scrubHH: string
-  scrubMM: string
+  scrubLabel: string
   priceText: string | null
   intensity: number | null
   demandText: string | null
@@ -244,8 +247,7 @@ function MixStripDay({
   showToday,
   mode,
   sourceLabel,
-  scrubHH,
-  scrubMM,
+  scrubLabel,
   priceText,
   intensity,
   demandText,
@@ -309,7 +311,7 @@ function MixStripDay({
       <div className="mixstrip-legend">
         <span className="mixstrip-item">
           {scrubbing
-            ? `bars = generation at ${scrubHH}:${scrubMM}`
+            ? `bars = generation at ${scrubLabel}`
             : showToday
               ? `bars = today-so-far average (${sourceMetaFor(sourceLabel).label})`
               : mode === 'daily'

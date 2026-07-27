@@ -33,6 +33,27 @@ describe('TimeSlider (day mode)', () => {
     render(<TimeSlider {...base} len={48} index={3} />)
     expect(screen.getByText(/01:30/)).toBeTruthy()
   })
+  // The slider used to do its own `i * 30` arithmetic while MixStrip had
+  // already moved to London wall-clock, so on the two clock-change days the
+  // two readouts disagreed — and the slider was the wrong one (#5).
+  it('reads London wall-clock on the 50-period October day', () => {
+    // Slot 49 is the last of a 25-hour local day: 23:30, not 24:30.
+    render(<TimeSlider {...base} len={50} meteredDate="2026-10-25" index={49} />)
+    expect(screen.getByText(/23:30/)).toBeTruthy()
+    // …and the repeated hour reads 01:00 twice rather than running on to 02:00.
+    cleanup()
+    render(<TimeSlider {...base} len={50} meteredDate="2026-10-25" index={4} />)
+    expect(screen.getByText(/01:00/)).toBeTruthy()
+  })
+  it('skips the missing hour on the 46-period March day', () => {
+    // Slot 2 is 02:00 — 01:00 never happens, and naive arithmetic said 01:00.
+    render(<TimeSlider {...base} len={46} meteredDate="2026-03-29" index={2} />)
+    expect(screen.getByText(/02:00/)).toBeTruthy()
+    cleanup()
+    // Last slot is still 23:30, where the old arithmetic drifted to 22:30.
+    render(<TimeSlider {...base} len={46} meteredDate="2026-03-29" index={45} />)
+    expect(screen.getByText(/23:30/)).toBeTruthy()
+  })
   it('forwards slider input to onChange', () => {
     const onChange = vi.fn()
     render(<TimeSlider {...base} onChange={onChange} />)
