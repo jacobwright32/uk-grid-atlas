@@ -48,6 +48,10 @@ import siStations from '../data/si/stations.json?url'
 import siTransmission from '../data/si/transmission.json?url'
 import siInterconnectors from '../data/si/interconnectors.json?url'
 import siMeta from '../data/si/meta.json?url'
+import huStations from '../data/hu/stations.json?url'
+import huTransmission from '../data/hu/transmission.json?url'
+import huInterconnectors from '../data/hu/interconnectors.json?url'
+import huMeta from '../data/hu/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -169,6 +173,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: siTransmission,
     interconnectors: siInterconnectors,
     meta: siMeta,
+  },
+  hu: {
+    stations: huStations,
+    transmission: huTransmission,
+    interconnectors: huInterconnectors,
+    meta: huMeta,
   },
   no: {
     stations: noStations,

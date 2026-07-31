@@ -43,7 +43,7 @@ class Grid:
     """
     Whether ``live(code)`` works.
 
-    True for 22 of 23. Great Britain is the exception: its snapshot is compiled
+    True for 23 of 24. Great Britain is the exception: its snapshot is compiled
     into the atlas's JavaScript bundle rather than served as standalone JSON, so
     there is no URL to fetch. ``history("gb")`` works normally.
     """
@@ -105,6 +105,7 @@ GRIDS: tuple[Grid, ...] = (
     Grid("at", "Austria", "europe", "Europe/Vienna", True),
     Grid("cz", "Czechia", "europe", "Europe/Prague", True),
     Grid("si", "Slovenia", "europe", "Europe/Ljubljana", True),
+    Grid("hu", "Hungary", "europe", "Europe/Budapest", True),
     Grid("pl", "Poland", "europe", "Europe/Warsaw", True),
     Grid("dk", "Denmark", "europe", "Europe/Copenhagen", True),
     Grid("no", "Norway", "europe", "Europe/Oslo", True),

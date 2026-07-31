@@ -1,0 +1,115 @@
+{
+ "builtAt": "2026-07-31T15:39:00.388Z",
+ "unitCount": 22,
+ "byUnit": {
+  "15WAJKA2345--STU": "way/921478873",
+  "15WAJKA67----STX": "way/921478873",
+  "15WDKCEGT--CCGTG": "relation/3310754",
+  "15WKISPEST-CCGTY": "way/223967102",
+  "15WLITERG----GTJ": "way/155044639",
+  "15WNYKCE---CCGTJ": "way/332521032",
+  "15WPECSG6----STK": "relation/12554369",
+  "15WSAJOSZG---GTD": "way/155227479",
+  "15WTATABG2---STR": "way/242831969",
+  "15WGONYUG1-CCGTG": "way/350933543",
+  "15WLORINCG---GTQ": "way/927794688",
+  "15WPAKSG2----STC": "relation/7671467",
+  "15WPAKSG3----ST4": "relation/7671467",
+  "15WPAKSG5----STP": "relation/7671467",
+  "15WPAKSG6----STH": "relation/7671467",
+  "15WCSEPELG1--GTH": "way/935387423",
+  "15WCSEPELG2--GTB": "way/935387423",
+  "15WCSEPELG3--ST6": "way/935387423",
+  "15WDUMEG15---GTB": "way/100837242",
+  "15WDUMEG7----GT5": "way/100837242",
+  "15WDUMEG8----GTY": "way/100837242",
+  "15WKFGT------GT5": "relation/7784562",
+  "15WMATRAG3---STO": "way/189226150",
+  "15WMATRAG4---STH": "way/189226150",
+  "15WMATRAG5---STA": "way/189226150",
+  "15WPAKSG1----STK": "relation/7671467",
+  "15WPAKSG4----STX": "relation/7671467",
+  "15WPAKSG7----ST9": "relation/7671467",
+  "15WPAKSG8----ST1": "relation/7671467"
+ },
+ "unmatchedTop": [
+  {
+   "eic": "15WVPPG1----VPPF",
+   "name": "CHP1ae",
+   "psr": "B04",
+   "mw": 103.3
+  },
+  {
+   "eic": "15WDUHAMB1---PPI",
+   "name": "DUHAMB_gép1",
+   "psr": "B04",
+   "mw": 42.3
+  },
+  {
+   "eic": "15WVEOT1----VPPS",
+   "name": "VEO1ae",
+   "psr": "B04",
+   "mw": 33.7
+  },
+  {
+   "eic": "15WSKOVP1----WTR",
+   "name": "SKÖV_park1",
+   "psr": "B19",
+   "mw": 23
+  },
+  {
+   "eic": "15W-SZOLGBB-AE-D",
+   "name": "SZOLGBBae",
+   "psr": "B20",
+   "mw": 20
+  },
+  {
+   "eic": "15W-KECKPV--AE-X",
+   "name": "KECKPVae",
+   "psr": "B16",
+   "mw": 20
+  },
+  {
+   "eic": "15WDUNAPVSZ-VPP9",
+   "name": "DUNAPVSZK_gép1",
+   "psr": "B16",
+   "mw": 17.4
+  },
+  {
+   "eic": "15W-GREEBAB-AE-B",
+   "name": "GREEBABae",
+   "psr": "B16",
+   "mw": 13.9
+  },
+  {
+   "eic": "15WTUSKPV1---PVJ",
+   "name": "TUSKPV_gép1",
+   "psr": "B16",
+   "mw": 10.1
+  },
+  {
+   "eic": "15WAUDIPVG1--PV1",
+   "name": "AUDIPV_gép1",
+   "psr": "B16",
+   "mw": 10
+  },
+  {
+   "eic": "15WMOLFPVG1--PV7",
+   "name": "MOLFPV_gép1",
+   "psr": "B16",
+   "mw": 6.2
+  },
+  {
+   "eic": "15WTMPKPVG1--PVV",
+   "name": "TMPKPV_gép1",
+   "psr": "B16",
+   "mw": 5.8
+  },
+  {
+   "eic": "15W-R2D2ABB-AE-E",
+   "name": "R2D2ABBae",
+   "psr": "B16",
+   "mw": 1.3
+  }
+ ]
+}

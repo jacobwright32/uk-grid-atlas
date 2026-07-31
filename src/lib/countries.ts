@@ -12,6 +12,7 @@ export type CountryId =
   | 'at'
   | 'cz'
   | 'si'
+  | 'hu'
   | 'no'
   | 'se'
   | 'pl'
@@ -39,6 +40,7 @@ export const REAL_COUNTRY_IDS = [
   'at',
   'cz',
   'si',
+  'hu',
   'no',
   'se',
   'pl',
@@ -95,8 +97,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-three grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-three grids · two continents · every HVDC link',
+      'Twenty-four grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-four grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -312,6 +314,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. ELES files per-unit output for only the four largest units — Krško, Šoštanj, Brestanica and Avče carry live dots; the hydro chains show capacity only.',
     tagline: 'Vsaka elektrarna · prenosno omrežje ELES · od Krškega do Drave',
+  },
+  hu: {
+    id: 'hu',
+    region: 'eu',
+    name: 'Hungary',
+    flag: '🇭🇺',
+    bounds: [
+      [16.0, 45.7],
+      [23.0, 48.65],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. MAVIR files per-unit output for the whole large fleet — Paks, Mátra, Dunamenti, Csepel and the Budapest CHPs all carry live dots. The 120 kV subtransmission layer and the single 750 kV line to Ukraine are omitted.',
+    tagline: 'Minden erőmű · a MAVIR átviteli hálózata · Pakstól a naperőművekig',
   },
   no: {
     id: 'no',

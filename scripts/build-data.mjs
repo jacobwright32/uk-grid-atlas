@@ -170,6 +170,21 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  hu: {
+    decimalComma: true,
+    plantFiles: ['plants_hu_pbf.json', 'plants_hu_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^hu_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // MAVIR backbone is 400/220. The 120 kV subtransmission layer is real but
+    // barely mapped as power=line in OSM (6 ways country-wide), so it is out —
+    // an empty tier is a broken promise. The single 750 kV line to Ukraine
+    // (Albertirsa) is likewise dropped: one line is not a tier, and >=500 kV
+    // returning null keeps it out of the 400 class.
+    classify: (volts) =>
+      volts >= 500000 ? null : volts >= 380000 ? 400 : volts >= 200000 ? 220 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
