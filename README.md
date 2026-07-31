@@ -45,6 +45,29 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 - **Self-contained dark basemap** (Natural Earth coastline) with an optional
   online CARTO raster underlay for street-level context.
 
+## Use the data from Python
+
+The JSON this atlas publishes is a public API, and
+[**world-energy-generation**](https://pypi.org/project/world-energy-generation/)
+is the Python client for it — generation, prices, cross-border flows and demand
+for all twenty-two grids, with no key and no required dependencies.
+
+```bash
+pip install world-energy-generation
+```
+
+```python
+import world_energy_generation as weg
+
+weg.latest("de").mix["wind"]                       # 11901.0 MW
+weg.generation(["de", "fr", "no"])                 # tidy DataFrame, needs [pandas]
+```
+
+Source is in [`python/`](python/), docs in [`python/README.md`](python/README.md).
+Worth reading before you publish a number: an absent fuel bucket means *not
+reported*, not zero; `us` is ERCOT + NYISO rather than the whole country; and
+carbon intensity is derived here from lifecycle factors, not measured upstream.
+
 ## Quick start
 
 ```bash

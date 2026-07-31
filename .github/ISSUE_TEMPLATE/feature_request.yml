@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest something the atlas or the Python package should do
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        To add a **grid**, use the "Add a grid" template instead.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which part
+      options:
+        - The atlas website
+        - The world-energy-generation Python package
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: >
+        The underlying task, not just the feature. Knowing what you are actually
+        trying to find out often surfaces a better answer than the one being
+        asked for — and sometimes one that already exists.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like
+      description: For the package, sketching the API you would want to call is very useful.
+      placeholder: |
+        weg.generation(["de", "fr"], resample="1W")
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How are you working around it today

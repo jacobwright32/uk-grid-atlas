@@ -1,0 +1,33 @@
+# Python build and packaging
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# Bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Environments
+.venv/
+venv/
+env/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# The client's on-disk cache, if anyone points it here while poking around
+.cache/

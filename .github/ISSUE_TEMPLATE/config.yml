@@ -1,0 +1,17 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Grid Atlas — the live map
+    url: https://jacobwright32.github.io/uk-grid-atlas/
+    about: Check whether the current data already answers your question.
+  - name: world-energy-generation on PyPI
+    url: https://pypi.org/project/world-energy-generation/
+    about: The Python client for this project's published data.
+  - name: Python package documentation
+    url: https://github.com/jacobwright32/uk-grid-atlas/blob/main/python/README.md
+    about: Install, quickstart, and the three caveats worth reading before you publish a number.
+  - name: Upstream data corrections
+    url: https://www.openstreetmap.org/
+    about: >
+      A plant in the wrong place, or tagged with the wrong fuel or capacity, is
+      usually an OpenStreetMap issue. Fixing it there improves this atlas and
+      everything else built on OSM.

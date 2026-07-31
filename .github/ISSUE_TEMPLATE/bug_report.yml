@@ -1,0 +1,69 @@
+name: Bug report
+description: Something is broken or behaves differently from how it is documented
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the problem is that a *number* looks wrong rather than that something
+        is broken, use the "A number looks wrong" template instead — it asks for
+        the details that make a data discrepancy actionable.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which part
+      options:
+        - The atlas website
+        - The world-energy-generation Python package
+        - The data pipeline (scripts/)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the full error and traceback if there was one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce it
+      description: >
+        For the website, the steps and the country you were on. For the package,
+        the shortest snippet that shows it.
+      placeholder: |
+        import world_energy_generation as weg
+        weg.history("de").days[-1]
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: >
+        For the package, `python -c "import world_energy_generation as w;
+        print(w.__version__)"` plus your Python version. For the website, your
+        browser and operating system.
+      placeholder: "world-energy-generation 0.1.0, Python 3.12, macOS"
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Quick checks
+      options:
+        - label: I am on the latest release, or the problem is present on `main`
+        - label: I searched existing issues

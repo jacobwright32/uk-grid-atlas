@@ -1,0 +1,98 @@
+name: Python CI
+
+# The Python client for the atlas data lives in python/ and is versioned and
+# released independently of the web app, so it gets its own workflow. The paths
+# filter keeps it off atlas-only changes; the Node CI in ci.yml is unfiltered and
+# will still run on Python-only changes, which is harmless.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "python/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    paths:
+      - "python/**"
+      - ".github/workflows/python-ci.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          # pandas is installed so the frame builders are actually exercised;
+          # the no-pandas path has its own subprocess tests that do not need it.
+          pip install -e '.[pandas]'
+          pip install pytest pytest-cov
+
+      # The suite runs entirely against committed fixtures over file:// URLs —
+      # no network, no API key. If this ever needs the internet, that is a bug.
+      - name: Tests
+        run: pytest --cov --cov-report=term-missing
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pinned on purpose. Both tools add rules in minor releases, and a green
+      # branch turning red because a linter shipped on a Tuesday wastes more time
+      # than it saves. Bump these deliberately, in their own PR.
+      - name: Install
+        run: pip install ruff==0.15.11 mypy==1.20.2 pandas pytest
+
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+
+  build:
+    # Catches packaging breakage at PR time rather than at release time, when the
+    # tag is already cut and PyPI will not accept a re-upload of the same version.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Install the wheel into a clean venv and import it
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install dist/*.whl
+          # Deliberately >= rather than == 22: the exact grid count is pinned by
+          # tests/test_grids.py, and someone adding a grid should get one clear
+          # named test failure, not this as a second confusing tripwire. What is
+          # being checked here is that the wheel installs and its registry loads.
+          /tmp/smoke/bin/python -c "
+          import world_energy_generation as weg
+          assert len(weg.codes()) >= 22
+          assert weg.carbon_intensity({'wind': 1000, 'coal': 1000}) == 416.0
+          print('wheel ok', weg.__version__, len(weg.codes()), 'grids')
+          "
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: python/dist

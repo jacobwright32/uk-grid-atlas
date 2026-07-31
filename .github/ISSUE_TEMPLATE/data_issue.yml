@@ -1,0 +1,112 @@
+name: A number looks wrong
+description: A generation, price, demand or flow figure disagrees with the operator
+title: "[data] "
+labels: ["data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most valuable kind of report in the project, so thank you.
+
+        Before filing, two things account for most apparent discrepancies and are
+        worth ruling out:
+
+        - **An absent fuel bucket means "not reported", not zero.** Germany
+          reports no nuclear because its reactors are shut. Switzerland reports
+          four buckets. A missing bucket is not a bug.
+        - **Some grids are narrower than their name.** `us` is ERCOT + NYISO,
+          roughly a third of US generation. `ca` is Ontario only. `ie` covers the
+          all-island market for generation but the Republic only for demand.
+
+        Everything else is worth reporting, including anything you are only
+        half-sure about.
+
+  - type: dropdown
+    id: grid
+    attributes:
+      label: Grid
+      options:
+        - gb — United Kingdom
+        - ie — Ireland (all-island)
+        - pt — Portugal
+        - es — Spain
+        - fr — France
+        - be — Belgium
+        - nl — Netherlands
+        - de — Germany
+        - ch — Switzerland
+        - it — Italy
+        - at — Austria
+        - cz — Czechia
+        - pl — Poland
+        - dk — Denmark
+        - "no — Norway"
+        - se — Sweden
+        - fi — Finland
+        - ee — Estonia
+        - lv — Latvia
+        - lt — Lithuania
+        - us — United States (Texas + New York)
+        - ca — Canada (Ontario)
+        - more than one / not sure
+    validations:
+      required: true
+
+  - type: input
+    id: when
+    attributes:
+      label: Date or time
+      description: The date, or the timestamp for an hourly figure. Include the timezone you read it in.
+      placeholder: "2026-07-30, or 2026-07-30 14:00 CEST"
+    validations:
+      required: true
+
+  - type: input
+    id: field
+    attributes:
+      label: Which figure
+      placeholder: "wind generation / day-ahead price / demand / flow on IFA2 / carbon intensity"
+    validations:
+      required: true
+
+  - type: input
+    id: shown
+    attributes:
+      label: What this shows
+      placeholder: "11901 MW"
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: What the source shows
+      placeholder: "14200 MW"
+
+  - type: input
+    id: source
+    attributes:
+      label: Link to the source
+      description: >
+        The operator's own page or API response is what makes this actionable.
+        A third-party dashboard is a starting point but may have its own bugs.
+      placeholder: "https://transparency.entsoe.eu/..."
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did you see it
+      options:
+        - The atlas website
+        - The world-energy-generation Python package
+        - The published JSON directly
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Anything else
+      description: >
+        Whether it is a one-off or persistent, whether neighbouring hours look
+        right, a screenshot, or the snippet of code you used.

@@ -1,0 +1,119 @@
+name: Publish Python package
+
+# Releases python/ to PyPI as `world-energy-generation`.
+#
+# Uses PyPI Trusted Publishing (OIDC): the runner mints a short-lived token from
+# GitHub's identity provider and PyPI verifies it. There is no API token to
+# store, leak, or rotate, which is the entire point — a long-lived PyPI token in
+# repo secrets is a standing liability, and this has none.
+#
+# One-time setup on PyPI, under the project's Publishing settings (or as a
+# "pending publisher" before the first release, since the project does not exist
+# on PyPI yet):
+#   Owner:            jacobwright32
+#   Repository:       uk-grid-atlas
+#   Workflow name:    python-publish.yml
+#   Environment:      pypi
+# Then create a GitHub environment called `pypi` (Settings -> Environments) and,
+# if you want a manual gate before anything goes public, add yourself as a
+# required reviewer on it.
+#
+# To release: bump `version` in python/pyproject.toml and `__version__` in
+# python/src/world_energy_generation/__init__.py, add a CHANGELOG entry, merge,
+# then tag:
+#   git tag python-v0.1.0 && git push origin python-v0.1.0
+#
+# The tag is prefixed so it cannot be confused with a release of the web app.
+
+on:
+  push:
+    tags:
+      - "python-v*"
+  workflow_dispatch:
+    inputs:
+      testpypi:
+        description: "Publish to TestPyPI instead of PyPI"
+        type: boolean
+        default: true
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install build twine
+
+      # A tag that disagrees with pyproject.toml is the classic release bug, and
+      # it is unrecoverable: PyPI refuses a second upload of the same version
+      # forever, so publishing 0.1.0 under tag python-v0.2.0 burns both numbers.
+      - name: Tag must match the packaged version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          packaged=$(python -c "
+          import pathlib, re
+          text = pathlib.Path('pyproject.toml').read_text()
+          print(re.search(r'^version = \"([^\"]+)\"', text, re.M).group(1))
+          ")
+          tagged="${GITHUB_REF_NAME#python-v}"
+          echo "pyproject: $packaged   tag: $tagged"
+          if [ "$packaged" != "$tagged" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match pyproject version $packaged"
+            exit 1
+          fi
+          # And the runtime constant, which is what users actually see.
+          runtime=$(python -c "
+          import pathlib, re
+          text = pathlib.Path('src/world_energy_generation/__init__.py').read_text()
+          print(re.search(r'^__version__ = \"([^\"]+)\"', text, re.M).group(1))
+          ")
+          if [ "$runtime" != "$packaged" ]; then
+            echo "::error::__version__ is $runtime but pyproject says $packaged"
+            exit 1
+          fi
+
+      # Never publish something that does not pass its own tests.
+      - name: Tests
+        run: |
+          pip install -e '.[pandas]' pytest
+          pytest -q
+
+      - run: python -m build
+      - run: twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: python/dist
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Required for OIDC. Nothing else is needed — note the absence of any
+      # `secrets` reference in this job.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to TestPyPI
+        if: inputs.testpypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        if: ${{ !inputs.testpypi }}
+        uses: pypa/gh-action-pypi-publish@release/v1

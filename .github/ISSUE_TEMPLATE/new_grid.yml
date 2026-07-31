@@ -1,0 +1,97 @@
+name: Add a grid
+description: Propose a power system this project does not cover yet
+title: "[grid] "
+labels: ["new-grid"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The biggest gap in this project. Current coverage is 22 grids: 20 in
+        Europe via ENTSO-E plus Elexon for Great Britain, and two in North
+        America — ERCOT + NYISO, and Ontario.
+
+        The only hard requirement is an **openly accessible** source of fuel-mix
+        data. Free registration for an API key is fine; a paid licence or a
+        scrape-only website is not, since the pipeline has to run unattended in
+        GitHub Actions and republish the result under a permissive licence.
+
+        You do not need to write the code to open this. A good source link is
+        most of the work.
+
+  - type: input
+    id: grid
+    attributes:
+      label: Which grid or market
+      placeholder: "AESO (Alberta), Hydro-Québec, PJM, CAISO, AEMO/NEM, Japan (Kansai), ..."
+    validations:
+      required: true
+
+  - type: input
+    id: operator
+    attributes:
+      label: Who operates it
+      description: The attribution string that should be shown for this grid.
+      placeholder: "Alberta Electric System Operator (AESO)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Where the data is published
+      description: >
+        Links to the fuel-mix endpoint or page. If there is documentation, or an
+        example response, that is even better.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: available
+    attributes:
+      label: What that source publishes
+      description: Check what you know is available. Fuel mix alone is enough to be worth adding.
+      options:
+        - label: Generation by fuel type
+        - label: Historical data (how far back?)
+        - label: Sub-hourly or hourly resolution
+        - label: Demand / load
+        - label: Wholesale or day-ahead prices
+        - label: Cross-border or inter-regional flows
+        - label: Per-plant or per-unit output
+
+  - type: dropdown
+    id: access
+    attributes:
+      label: Access
+      options:
+        - Fully open, no registration
+        - Free API key after registration
+        - Requires a paid licence
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: licence
+    attributes:
+      label: Terms of use
+      description: >
+        A link to the source's licence or terms, if you can find one. This
+        determines whether the data can be republished at all, so it is the thing
+        most likely to block an otherwise easy addition.
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: What the scope actually covers
+      description: >
+        Be precise, because the grid's label will say this. If it is one ISO
+        inside a larger country, or a market spanning several jurisdictions, that
+        needs to be visible to anyone doing arithmetic on it.
+
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Would you like to work on it
+      options:
+        - label: I would be happy to write the fetcher for this
