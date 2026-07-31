@@ -14,6 +14,7 @@ export type CountryId =
   | 'si'
   | 'hu'
   | 'sk'
+  | 'hr'
   | 'no'
   | 'se'
   | 'pl'
@@ -43,6 +44,7 @@ export const REAL_COUNTRY_IDS = [
   'si',
   'hu',
   'sk',
+  'hr',
   'no',
   'se',
   'pl',
@@ -99,8 +101,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-five grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-five grids · two continents · every HVDC link',
+      'Twenty-six grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-six grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -356,6 +358,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. SEPS files per-unit output for five stations — both nuclear plants, Čierny Váh pumped storage, Malženice and PPC Bratislava carry live dots.',
     tagline: 'Každá elektráreň · prenosová sústava SEPS · jadro z Bohuníc a Mochoviec',
+  },
+  hr: {
+    id: 'hr',
+    region: 'eu',
+    name: 'Croatia',
+    flag: '🇭🇷',
+    bounds: [
+      [13.2, 42.3],
+      [19.5, 46.65],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Daily mix, demand and day-ahead prices from ENTSO-E, refreshed by a scheduled workflow. HEP publishes no per-unit output at all, so station dots show capacity only — the mix strip is the live layer here.',
+    tagline: 'Svaka elektrana · prijenosna mreža HOPS · vjetar s Jadrana',
   },
   no: {
     id: 'no',

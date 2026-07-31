@@ -139,6 +139,10 @@ export const ENTSOE_COUNTRIES = {
   si: { unitDomains: ['10YSI-ELES-----O'], mixDomains: ['10YSI-ELES-----O'] },
   hu: { unitDomains: ['10YHU-MAVIR----U'], mixDomains: ['10YHU-MAVIR----U'] },
   sk: { unitDomains: ['10YSK-SEPS-----K'], mixDomains: ['10YSK-SEPS-----K'] },
+  // HEP publishes no per-unit output (A73/A71 both empty) — mix, load and
+  // prices only. unitDomains stays set so the registry build degrades to an
+  // empty map rather than a config error.
+  hr: { unitDomains: ['10YHR-HEP------M'], mixDomains: ['10YHR-HEP------M'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

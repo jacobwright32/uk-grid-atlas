@@ -56,6 +56,10 @@ import skStations from '../data/sk/stations.json?url'
 import skTransmission from '../data/sk/transmission.json?url'
 import skInterconnectors from '../data/sk/interconnectors.json?url'
 import skMeta from '../data/sk/meta.json?url'
+import hrStations from '../data/hr/stations.json?url'
+import hrTransmission from '../data/hr/transmission.json?url'
+import hrInterconnectors from '../data/hr/interconnectors.json?url'
+import hrMeta from '../data/hr/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -189,6 +193,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: skTransmission,
     interconnectors: skInterconnectors,
     meta: skMeta,
+  },
+  hr: {
+    stations: hrStations,
+    transmission: hrTransmission,
+    interconnectors: hrInterconnectors,
+    meta: hrMeta,
   },
   no: {
     stations: noStations,

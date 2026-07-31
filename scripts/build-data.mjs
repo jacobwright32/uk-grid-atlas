@@ -201,6 +201,17 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  hr: {
+    decimalComma: true,
+    plantFiles: ['plants_hr_pbf.json', 'plants_hr_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^hr_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // HOPS runs 400/220/110 — the classic three-tier shape (FI rule).
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
