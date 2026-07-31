@@ -1,6 +1,6 @@
 # world-energy-generation
 
-Electricity generation, prices, cross-border flows and demand for **22 power grids** across Europe and North America, as typed Python. No API key, no account, no required dependencies.
+Electricity generation, prices, cross-border flows and demand for **23 power grids** across Europe and North America, as typed Python. No API key, no account, no required dependencies.
 
 ```bash
 pip install world-energy-generation
@@ -37,7 +37,7 @@ Requires Python 3.10 or newer. The core package imports nothing outside the stan
 
 ## The two datasets
 
-### `history(code)` — rolling ~31 days, all 22 grids
+### `history(code)` — rolling ~31 days, all 23 grids
 
 Daily means for about 31 days, plus the last several days at hourly resolution. This is the uniform surface; reach for it first.
 
@@ -71,7 +71,7 @@ hour.flow_series["alegro"]    # 24 values on the DE-BE interconnector
 hour.demand_series            # 24 values
 ```
 
-### `live(code)` — most recent snapshot, 21 grids
+### `live(code)` — most recent snapshot, 22 grids
 
 ```python
 snap = weg.live("fr")
@@ -120,19 +120,19 @@ weg.grid("us").note
 
 Buckets with no factor, no value, or a non-positive value are excluded from both the numerator and the denominator, so an unknown fuel dilutes nothing. Where nothing attributable was generating, the result is `None` rather than `0.0` — zero would be a claim of a carbon-free grid, and `None` says "nothing to go on". Note that `storage` at 0 makes a grid read slightly optimistic during discharge, since the emissions belong to whatever charged it.
 
-## The 22 grids
+## The 23 grids
 
 ```python
 weg.codes()
 # ['gb', 'ie', 'pt', 'es', 'fr', 'be', 'nl', 'de', 'ch', 'it', 'at', 'cz',
-#  'pl', 'dk', 'no', 'se', 'fi', 'ee', 'lv', 'lt', 'us', 'ca']
+#  'si', 'pl', 'dk', 'no', 'se', 'fi', 'ee', 'lv', 'lt', 'us', 'ca']
 ```
 
 | Code | Scope | Live | Operator |
 |------|-------|:----:|----------|
 | `gb` | United Kingdom | – | Elexon (BMRS / Insights) |
 | `ie` | Ireland, all-island | ✓ | ENTSO-E |
-| `pt` `es` `fr` `be` `nl` `de` `ch` `it` `at` `cz` `pl` | Portugal, Spain, France, Belgium, Netherlands, Germany, Switzerland, Italy, Austria, Czechia, Poland | ✓ | ENTSO-E |
+| `pt` `es` `fr` `be` `nl` `de` `ch` `it` `at` `cz` `si` `pl` | Portugal, Spain, France, Belgium, Netherlands, Germany, Switzerland, Italy, Austria, Czechia, Slovenia, Poland | ✓ | ENTSO-E |
 | `dk` `no` `se` `fi` `ee` `lv` `lt` | Denmark, Norway, Sweden, Finland, Estonia, Latvia, Lithuania | ✓ | ENTSO-E |
 | `us` | United States: Texas + New York only | ✓ | ERCOT + NYISO |
 | `ca` | Canada: Ontario only | ✓ | IESO |
@@ -141,7 +141,7 @@ Filter the registry rather than hardcoding lists:
 
 ```python
 weg.grids(region="north-america")        # us, ca
-weg.grids(live_only=True)                # the 21 with live JSON
+weg.grids(live_only=True)                # the 22 with live JSON
 weg.grids_frame()                        # the whole registry as a DataFrame
 ```
 
@@ -153,7 +153,7 @@ Four tidy builders, all long-format and ready for `groupby`:
 weg.generation(["de", "fr"])      # grid, date, fuel, mw
 weg.generation("de", hourly=True) # grid, timestamp, fuel, mw
 weg.prices(["de", "gb"])          # grid, date, price, currency
-weg.demand()                      # all 22: grid, date, demand_mw
+weg.demand()                      # all 23: grid, date, demand_mw
 ```
 
 Plus wide frames on a single history:

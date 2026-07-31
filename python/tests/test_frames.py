@@ -168,7 +168,7 @@ def test_grids_frame_needs_no_network():
     import world_energy_generation as weg
 
     frame = weg.grids_frame()
-    assert len(frame) == 22
+    assert len(frame) == len(weg.GRIDS)
     assert frame.index.name == "code"
     assert frame.loc["gb", "has_live"] is False or not frame.loc["gb", "has_live"]
 

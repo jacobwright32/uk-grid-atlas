@@ -158,6 +158,18 @@ const COUNTRIES = {
     // ČEPS backbone is 400/220; the 110 kV distribution layer is out (DE rule).
     classify: (volts) => (volts >= 380000 ? 400 : volts >= 200000 ? 220 : null),
   },
+  si: {
+    decimalComma: true,
+    plantFiles: ['plants_si_pbf.json'],
+    seaFiles: [],
+    lineFile: /^si_lines.*\.json$/,
+    // Geofabrik extract clips at the border; the 46 km of coast has no offshore wind.
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // ELES backbone is 400/220; 110 kV is a real transmission layer here (FI rule).
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],

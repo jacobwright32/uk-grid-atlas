@@ -11,6 +11,7 @@ export type CountryId =
   | 'ch'
   | 'at'
   | 'cz'
+  | 'si'
   | 'no'
   | 'se'
   | 'pl'
@@ -37,6 +38,7 @@ export const REAL_COUNTRY_IDS = [
   'ch',
   'at',
   'cz',
+  'si',
   'no',
   'se',
   'pl',
@@ -93,8 +95,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-two grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-two grids · two continents · every HVDC link',
+      'Twenty-three grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-three grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -290,6 +292,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day from ENTSO-E, refreshed by a scheduled workflow. ČEPS publishes per-unit output for only a few fossil units — the mix is complete but station dots are sparse. The 110 kV distribution network is omitted.',
     tagline: 'Každá elektrárna · přenosová soustava ČEPS · jádro i uhlí',
+  },
+  si: {
+    id: 'si',
+    region: 'eu',
+    name: 'Slovenia',
+    flag: '🇸🇮',
+    bounds: [
+      [13.3, 45.4],
+      [16.7, 46.95],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. ELES files per-unit output for only the four largest units — Krško, Šoštanj, Brestanica and Avče carry live dots; the hydro chains show capacity only.',
+    tagline: 'Vsaka elektrarna · prenosno omrežje ELES · od Krškega do Drave',
   },
   no: {
     id: 'no',

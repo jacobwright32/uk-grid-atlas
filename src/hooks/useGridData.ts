@@ -44,6 +44,10 @@ import czStations from '../data/cz/stations.json?url'
 import czTransmission from '../data/cz/transmission.json?url'
 import czInterconnectors from '../data/cz/interconnectors.json?url'
 import czMeta from '../data/cz/meta.json?url'
+import siStations from '../data/si/stations.json?url'
+import siTransmission from '../data/si/transmission.json?url'
+import siInterconnectors from '../data/si/interconnectors.json?url'
+import siMeta from '../data/si/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -159,6 +163,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: czTransmission,
     interconnectors: czInterconnectors,
     meta: czMeta,
+  },
+  si: {
+    stations: siStations,
+    transmission: siTransmission,
+    interconnectors: siInterconnectors,
+    meta: siMeta,
   },
   no: {
     stations: noStations,
