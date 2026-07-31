@@ -138,6 +138,7 @@ export const ENTSOE_COUNTRIES = {
   cz: { unitDomains: ['10YCZ-CEPS-----N'], mixDomains: ['10YCZ-CEPS-----N'] },
   si: { unitDomains: ['10YSI-ELES-----O'], mixDomains: ['10YSI-ELES-----O'] },
   hu: { unitDomains: ['10YHU-MAVIR----U'], mixDomains: ['10YHU-MAVIR----U'] },
+  sk: { unitDomains: ['10YSK-SEPS-----K'], mixDomains: ['10YSK-SEPS-----K'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

@@ -52,6 +52,10 @@ import huStations from '../data/hu/stations.json?url'
 import huTransmission from '../data/hu/transmission.json?url'
 import huInterconnectors from '../data/hu/interconnectors.json?url'
 import huMeta from '../data/hu/meta.json?url'
+import skStations from '../data/sk/stations.json?url'
+import skTransmission from '../data/sk/transmission.json?url'
+import skInterconnectors from '../data/sk/interconnectors.json?url'
+import skMeta from '../data/sk/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -179,6 +183,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: huTransmission,
     interconnectors: huInterconnectors,
     meta: huMeta,
+  },
+  sk: {
+    stations: skStations,
+    transmission: skTransmission,
+    interconnectors: skInterconnectors,
+    meta: skMeta,
   },
   no: {
     stations: noStations,

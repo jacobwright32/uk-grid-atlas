@@ -13,6 +13,7 @@ export type CountryId =
   | 'cz'
   | 'si'
   | 'hu'
+  | 'sk'
   | 'no'
   | 'se'
   | 'pl'
@@ -41,6 +42,7 @@ export const REAL_COUNTRY_IDS = [
   'cz',
   'si',
   'hu',
+  'sk',
   'no',
   'se',
   'pl',
@@ -97,8 +99,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-four grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-four grids · two continents · every HVDC link',
+      'Twenty-five grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-five grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -334,6 +336,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. MAVIR files per-unit output for the whole large fleet — Paks, Mátra, Dunamenti, Csepel and the Budapest CHPs all carry live dots. The 120 kV subtransmission layer and the single 750 kV line to Ukraine are omitted.',
     tagline: 'Minden erőmű · a MAVIR átviteli hálózata · Pakstól a naperőművekig',
+  },
+  sk: {
+    id: 'sk',
+    region: 'eu',
+    name: 'Slovakia',
+    flag: '🇸🇰',
+    bounds: [
+      [16.8, 47.7],
+      [22.6, 49.65],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. SEPS files per-unit output for five stations — both nuclear plants, Čierny Váh pumped storage, Malženice and PPC Bratislava carry live dots.',
+    tagline: 'Každá elektráreň · prenosová sústava SEPS · jadro z Bohuníc a Mochoviec',
   },
   no: {
     id: 'no',

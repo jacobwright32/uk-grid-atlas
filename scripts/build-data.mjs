@@ -185,6 +185,22 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 500000 ? null : volts >= 380000 ? 400 : volts >= 200000 ? 220 : null,
   },
+  sk: {
+    decimalComma: true,
+    plantFiles: ['plants_sk_pbf.json'],
+    seaFiles: [],
+    lineFile: /^sk_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // Geofabrik's border buffer reaches across the Danube: Hungary's Gönyű CCGT
+    // sits on the right bank and leaks in. South of 47.8° in that river stretch
+    // is Hungarian territory.
+    keep: ([lon, lat]) => !(lon > 17.6 && lon < 17.85 && lat < 47.8),
+    // SEPS backbone is 400/220, and unlike Hungary the 110 kV layer is richly
+    // mapped (1,288 ways) — three tiers, FI rule.
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
