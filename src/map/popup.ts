@@ -1,5 +1,5 @@
 import type { MapGeoJSONFeature } from 'maplibre-gl'
-import { FUEL_COLOR, FUEL_LABEL, LINE_COLORS, TIER_COLORS } from '../lib/fuels'
+import { FUEL_COLOR, FUEL_LABEL, LINE_COLORS, TIER_COLORS, methodLabel } from '../lib/fuels'
 import { fmtMW, humanise } from '../lib/format'
 import type { FuelId, InterconnectorProps, LineProps, StationProps } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
@@ -103,7 +103,13 @@ export function stationCard(f: MapGeoJSONFeature, ctx?: CardContext): HTMLElemen
   head.appendChild(el('strong', 'card-title', p.name))
   root.appendChild(head)
 
-  root.appendChild(el('div', 'card-sub', FUEL_LABEL[fuel] ?? 'Power station'))
+  // `plant:method` qualifies the fuel where it carries information the label
+  // can't — "Hydro · run-of-river" vs "Hydro · reservoir" is the dispatchability
+  // of the site. methodLabel() returns null for the tags that just repeat the
+  // fuel, which is most of them. See METHOD_RULES in lib/fuels.
+  const qualifier = methodLabel(fuel, p.method)
+  const label = FUEL_LABEL[fuel] ?? 'Power station'
+  root.appendChild(el('div', 'card-sub', qualifier ? `${label} · ${qualifier}` : label))
 
   const rows = [
     row('Capacity', p.capacityMW != null ? fmtMW(p.capacityMW) : 'not recorded'),

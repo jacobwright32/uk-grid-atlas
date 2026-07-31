@@ -68,6 +68,60 @@ export const FUEL_LABEL: Record<FuelId, string> = {
   other: 'Other',
 }
 
+/**
+ * The slice of OSM's `plant:method` worth putting on a card.
+ *
+ * 47,891 of the 60,183 stations carry a method, but most of them only restate
+ * the fuel: 34,695 `solar photovoltaic`, 4,717 `combustion` across the five
+ * thermal fuels, 1,724 `wind_turbine`, 104 `nuclear fission`. Rendering the raw
+ * tag would append a redundant clause to three quarters of the cards.
+ *
+ * What's left is behavioural, and it is mostly hydro: 3,213 run-of-river sites
+ * (non-dispatchable — they take what the river gives) against 1,685 reservoir
+ * sites (dispatchable). That is the most useful thing on this map that the fuel
+ * label cannot say, and until now it was sitting unread in every bundle. Then
+ * 1,189 anaerobic-digestion bioenergy plants, 155 concentrating solar (a
+ * different machine from PV), and single figures of tidal, gasification and CHP.
+ *
+ * Allowlist rather than denylist, for two reasons. The long tail of 73 distinct
+ * fuel/method pairs is largely typos and mis-tags — `průběh_řekyw`,
+ * `batteriespeicher`, `gas turbine`, `hydro | combustion` — and an allowlist
+ * renders none of it without needing to enumerate the garbage. And each entry
+ * is gated on fuel, so a value that is informative for one fuel can't leak into
+ * another: `thermal` means concentrating solar on a solar plant and nothing
+ * worth saying on the five gas plants that also claim it.
+ */
+export const METHOD_RULES: Record<string, { label: string; fuels: readonly FuelId[] }> = {
+  'run-of-the-river': { label: 'run-of-river', fuels: ['hydro'] },
+  'water-storage': { label: 'reservoir', fuels: ['hydro'] },
+  barrage: { label: 'tidal barrage', fuels: ['hydro', 'marine'] },
+  stream: { label: 'tidal stream', fuels: ['marine'] },
+  anaerobic_digestion: { label: 'anaerobic digestion', fuels: ['bioenergy', 'waste'] },
+  gasification: { label: 'gasification', fuels: ['bioenergy', 'waste'] },
+  thermal: { label: 'concentrating', fuels: ['solar'] },
+  cogeneration: { label: 'CHP', fuels: ['gas', 'bioenergy', 'waste', 'coal', 'oil'] },
+  combined_cycle: { label: 'combined cycle', fuels: ['gas'] },
+}
+
+/**
+ * Qualifier for a station's fuel label, or null when the tag says nothing new.
+ *
+ * OSM packs multiple methods into one value with `;` (and occasionally `/`), so
+ * a mixed scheme tagged `water-storage;run-of-the-river` reads back as
+ * "reservoir + run-of-river". Unrecognised tokens are dropped silently rather
+ * than passed through: a card is not the place to surface a tagging error.
+ */
+export function methodLabel(fuel: FuelId, method?: string | null): string | null {
+  if (!method) return null
+  const out: string[] = []
+  for (const raw of method.split(/[;/]/)) {
+    const rule = METHOD_RULES[raw.trim().toLowerCase().replace(/\s+/g, '_')]
+    if (!rule || !rule.fuels.includes(fuel)) continue
+    if (!out.includes(rule.label)) out.push(rule.label)
+  }
+  return out.length ? out.join(' + ') : null
+}
+
 /** Line-tier colours: brightest = backbone, dimmest = regional. */
 export const TIER_COLORS = ['#e8e6df', '#a8a69d', '#6f6d66'] as const
 
