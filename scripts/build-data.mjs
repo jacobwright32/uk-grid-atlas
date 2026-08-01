@@ -212,6 +212,26 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  bg: {
+    decimalComma: true,
+    plantFiles: ['plants_bg_pbf.json', 'plants_bg_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^bg_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // ESO runs 400/220/110 (FI rule). The single 750 kV relic from Varna toward
+    // Ukraine has been derated for decades; >=500 kV drops it if tagged.
+    classify: (volts) =>
+      volts >= 500000
+        ? null
+        : volts >= 380000
+          ? 400
+          : volts >= 200000
+            ? 220
+            : volts >= 100000
+              ? 110
+              : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],

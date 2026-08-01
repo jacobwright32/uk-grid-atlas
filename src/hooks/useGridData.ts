@@ -60,6 +60,10 @@ import hrStations from '../data/hr/stations.json?url'
 import hrTransmission from '../data/hr/transmission.json?url'
 import hrInterconnectors from '../data/hr/interconnectors.json?url'
 import hrMeta from '../data/hr/meta.json?url'
+import bgStations from '../data/bg/stations.json?url'
+import bgTransmission from '../data/bg/transmission.json?url'
+import bgInterconnectors from '../data/bg/interconnectors.json?url'
+import bgMeta from '../data/bg/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -199,6 +203,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: hrTransmission,
     interconnectors: hrInterconnectors,
     meta: hrMeta,
+  },
+  bg: {
+    stations: bgStations,
+    transmission: bgTransmission,
+    interconnectors: bgInterconnectors,
+    meta: bgMeta,
   },
   no: {
     stations: noStations,

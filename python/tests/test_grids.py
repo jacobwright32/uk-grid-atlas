@@ -15,7 +15,7 @@ from world_energy_generation import GRIDS, Grid, GridNotFound, codes, grid, grid
 
 
 def test_grid_count():
-    assert len(GRIDS) == 26
+    assert len(GRIDS) == 27
 
 
 def test_codes_are_unique():
@@ -45,7 +45,7 @@ def test_gb_is_the_only_grid_without_live():
 
 
 def test_regions_split():
-    assert len(grids(region="europe")) == 24
+    assert len(grids(region="europe")) == 25
     assert [g.code for g in grids(region="north-america")] == ["us", "ca"]
 
 
@@ -68,7 +68,7 @@ def test_unknown_region_is_empty_not_an_error():
 
 def test_live_only_filter_drops_gb():
     assert "gb" not in [g.code for g in grids(live_only=True)]
-    assert len(grids(live_only=True)) == 25
+    assert len(grids(live_only=True)) == 26
 
 
 def test_lookup_is_case_and_space_insensitive():

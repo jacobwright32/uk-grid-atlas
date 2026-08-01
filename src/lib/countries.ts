@@ -15,6 +15,7 @@ export type CountryId =
   | 'hu'
   | 'sk'
   | 'hr'
+  | 'bg'
   | 'no'
   | 'se'
   | 'pl'
@@ -45,6 +46,7 @@ export const REAL_COUNTRY_IDS = [
   'hu',
   'sk',
   'hr',
+  'bg',
   'no',
   'se',
   'pl',
@@ -101,8 +103,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-six grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-six grids · two continents · every HVDC link',
+      'Twenty-seven grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-seven grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -378,6 +380,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Daily mix, demand and day-ahead prices from ENTSO-E, refreshed by a scheduled workflow. HEP publishes no per-unit output at all, so station dots show capacity only — the mix strip is the live layer here.',
     tagline: 'Svaka elektrana · prijenosna mreža HOPS · vjetar s Jadrana',
+  },
+  bg: {
+    id: 'bg',
+    region: 'eu',
+    name: 'Bulgaria',
+    flag: '🇧🇬',
+    bounds: [
+      [22.3, 41.2],
+      [28.7, 44.25],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. ESO files per-unit output for Kozloduy and the coal fleet — those dots are live; Varna and the Chaira pumped storage publish no unit data.',
+    tagline: 'Всяка централа · преносната мрежа на ЕСО · Козлодуй и Марица',
   },
   no: {
     id: 'no',

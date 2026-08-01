@@ -143,6 +143,7 @@ export const ENTSOE_COUNTRIES = {
   // prices only. unitDomains stays set so the registry build degrades to an
   // empty map rather than a config error.
   hr: { unitDomains: ['10YHR-HEP------M'], mixDomains: ['10YHR-HEP------M'] },
+  bg: { unitDomains: ['10YCA-BULGARIA-R'], mixDomains: ['10YCA-BULGARIA-R'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [
