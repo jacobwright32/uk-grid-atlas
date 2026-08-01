@@ -18,6 +18,7 @@ export type CountryId =
   | 'bg'
   | 'gr'
   | 'ro'
+  | 'ba'
   | 'no'
   | 'se'
   | 'pl'
@@ -51,6 +52,7 @@ export const REAL_COUNTRY_IDS = [
   'bg',
   'gr',
   'ro',
+  'ba',
   'no',
   'se',
   'pl',
@@ -107,8 +109,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-nine grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-nine grids · two continents · every HVDC link',
+      'Thirty grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Thirty grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -444,6 +446,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Transelectrica files per-unit output for the big fleet — Cernavodă, the Iron Gates and the thermal plants carry live dots.',
     tagline: 'Fiecare centrală · rețeaua Transelectrica · de la Porțile de Fier la Cernavodă',
+  },
+  ba: {
+    id: 'ba',
+    region: 'eu',
+    name: 'Bosnia and Herzegovina',
+    flag: '🇧🇦',
+    bounds: [
+      [15.7, 42.5],
+      [19.7, 45.3],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. NOS BiH files generation and demand but no day-ahead prices — the price line stays empty here, honestly.',
+    tagline: 'Svaka elektrana · prijenosna mreža NOS BiH · voda i ugalj',
   },
   no: {
     id: 'no',

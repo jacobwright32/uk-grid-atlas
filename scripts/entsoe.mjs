@@ -146,6 +146,9 @@ export const ENTSOE_COUNTRIES = {
   bg: { unitDomains: ['10YCA-BULGARIA-R'], mixDomains: ['10YCA-BULGARIA-R'] },
   gr: { unitDomains: ['10YGR-HTSO-----Y'], mixDomains: ['10YGR-HTSO-----Y'] },
   ro: { unitDomains: ['10YRO-TEL------P'], mixDomains: ['10YRO-TEL------P'] },
+  // NOS BiH files generation and load but no day-ahead prices (A44 empty) —
+  // the first ENTSO-E grid here with currency: null, the us shape.
+  ba: { unitDomains: ['10YBA-JPCC-----D'], mixDomains: ['10YBA-JPCC-----D'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

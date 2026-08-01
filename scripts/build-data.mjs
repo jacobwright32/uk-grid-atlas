@@ -255,6 +255,17 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  ba: {
+    decimalComma: true,
+    plantFiles: ['plants_ba_pbf.json'],
+    seaFiles: [],
+    lineFile: /^ba_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // NOS BiH runs 400/220/110 (FI rule).
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
