@@ -145,6 +145,7 @@ export const ENTSOE_COUNTRIES = {
   hr: { unitDomains: ['10YHR-HEP------M'], mixDomains: ['10YHR-HEP------M'] },
   bg: { unitDomains: ['10YCA-BULGARIA-R'], mixDomains: ['10YCA-BULGARIA-R'] },
   gr: { unitDomains: ['10YGR-HTSO-----Y'], mixDomains: ['10YGR-HTSO-----Y'] },
+  ro: { unitDomains: ['10YRO-TEL------P'], mixDomains: ['10YRO-TEL------P'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

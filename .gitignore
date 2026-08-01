@@ -7,3 +7,8 @@ dist-single
 # staged-for-deletion scratch (tooling drops files here; never commit)
 _to_delete/
 coverage/
+
+# delivery drop zone: Claude places these at the repo root each country add;
+# git must never see them
+commit-msg.txt
+tiles.tar.gz

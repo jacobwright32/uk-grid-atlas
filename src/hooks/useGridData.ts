@@ -68,6 +68,10 @@ import grStations from '../data/gr/stations.json?url'
 import grTransmission from '../data/gr/transmission.json?url'
 import grInterconnectors from '../data/gr/interconnectors.json?url'
 import grMeta from '../data/gr/meta.json?url'
+import roStations from '../data/ro/stations.json?url'
+import roTransmission from '../data/ro/transmission.json?url'
+import roInterconnectors from '../data/ro/interconnectors.json?url'
+import roMeta from '../data/ro/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -219,6 +223,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: grTransmission,
     interconnectors: grInterconnectors,
     meta: grMeta,
+  },
+  ro: {
+    stations: roStations,
+    transmission: roTransmission,
+    interconnectors: roInterconnectors,
+    meta: roMeta,
   },
   no: {
     stations: noStations,

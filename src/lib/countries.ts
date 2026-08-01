@@ -17,6 +17,7 @@ export type CountryId =
   | 'hr'
   | 'bg'
   | 'gr'
+  | 'ro'
   | 'no'
   | 'se'
   | 'pl'
@@ -49,6 +50,7 @@ export const REAL_COUNTRY_IDS = [
   'hr',
   'bg',
   'gr',
+  'ro',
   'no',
   'se',
   'pl',
@@ -105,8 +107,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-eight grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-eight grids · two continents · every HVDC link',
+      'Twenty-nine grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-nine grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -422,6 +424,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. IPTO files per-unit output for the whole thermal and big-hydro fleet. Non-interconnected island systems show stations without live output; their 66 kV grids are below the tier model.',
     tagline: 'Κάθε σταθμός · το δίκτυο του ΑΔΜΗΕ · ήλιος και άνεμος',
+  },
+  ro: {
+    id: 'ro',
+    region: 'eu',
+    name: 'Romania',
+    flag: '🇷🇴',
+    bounds: [
+      [20.2, 43.6],
+      [29.8, 48.3],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. Transelectrica files per-unit output for the big fleet — Cernavodă, the Iron Gates and the thermal plants carry live dots.',
+    tagline: 'Fiecare centrală · rețeaua Transelectrica · de la Porțile de Fier la Cernavodă',
   },
   no: {
     id: 'no',

@@ -243,6 +243,18 @@ const COUNTRIES = {
     // shape, not Finland's. The island 66 kV systems are below the model.
     classify: (volts) => (volts >= 380000 ? 400 : volts >= 140000 ? 150 : null),
   },
+  ro: {
+    decimalComma: true,
+    plantFiles: ['plants_ro_pbf.json', 'plants_ro_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^ro_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // Transelectrica runs 400/220/110 (FI rule). The largest candidate bundle
+    // of the 2026 run — slim-bundles earns its keep here.
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
