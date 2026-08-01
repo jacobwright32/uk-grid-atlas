@@ -64,6 +64,10 @@ import bgStations from '../data/bg/stations.json?url'
 import bgTransmission from '../data/bg/transmission.json?url'
 import bgInterconnectors from '../data/bg/interconnectors.json?url'
 import bgMeta from '../data/bg/meta.json?url'
+import grStations from '../data/gr/stations.json?url'
+import grTransmission from '../data/gr/transmission.json?url'
+import grInterconnectors from '../data/gr/interconnectors.json?url'
+import grMeta from '../data/gr/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -209,6 +213,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: bgTransmission,
     interconnectors: bgInterconnectors,
     meta: bgMeta,
+  },
+  gr: {
+    stations: grStations,
+    transmission: grTransmission,
+    interconnectors: grInterconnectors,
+    meta: grMeta,
   },
   no: {
     stations: noStations,

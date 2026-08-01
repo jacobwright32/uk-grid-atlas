@@ -232,6 +232,17 @@ const COUNTRIES = {
               ? 110
               : null,
   },
+  gr: {
+    decimalComma: true,
+    plantFiles: ['plants_gr_pbf.json', 'plants_gr_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^gr_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // IPTO runs 400 kV over a 150 kV main transmission layer — Portugal's
+    // shape, not Finland's. The island 66 kV systems are below the model.
+    classify: (volts) => (volts >= 380000 ? 400 : volts >= 140000 ? 150 : null),
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],

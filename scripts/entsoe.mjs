@@ -144,6 +144,7 @@ export const ENTSOE_COUNTRIES = {
   // empty map rather than a config error.
   hr: { unitDomains: ['10YHR-HEP------M'], mixDomains: ['10YHR-HEP------M'] },
   bg: { unitDomains: ['10YCA-BULGARIA-R'], mixDomains: ['10YCA-BULGARIA-R'] },
+  gr: { unitDomains: ['10YGR-HTSO-----Y'], mixDomains: ['10YGR-HTSO-----Y'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

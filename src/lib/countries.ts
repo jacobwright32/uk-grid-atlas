@@ -16,6 +16,7 @@ export type CountryId =
   | 'sk'
   | 'hr'
   | 'bg'
+  | 'gr'
   | 'no'
   | 'se'
   | 'pl'
@@ -47,6 +48,7 @@ export const REAL_COUNTRY_IDS = [
   'sk',
   'hr',
   'bg',
+  'gr',
   'no',
   'se',
   'pl',
@@ -103,8 +105,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Twenty-seven grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Twenty-seven grids · two continents · every HVDC link',
+      'Twenty-eight grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Twenty-eight grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -400,6 +402,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. ESO files per-unit output for Kozloduy and the coal fleet — those dots are live; Varna and the Chaira pumped storage publish no unit data.',
     tagline: 'Всяка централа · преносната мрежа на ЕСО · Козлодуй и Марица',
+  },
+  gr: {
+    id: 'gr',
+    region: 'eu',
+    name: 'Greece',
+    flag: '🇬🇷',
+    bounds: [
+      [19.2, 34.7],
+      [28.3, 41.9],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [150], label: '150 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. IPTO files per-unit output for the whole thermal and big-hydro fleet. Non-interconnected island systems show stations without live output; their 66 kV grids are below the tier model.',
+    tagline: 'Κάθε σταθμός · το δίκτυο του ΑΔΜΗΕ · ήλιος και άνεμος',
   },
   no: {
     id: 'no',
