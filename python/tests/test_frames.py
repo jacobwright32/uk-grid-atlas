@@ -207,3 +207,22 @@ def _stub_client(history: History) -> Any:
             return history
 
     return Stub()
+
+
+def test_coverage_frame(client: Client):
+    frame = client.coverage().to_frame()
+    assert frame.index.name == "code"
+    assert set(frame.index) == {"ca", "ch", "de", "gb", "us"}
+    assert bool(frame.loc["gb", "prices"]) is True
+    assert frame.loc["de", "flows"] == "hvdc"
+    # The one-liner the frame exists for:
+    assert "us" in frame.query("~prices").index
+
+
+def test_histories_fan_out_preserves_registry_order(client: Client):
+    """>2 codes takes the pooled path; order must stay the caller's."""
+    from world_energy_generation.frames import _histories
+
+    wanted = ["us", "de", "gb", "ca"]
+    got = [h.code for h in _histories(wanted, client)]
+    assert got == wanted

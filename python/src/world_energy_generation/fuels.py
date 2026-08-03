@@ -1,6 +1,6 @@
 """Fuel buckets and the carbon factors used to derive an intensity from a mix.
 
-Ten buckets, fixed across all 22 grids. They are coarser than any national
+Ten buckets, fixed across all 32 grids. They are coarser than any national
 statistical classification on purpose: the point is that ``de`` and ``us`` and
 ``gb`` can be put on the same axis without a mapping table, which means every
 bucket has to exist in every upstream feed's vocabulary.

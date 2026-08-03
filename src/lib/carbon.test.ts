@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+// Vite ?raw import: the python source as a string, so the lockstep test
+// needs no node:fs types inside the app's tsc project.
+import fuelsPy from '../../python/src/world_energy_generation/fuels.py?raw'
 import { CARBON_FACTORS, fmtIntensity, intensityOf, intensityOfMix } from './carbon'
 
 describe('intensityOf (#21)', () => {
@@ -61,5 +64,23 @@ describe('intensityOfMix / fmtIntensity', () => {
   })
   it('formats compactly', () => {
     expect(fmtIntensity(142)).toBe('142 g/kWh')
+  })
+})
+
+describe('carbon factors ↔ python package lockstep', () => {
+  it('mirrors fuels.py CARBON_FACTORS exactly (both artifacts, one number)', () => {
+    // Parse the python table straight out of the source — the two tables
+    // have no shared build step, so this test IS the coupling.
+    const block = fuelsPy.match(/CARBON_FACTORS[^=]*=\s*\{([^}]+)\}/)?.[1]
+    expect(block, 'CARBON_FACTORS dict not found in fuels.py').toBeTruthy()
+    const pairs = [...block!.matchAll(/"(\w+)":\s*([\d.]+)/g)]
+    expect(pairs.length).toBeGreaterThanOrEqual(10)
+    for (const [, key, value] of pairs) {
+      expect(CARBON_FACTORS[key!], `factor for ${key}`).toBe(Number(value))
+    }
+    // TS-only extras must be client-side fleet buckets, never mix buckets.
+    const pyKeys = new Set(pairs.map((p) => p[1]))
+    const extras = Object.keys(CARBON_FACTORS).filter((k) => !pyKeys.has(k))
+    expect(extras).toEqual(['pumped'])
   })
 })

@@ -85,6 +85,38 @@ snap.mix["nuclear"]      # 42300.0
 
 Great Britain is the one grid with no live JSON: its snapshot is compiled into the atlas's JavaScript bundle rather than served as a file, so `live("gb")` raises `DataNotPublished` and points you at `history("gb")`, which works normally. If you want the most recent figure for any grid without special-casing GB, use `latest(code)` — it reads the last complete day out of history.
 
+### `coverage()` — what each grid measurably publishes
+
+```python
+cov = weg.coverage()
+cov["ba"].prices                     # False — NOS BiH files no day-ahead prices
+cov["rs"].per_station_live           # 11
+cov["de"].flows                      # "hvdc" — mapped links only
+cov["pt"].flows                      # "net"  — measured over every border
+cov.to_frame().query("~prices")      # the grids with no published prices
+```
+
+Computed by the atlas workflow *from the published files* at every bake — a per-grid answer to "why is this field `None`?" that is checked, not promised. `flows` tells you how much to trust `import_mw`: `"net"` is the signed position over every border, `"hvdc"` counts mapped interconnectors only, `"none"` means the figure is absent because nothing is measured.
+
+Windowed reads trim the rolling history client-side, inclusive on both ends:
+
+```python
+weg.history("de", since="2026-07-20", until="2026-07-27")
+```
+
+## The `weg` command
+
+The same data without opening Python — installed with the package, zero dependencies:
+
+```console
+$ weg live de                 # current mix, price, est. carbon
+$ weg history gb --days 3     # recent settled days
+$ weg coverage                # the full coverage matrix
+$ weg grids                   # the registry
+```
+
+Read-only, plain text, `--base-url` for forks. Script against the library rather than parsing this output.
+
 ## Three things to know before you publish a number
 
 **1. An absent fuel bucket was not reported. It is not zero.**

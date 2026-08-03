@@ -7,6 +7,8 @@ import type { GroupId, GridMeta, NetworkToggles } from '../lib/types'
 import type { LiveData } from '../lib/live'
 import { isBaked, sourceMetaFor } from '../lib/sources'
 import type { LiveStatus } from '../hooks/useLiveData'
+import { useCoverage } from '../hooks/useCoverage'
+import type { GridCoverage } from '../hooks/useCoverage'
 import type { CountryConfig } from '../lib/countries'
 
 interface Props {
@@ -70,6 +72,49 @@ function snapshotAgeLabel(live: LiveData | null): string {
   return `updated ${Math.round(h)} h ago`
 }
 
+/**
+ * Coverage rows (#96): what this grid measurably publishes, straight from
+ * the workflow-baked coverage.json — the per-grid answer to "why does my
+ * country show no prices?" that used to live in buried footnotes.
+ */
+function coverageRows(c: GridCoverage): { label: string; value: string; ok: boolean }[] {
+  return [
+    {
+      label: 'Per-station live',
+      value: c.browserLive
+        ? 'via browser (Elexon)'
+        : c.perStationLive > 0
+          ? `${c.perStationLive} stations`
+          : 'not published',
+      ok: c.browserLive || c.perStationLive > 0,
+    },
+    { label: 'Intraday mix', value: c.intraday ? 'yes' : 'no', ok: c.intraday },
+    {
+      label: 'Prices',
+      value: c.prices ? `yes${c.currency ? ` (${c.currency})` : ''}` : 'not published',
+      ok: c.prices,
+    },
+    { label: 'Demand', value: c.demand ? 'yes' : 'no', ok: c.demand },
+    {
+      label: 'Net trade',
+      value:
+        c.flows === 'net'
+          ? 'every border'
+          : c.flows === 'hvdc'
+            ? 'HVDC links only'
+            : 'not measured',
+      ok: c.flows !== 'none',
+    },
+    {
+      label: 'History',
+      value: `${c.historyDays} days · ${c.hourlyDays} hourly${
+        c.perStationHistoryDays ? ` · ${c.perStationHistoryDays} per-station` : ''
+      }`,
+      ok: c.historyDays > 0,
+    },
+  ]
+}
+
 /** Past two missed refresh cycles the snapshot is officially stale. */
 function snapshotIsStale(live: LiveData | null): boolean {
   const h = snapshotAgeHours(live)
@@ -101,6 +146,7 @@ export default function Sidebar({
 }: Props) {
   const panelRef = useRef<HTMLElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const coverage = useCoverage(country.id)
 
   /**
    * Modal behaviour strictly while the drawer floats over the map (#12): focus
@@ -194,6 +240,23 @@ export default function Sidebar({
               <p className="footnote">
                 {country.liveNote || sourceMetaFor(live.sourceLabel).footnote}
               </p>
+            )}
+            {/* Coverage surface (#96): measured from the baked files by the
+                workflow, so "not published" is a fact about the feed, not a
+                promise about the app. */}
+            {coverage && (
+              <details className="coverage">
+                <summary>What this grid publishes</summary>
+                <dl className="coverage-list">
+                  {coverageRows(coverage).map((r) => (
+                    <div key={r.label} className={r.ok ? undefined : 'coverage-row--absent'}>
+                      <dt>{r.label}</dt>
+                      <dd>{r.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="footnote">Measured from the published files at each bake.</p>
+              </details>
             )}
           </>
         ) : (

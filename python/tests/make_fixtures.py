@@ -54,6 +54,14 @@ def main(repo: Path) -> int:
             snap.pop("today", None)
             _write(out / f"{code}.json", snap)
 
+    # Coverage (#96): keep only the fixture grids, so the file stays small
+    # and the parser sees exactly the shape the builder writes.
+    coverage_src = src / "coverage.json"
+    if coverage_src.is_file():
+        cov = json.loads(coverage_src.read_text("utf-8"))
+        cov["grids"] = {k: v for k, v in (cov.get("grids") or {}).items() if k in GRIDS}
+        _write(out / "coverage.json", cov)
+
     print(f"wrote fixtures for {', '.join(GRIDS)}")
     return 0
 

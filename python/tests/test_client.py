@@ -131,7 +131,7 @@ def test_clear_cache_can_delete_disk(base_url: str, tmp_path: Path):
 
 
 def test_missing_file_becomes_a_fetch_error(tmp_path: Path):
-    client = Client(tmp_path.as_uri() + "/")
+    client = Client(tmp_path.as_uri() + "/", retries=0)  # a miss is not transient — no sleeps
     with pytest.raises(FetchError) as exc:
         client.history("de")
     assert "de.json" in str(exc.value)
@@ -213,3 +213,100 @@ def test_fixture_files_are_valid_json():
     """Cheap guard: a truncation bug in make_fixtures.py would surface here first."""
     for path in FIXTURES.rglob("*.json"):
         json.loads(path.read_text("utf-8"))
+
+
+# ---- coverage (#96) --------------------------------------------------------
+
+
+def test_coverage_round_trip(client: Client):
+    cov = client.coverage()
+    assert len(cov) == 5  # the fixture grids
+    assert cov["gb"].browser_live is True
+    assert cov["gb"].flows == "net"
+    assert cov["de"].flows == "hvdc"
+    assert cov["us"].prices is False  # the two US ISOs publish no prices
+    assert cov["ca"].currency == "CAD"
+
+
+def test_coverage_lookup_is_case_insensitive_like_the_registry(client: Client):
+    cov = client.coverage()
+    assert cov["GB"].code == "gb"  # resolved through grid(), same as everywhere
+
+
+def test_coverage_iterates_grids(client: Client):
+    codes = sorted(g.code for g in client.coverage())
+    assert codes == ["ca", "ch", "de", "gb", "us"]
+
+
+# ---- since/until (#96) -----------------------------------------------------
+
+
+def test_history_since_until_trims_both_record_kinds(client: Client):
+    full = client.history("de")
+    first, last = full.days[0].date, full.days[-1].date
+    trimmed = client.history("de", since=last)
+    assert [d.date for d in trimmed.days] == [last]
+    assert all(h.date >= last for h in trimmed.hourly)
+    only_first = client.history("de", until=first)
+    assert [d.date for d in only_first.days] == [first]
+
+
+def test_history_window_bounds_are_inclusive(client: Client):
+    full = client.history("de")
+    lo, hi = full.days[1].date, full.days[2].date
+    window = full.window(since=lo, until=hi)
+    assert [d.date for d in window.days] == [lo, hi]
+    assert window.code == full.code
+    assert window.currency == full.currency
+
+
+# ---- retry (#96 robustness) ------------------------------------------------
+
+
+def test_transient_failures_are_retried(client: Client, monkeypatch: pytest.MonkeyPatch):
+    sleeps: list[float] = []
+    monkeypatch.setattr("world_energy_generation.client.time.sleep", sleeps.append)
+    real = client._get_once
+    failures = iter([FetchError("u", "storm", status=503), FetchError("u", "storm", status=429)])
+
+    def flaky(url: str) -> bytes:
+        try:
+            raise next(failures)
+        except StopIteration:
+            return real(url)
+
+    monkeypatch.setattr(client, "_get_once", flaky)
+    assert client.history("de").code == "de"  # third attempt lands
+    assert sleeps == [0.5, 1.5]
+
+
+def test_a_404_is_a_fact_not_a_blip(client: Client, monkeypatch: pytest.MonkeyPatch):
+    sleeps: list[float] = []
+    monkeypatch.setattr("world_energy_generation.client.time.sleep", sleeps.append)
+    calls: list[str] = []
+
+    def missing(url: str) -> bytes:
+        calls.append(url)
+        raise FetchError(url, "not found", status=404)
+
+    monkeypatch.setattr(client, "_get_once", missing)
+    with pytest.raises(FetchError):
+        client.history("de")
+    assert len(calls) == 1, "a 404 must not be retried"
+    assert sleeps == []
+
+
+def test_retries_zero_fails_on_first_transient_error(
+    base_url: str, monkeypatch: pytest.MonkeyPatch
+):
+    client = Client(base_url, retries=0)
+    calls: list[str] = []
+
+    def storming(url: str) -> bytes:
+        calls.append(url)
+        raise FetchError(url, "storm", status=503)
+
+    monkeypatch.setattr(client, "_get_once", storming)
+    with pytest.raises(FetchError):
+        client.history("de")
+    assert len(calls) == 1

@@ -1384,3 +1384,53 @@
     padding-right: 8px;
   }
 }
+
+/* ------------------------------------------------ coverage surface (#96) */
+
+.coverage {
+  margin-top: 8px;
+}
+
+.coverage > summary {
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-size: 12px;
+  user-select: none;
+}
+
+.coverage > summary:hover {
+  color: var(--ink-2);
+}
+
+.coverage[open] > summary {
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+
+.coverage-list {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.coverage-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.coverage-list dt {
+  color: var(--ink-muted);
+}
+
+.coverage-list dd {
+  margin: 0;
+  color: var(--ink-2);
+  text-align: right;
+}
+
+.coverage-row--absent dd {
+  color: var(--ink-muted);
+  font-style: italic;
+}

@@ -6,6 +6,7 @@
  */
 import { COUNTRIES, REAL_COUNTRY_IDS } from './countries'
 import type { CountryId } from './countries'
+import { intensityOf } from './carbon'
 import { fetchMixNow, loadEntsoeSnapshot } from './live'
 import type { LiveData } from './live'
 import type { MixSnapshot } from './live-core.mjs'
@@ -47,39 +48,16 @@ export interface CompareRow {
   basis: 'live' | 'today' | 'day'
 }
 
-/**
- * Lifecycle emission factors, gCO₂eq/kWh — IPCC AR5 WG3 Annex III medians
- * (coal 820, gas 490, biomass 230, solar-utility 48, geothermal 38, hydro 24,
- * nuclear 12, wind 11; "other" uses the oil figure). This is an *estimate*
- * and the UI labels it as one: generation only, imports excluded, and
- * battery storage left out of both sides of the division — its discharge
- * carries whatever mix charged it, which one snapshot cannot know.
- */
-const CARBON_FACTORS: Record<string, number> = {
-  wind: 11,
-  solar: 48,
-  gas: 490,
-  nuclear: 12,
-  coal: 820,
-  geothermal: 38,
-  biomass: 230,
-  hydro: 24,
-  other: 650,
-}
-
 const RENEWABLE_KEYS = new Set(['wind', 'solar', 'hydro', 'geothermal', 'biomass'])
 
-/** Emissions estimate over generation slices; null when nothing qualifies. */
+/**
+ * Emissions estimate over generation slices; null when nothing qualifies.
+ * Delegates to the one factor table (lib/carbon, #21 — the same numbers the
+ * python package's fuels.py publishes) so every artifact says the same
+ * gCO₂e/kWh for the same mix.
+ */
 export function carbonEstimate(slices: CompareSlice[]): number | null {
-  let mw = 0
-  let g = 0
-  for (const s of slices) {
-    const f = CARBON_FACTORS[s.key]
-    if (f == null) continue // storage & unknown buckets: excluded entirely
-    mw += s.mw
-    g += s.mw * f
-  }
-  return mw > 0 ? Math.round(g / mw) : null
+  return intensityOf(slices.map((s) => ({ key: s.key, nowMW: s.mw })))
 }
 
 /** Renewable share of generation, 0..1; null with no generation at all. */

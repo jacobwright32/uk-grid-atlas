@@ -11,6 +11,47 @@ called out explicitly, even in a patch release.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-08-03
+
+The honesty release: the atlas now *measures* what every grid publishes and
+what every grid trades, and this package reads both.
+
+### Added
+
+- **`weg.coverage()`** — measured publication coverage for every grid, from
+  the atlas's new `live/coverage.json`: per-station live counts, prices,
+  demand, history depth, and how trade is measured (`flows`: `"net"` over
+  every border, `"hvdc"` links only, or `"none"`). Computed by the atlas
+  workflow from the published files at every bake, so "`ba` has no prices"
+  is a checked fact, not a footnote. `Coverage` supports `cov["de"]`,
+  iteration, `len()`, and `.to_frame()`.
+- **`since=` / `until=` on `history()`** (and `Client.history`), plus
+  `History.window()` — inclusive date trims over days and hourly records
+  alike. Client-side sugar: the atlas still publishes one rolling window.
+- **A `weg` command.** `weg grids`, `weg live de`, `weg history gb --days 3`,
+  `weg coverage` — read-only views over the same client, zero dependencies.
+  `--base-url` reads a fork or mirror. Script against the library, not the
+  CLI's output.
+- **Transient-failure retry.** `Client._get` retries 5xx/429/network errors
+  twice (0.5 s then 1.5 s) before raising; a 404 still fails immediately.
+  One blip in a 32-grid sweep no longer discards the other 31 grids.
+  Constructor takes `retries=` (default 2).
+- **Parallel sweeps.** The frame builders fetch histories a few at a time
+  (six workers) instead of serially — a cold 32-grid `generation()` drops
+  from ~22 s to ~4 s. Order and caching semantics are unchanged.
+
+### Fixed
+
+- The signed import convention is now real end-to-end. `DayRecord.import_mw`
+  has always been documented as "negative means net exporter", but for grids
+  without mapped HVDC links upstream wrote an unmeasured 0 (or nothing).
+  The atlas now measures the true net position over every border for 15
+  single-zone grids (more as bakes land) and suppresses the figure entirely
+  where nothing is measured — so `import_mw` is either a real signed number
+  or `None`, never a phantom 0. No package code changed; the feed got honest.
+- The PyPI `description` and two docstrings still said 22 grids (32 since
+  0.2.0).
+
 ## [0.2.0] — 2026-08-03
 
 Ten new grids, no API changes. Code written against 0.1.0 keeps working

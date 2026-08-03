@@ -22,6 +22,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from .models import History
 
 __all__ = [
+    "coverage_frame",
     "demand",
     "generation",
     "grids_frame",
@@ -147,7 +148,16 @@ def _histories(codes: str | Sequence[str] | None, client: Any) -> list[History]:
     from .client import default_client
 
     fetch = client or default_client()
-    return [fetch.history(code) for code in _resolve(codes)]
+    wanted = _resolve(codes)
+    if len(wanted) <= 2:
+        return [fetch.history(code) for code in wanted]
+    # A full-registry sweep is 32 GETs of small static files; a handful in
+    # flight cuts a cold sweep by ~5x while staying polite to GitHub Pages.
+    # pool.map preserves input order, and the client cache is shared.
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        return list(pool.map(fetch.history, wanted))
 
 
 def generation(
@@ -161,7 +171,8 @@ def generation(
 
     Long format — ``grid``, ``date`` (or ``timestamp``), ``fuel``, ``mw`` — which
     is what you want for grouping and plotting. Pass nothing for all 32, which is
-    22 HTTP requests, so let the client cache do its job.
+    32 HTTP requests (a few in flight at a time), so let the client cache do
+    its job.
 
     Rows for buckets a grid does not report are omitted rather than emitted as
     NaN: in long format an absent row *is* the absence, and carrying explicit
@@ -273,5 +284,36 @@ def grids_frame() -> Any:
                 "note": g.note,
             }
             for g in GRIDS
+        ]
+    ).set_index("code")
+
+
+def coverage_frame(coverage: Any) -> Any:
+    """
+    A :class:`~.models.Coverage` as one row per grid, indexed by code.
+
+    The whole point of the frame is ``.query`` — "which grids have prices but
+    no per-station live?" becomes one line instead of a loop.
+    """
+    pd = _pandas("coverage_frame()")
+    return pd.DataFrame(
+        [
+            {
+                "code": g.code,
+                "source": g.source,
+                "per_station_live": g.per_station_live,
+                "intraday": g.intraday,
+                "prices": g.prices,
+                "demand": g.demand,
+                "flows": g.flows,
+                "links": g.links,
+                "history_days": g.history_days,
+                "hourly_days": g.hourly_days,
+                "per_station_history_days": g.per_station_history_days,
+                "currency": g.currency,
+                "metered_date": g.metered_date,
+                "generated_at": g.generated_at,
+            }
+            for g in coverage
         ]
     ).set_index("code")

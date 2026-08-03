@@ -36,6 +36,10 @@ jobs:
         run: node scripts/fetch-us-snapshot.mjs || echo "US fetch failed — keeping previous us.json"
       - name: Fetch GB history (Elexon, key-less)
         run: node scripts/fetch-gb-history.mjs || echo "GB history fetch failed — keeping previous gb.json"
+      # Coverage surface (#96): restate what the freshly-baked files actually
+      # contain — the sidebar block and weg.coverage() both read this.
+      - name: Rebuild coverage.json
+        run: node scripts/build-coverage.mjs
       - name: Commit refreshed snapshots
         id: commit
         run: |

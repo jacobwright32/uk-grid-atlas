@@ -27,7 +27,9 @@ from .fuels import carbon_intensity
 __all__ = [
     "HISTORY_VERSION",
     "KNOWN_HISTORY_VERSIONS",
+    "Coverage",
     "DayRecord",
+    "GridCoverage",
     "History",
     "HourRecord",
     "LiveSnapshot",
@@ -257,6 +259,35 @@ class History:
         target = when if isinstance(when, _date) else _date.fromisoformat(when)
         return next((d for d in self.days if d.date == target), None)
 
+    def window(
+        self,
+        since: str | _date | None = None,
+        until: str | _date | None = None,
+    ) -> History:
+        """
+        A copy trimmed to ``since``..``until`` (ISO strings or ``date``, both
+        inclusive), applied to daily and hourly records alike.
+
+        Client-side sugar over the one rolling file the atlas publishes —
+        asking for dates older than the window yields an empty result, not an
+        archive fetch.
+        """
+        lo = _date.fromisoformat(since) if isinstance(since, str) else since
+        hi = _date.fromisoformat(until) if isinstance(until, str) else until
+
+        def keep(d: _date) -> bool:
+            return (lo is None or d >= lo) and (hi is None or d <= hi)
+
+        return History(
+            code=self.code,
+            currency=self.currency,
+            source_label=self.source_label,
+            updated_at=self.updated_at,
+            days=[d for d in self.days if keep(d.date)],
+            hourly=[h for h in self.hourly if keep(h.date)],
+            version=self.version,
+        )
+
     def carbon_intensity(self) -> dict[_date, float | None]:
         """Derived gCO2e/kWh per day, in date order."""
         return {d.date: d.carbon_intensity for d in self.days}
@@ -320,7 +351,7 @@ class LiveSnapshot:
     """
     The atlas's internal pipeline tag, e.g. ``"entsoe"``.
 
-    **Not provenance.** It reads ``"entsoe"`` for all 21 grids that publish a
+    **Not provenance.** It reads ``"entsoe"`` for all 31 grids that publish a
     snapshot, including Ontario (IESO) and the US ISOs, because upstream it is a
     frontend enum rather than a source field. For attribution use
     :attr:`attribution`.
@@ -455,3 +486,122 @@ def _mean(series: Sequence[float | None]) -> float | None:
     if not covered:
         return None
     return round(sum(covered) / len(covered), 2)
+
+
+@dataclass(frozen=True)
+class GridCoverage:
+    """
+    What one grid measurably publishes. Every field here was computed by the
+    atlas workflow from the published files themselves at bake time — "prices
+    is False" means the feed carried none, not that the app hides them.
+    """
+
+    code: str
+    source: str
+    """Pipeline label — "ENTSO-E", "Elexon", "IESO", "ERCOT + NYISO"."""
+    snapshot: bool
+    """Whether a standalone live JSON exists (False only for ``gb``)."""
+    browser_live: bool
+    """True for grids whose live layer is fetched by the browser (``gb``)."""
+    generated_at: _datetime | None
+    metered_date: _date | None
+    per_station_live: int
+    """Stations with any per-unit output in the latest snapshot."""
+    intraday: bool
+    """Today-so-far mix present (fresher than the metered day)."""
+    prices: bool
+    demand: bool
+    flows: str
+    """
+    Trade measurement: ``"net"`` — the signed position over *every* border;
+    ``"hvdc"`` — mapped HVDC links only; ``"none"`` — nothing measured.
+    """
+    links: int
+    """Mapped HVDC links with per-link flow series."""
+    history_days: int
+    hourly_days: int
+    per_station_history_days: int
+    price_days: int
+    demand_days: int
+    currency: str | None
+
+    @classmethod
+    def _parse(cls, code: str, raw: Mapping[str, Any]) -> GridCoverage:
+        def _int(value: Any) -> int:
+            n = _num(value)
+            return int(n) if n is not None else 0
+
+        metered = raw.get("meteredDate")
+        try:
+            metered_date = _date.fromisoformat(metered) if isinstance(metered, str) else None
+        except ValueError:
+            metered_date = None
+        flows = raw.get("flows")
+        return cls(
+            code=code,
+            source=_str_or_none(raw.get("source")) or "ENTSO-E",
+            snapshot=bool(raw.get("snapshot")),
+            browser_live=bool(raw.get("browserLive")),
+            generated_at=_as_datetime(raw.get("generatedAt")),
+            metered_date=metered_date,
+            per_station_live=_int(raw.get("perStationLive")),
+            intraday=bool(raw.get("intraday")),
+            prices=bool(raw.get("prices")),
+            demand=bool(raw.get("demand")),
+            flows=flows if flows in ("net", "hvdc", "none") else "none",
+            links=_int(raw.get("links")),
+            history_days=_int(raw.get("historyDays")),
+            hourly_days=_int(raw.get("hourlyDays")),
+            per_station_history_days=_int(raw.get("perStationHistoryDays")),
+            price_days=_int(raw.get("priceDays")),
+            demand_days=_int(raw.get("demandDays")),
+            currency=_str_or_none(raw.get("currency")),
+        )
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """
+    Measured publication coverage for every grid (``live/coverage.json``).
+
+    The per-grid answer to "why does Bosnia show no prices?" — because the
+    feed publishes none, and this file proves it was checked. Rebaked with
+    every snapshot refresh, so the claims are as fresh as the data.
+    """
+
+    generated_at: _datetime | None
+    grids: dict[str, GridCoverage]
+    version: int = 1
+
+    def __getitem__(self, code: str) -> GridCoverage:
+        """Coverage for one grid, accepting any registry alias."""
+        from .grids import grid as _lookup
+
+        return self.grids[_lookup(code).code]
+
+    def __iter__(self) -> Any:
+        return iter(self.grids.values())
+
+    def __len__(self) -> int:
+        return len(self.grids)
+
+    def to_frame(self) -> Any:
+        """One row per grid. Needs pandas."""
+        from .frames import coverage_frame
+
+        return coverage_frame(self)
+
+    @classmethod
+    def _parse(cls, raw: Mapping[str, Any]) -> Coverage:
+        grids_raw = raw.get("grids")
+        grids: dict[str, GridCoverage] = {}
+        if isinstance(grids_raw, Mapping):
+            for code, entry in grids_raw.items():
+                if isinstance(entry, Mapping):
+                    grids[str(code)] = GridCoverage._parse(str(code), entry)
+        version = raw.get("version")
+        return cls(
+            generated_at=_as_datetime(raw.get("generatedAt")),
+            grids=grids,
+            version=int(version) if isinstance(version, int) else 1,
+        )

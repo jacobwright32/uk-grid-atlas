@@ -374,3 +374,64 @@ def _minimal(*, version: object = HISTORY_VERSION, date_: str = "2026-07-23", mi
         "days": [{"date": date_, "mix": {"wind": 100} if mix is None else mix}],
         "hourly": [],
     }
+
+
+# ---- Coverage (#96) --------------------------------------------------------
+
+
+class TestCoverage:
+    def test_parses_the_builder_shape(self):
+        from world_energy_generation import Coverage
+
+        cov = Coverage._parse(
+            {
+                "version": 1,
+                "generatedAt": "2026-08-03T12:00:00.000Z",
+                "grids": {
+                    "ba": {
+                        "source": "ENTSO-E",
+                        "snapshot": True,
+                        "browserLive": False,
+                        "generatedAt": "2026-08-03T11:00:00.000Z",
+                        "meteredDate": "2026-08-02",
+                        "perStationLive": 8,
+                        "intraday": False,
+                        "prices": False,
+                        "demand": True,
+                        "flows": "net",
+                        "links": 0,
+                        "historyDays": 31,
+                        "hourlyDays": 7,
+                        "perStationHistoryDays": 7,
+                        "priceDays": 0,
+                        "demandDays": 31,
+                        "currency": None,
+                    }
+                },
+            }
+        )
+        ba = cov["ba"]
+        assert ba.per_station_live == 8
+        assert ba.flows == "net"
+        assert ba.prices is False
+        assert ba.metered_date is not None and ba.metered_date.isoformat() == "2026-08-02"
+        assert cov.generated_at is not None
+        assert len(cov) == 1
+
+    def test_tolerates_missing_and_junk_fields(self):
+        """A newer builder may add fields; an older file may lack some."""
+        from world_energy_generation import Coverage
+
+        cov = Coverage._parse({"grids": {"xx": {"flows": "sideways", "perStationLive": "nine"}}})
+        g = cov.grids["xx"]
+        assert g.flows == "none"
+        assert g.per_station_live == 0
+        assert g.snapshot is False
+        assert g.currency is None
+        assert g.metered_date is None
+
+    def test_empty_or_absent_grids_parse_to_empty(self):
+        from world_energy_generation import Coverage
+
+        assert len(Coverage._parse({})) == 0
+        assert len(Coverage._parse({"grids": "nonsense"})) == 0

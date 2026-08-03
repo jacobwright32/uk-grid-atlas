@@ -72,13 +72,15 @@ from .grids import GRIDS, Grid, codes, grid, grids
 from .models import (
     HISTORY_VERSION,
     KNOWN_HISTORY_VERSIONS,
+    Coverage,
     DayRecord,
+    GridCoverage,
     History,
     HourRecord,
     LiveSnapshot,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # Grouped by what a reader is looking for rather than alphabetically, which is
 # why RUF022 is silenced here: this list doubles as a table of contents.
@@ -87,6 +89,7 @@ __all__ = [  # noqa: RUF022
     "history",
     "live",
     "latest",
+    "coverage",
     # tidy frames (need pandas)
     "generation",
     "prices",
@@ -103,6 +106,8 @@ __all__ = [  # noqa: RUF022
     "DayRecord",
     "HourRecord",
     "LiveSnapshot",
+    "Coverage",
+    "GridCoverage",
     "HISTORY_VERSION",
     "KNOWN_HISTORY_VERSIONS",
     # fuels
@@ -128,17 +133,26 @@ __all__ = [  # noqa: RUF022
 ]
 
 
-def history(code: str, *, client: Client | None = None) -> History:
+def history(
+    code: str,
+    *,
+    since: str | Any = None,
+    until: str | Any = None,
+    client: Client | None = None,
+) -> History:
     """
     Rolling ~31-day history for one grid. Available for all 32.
 
     >>> history("no").days[-1].mix["hydro"]     # doctest: +SKIP
     12844.0
+    >>> history("de", since="2026-07-20").days[0].date     # doctest: +SKIP
+    datetime.date(2026, 7, 20)
 
-    The window rolls and the atlas drops the oldest day on each refresh, so
-    persist what you fetch if you need a fixed period.
+    ``since``/``until`` (ISO strings or ``date``, inclusive) trim the window
+    client-side. The window rolls and the atlas drops the oldest day on each
+    refresh, so persist what you fetch if you need a fixed period.
     """
-    return (client or default_client()).history(code)
+    return (client or default_client()).history(code, since=since, until=until)
 
 
 def live(code: str, *, client: Client | None = None) -> LiveSnapshot:
@@ -164,6 +178,20 @@ def latest(code: str, *, client: Client | None = None) -> DayRecord | None:
     """
     days = history(code, client=client).days
     return days[-1] if days else None
+
+
+def coverage(*, client: Client | None = None) -> Coverage:
+    """
+    Measured publication coverage for every grid — what each feed actually
+    contains, computed by the atlas workflow from the published files.
+
+    >>> cov = coverage()                        # doctest: +SKIP
+    >>> cov["ba"].prices                        # doctest: +SKIP
+    False
+    >>> [g.code for g in cov if g.flows == "net"]   # doctest: +SKIP
+    ['at', 'ba', 'ch', ...]
+    """
+    return (client or default_client()).coverage()
 
 
 def generation(

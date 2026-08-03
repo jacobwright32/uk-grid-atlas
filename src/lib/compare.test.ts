@@ -41,24 +41,24 @@ function makeLive(over: Partial<LiveData>): LiveData {
 }
 
 describe('carbonEstimate / renewableShare', () => {
-  it('weights IPCC medians by generation', () => {
+  it('matches the shared factor table (lib/carbon ↔ python fuels.py)', () => {
     expect(carbonEstimate([{ key: 'coal', label: '', color: '', mw: 100 }])).toBe(820)
+    // The python docstring example: carbon_intensity({wind: 1000, coal: 1000}) == 416
     expect(
       carbonEstimate([
-        { key: 'coal', label: '', color: '', mw: 100 },
-        { key: 'wind', label: '', color: '', mw: 100 },
+        { key: 'coal', label: '', color: '', mw: 1000 },
+        { key: 'wind', label: '', color: '', mw: 1000 },
       ]),
-    ).toBe(416) // (820 + 11) / 2, rounded
+    ).toBe(416)
   })
 
-  it('excludes storage from both sides and returns null with nothing left', () => {
+  it('dilutes with zero-factor storage exactly like the package does', () => {
     expect(
       carbonEstimate([
         { key: 'storage', label: '', color: '', mw: 50 },
         { key: 'gas', label: '', color: '', mw: 50 },
       ]),
-    ).toBe(490)
-    expect(carbonEstimate([{ key: 'storage', label: '', color: '', mw: 50 }])).toBeNull()
+    ).toBe(245)
     expect(carbonEstimate([])).toBeNull()
   })
 

@@ -8,6 +8,14 @@ import Sidebar from './Sidebar'
 import { COUNTRIES } from '../lib/countries'
 import type { GridMeta, GroupId, NetworkToggles } from '../lib/types'
 import type { StatsByGroup } from '../lib/filter'
+import type { GridCoverage } from '../hooks/useCoverage'
+
+// The coverage block reads the workflow-baked file through useCoverage;
+// render tests inject rows directly (the fetch/caching is the hook's story).
+const mockCoverage = vi.hoisted(() => ({ current: null as GridCoverage | null }))
+vi.mock('../hooks/useCoverage', () => ({
+  useCoverage: () => mockCoverage.current,
+}))
 
 afterEach(cleanup)
 
@@ -190,5 +198,60 @@ describe('per-grid honesty (gaps audit)', () => {
     const dayOld = new Date(Date.now() - 26 * 3_600_000).toISOString()
     render(<Sidebar {...base} country={COUNTRIES.si} live={bakedLive(dayOld)} />)
     expect(screen.getByText(/refresh workflow may be down/)).toBeTruthy()
+  })
+})
+
+describe('coverage block (#96)', () => {
+  const bakedLive = () =>
+    ({
+      basis: 'entsoe',
+      meteredDate: '2026-08-02',
+      generatedAt: new Date().toISOString(),
+      perStationNow: null,
+      sourceLabel: undefined,
+    }) as never
+  const full: GridCoverage = {
+    source: 'ENTSO-E',
+    snapshot: true,
+    browserLive: false,
+    generatedAt: '2026-08-03T12:00:00Z',
+    meteredDate: '2026-08-02',
+    perStationLive: 8,
+    intraday: true,
+    prices: false,
+    demand: true,
+    flows: 'net',
+    links: 0,
+    historyDays: 31,
+    hourlyDays: 7,
+    perStationHistoryDays: 7,
+    priceDays: 0,
+    demandDays: 31,
+    currency: null,
+  }
+  afterEach(() => {
+    mockCoverage.current = null
+  })
+
+  it('states measured coverage, absences included', () => {
+    mockCoverage.current = full
+    render(<Sidebar {...base} country={COUNTRIES.ba} live={bakedLive()} />)
+    expect(screen.getByText('What this grid publishes')).toBeTruthy()
+    expect(screen.getByText('8 stations')).toBeTruthy()
+    expect(screen.getByText('every border')).toBeTruthy()
+    expect(screen.getByText('not published')).toBeTruthy() // ba's prices, honestly
+    expect(screen.getByText(/31 days · 7 hourly · 7 per-station/)).toBeTruthy()
+  })
+
+  it('says HVDC-only when that is all that is measured', () => {
+    mockCoverage.current = { ...full, flows: 'hvdc', links: 4 }
+    render(<Sidebar {...base} country={COUNTRIES.de} live={bakedLive()} />)
+    expect(screen.getByText('HVDC links only')).toBeTruthy()
+  })
+
+  it('renders nothing before the file loads (or if it never bakes)', () => {
+    mockCoverage.current = null
+    render(<Sidebar {...base} country={COUNTRIES.si} live={bakedLive()} />)
+    expect(screen.queryByText('What this grid publishes')).toBeNull()
   })
 })
