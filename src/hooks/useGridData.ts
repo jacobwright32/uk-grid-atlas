@@ -80,6 +80,10 @@ import rsStations from '../data/rs/stations.json?url'
 import rsTransmission from '../data/rs/transmission.json?url'
 import rsInterconnectors from '../data/rs/interconnectors.json?url'
 import rsMeta from '../data/rs/meta.json?url'
+import mkStations from '../data/mk/stations.json?url'
+import mkTransmission from '../data/mk/transmission.json?url'
+import mkInterconnectors from '../data/mk/interconnectors.json?url'
+import mkMeta from '../data/mk/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -249,6 +253,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: rsTransmission,
     interconnectors: rsInterconnectors,
     meta: rsMeta,
+  },
+  mk: {
+    stations: mkStations,
+    transmission: mkTransmission,
+    interconnectors: mkInterconnectors,
+    meta: mkMeta,
   },
   no: {
     stations: noStations,

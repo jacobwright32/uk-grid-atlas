@@ -151,6 +151,7 @@ export const ENTSOE_COUNTRIES = {
   ba: { unitDomains: ['10YBA-JPCC-----D'], mixDomains: ['10YBA-JPCC-----D'] },
   // EMS publishes no per-unit output — mix, load and prices only (hr shape).
   rs: { unitDomains: ['10YCS-SERBIATSOV'], mixDomains: ['10YCS-SERBIATSOV'] },
+  mk: { unitDomains: ['10YMK-MEPSO----8'], mixDomains: ['10YMK-MEPSO----8'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

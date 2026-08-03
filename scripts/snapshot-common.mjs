@@ -196,7 +196,10 @@ export function buildDayRecord(date, mixRows, importMW, price, demandMW = null) 
     importMW: importMW == null ? null : Math.round(importMW),
     totalMW,
     price: price == null ? null : Math.round(price * 100) / 100,
-    demandMW: demandMW == null ? null : Math.round(demandMW),
+    // A grid-wide demand of exactly zero is an upstream filing artifact, not a
+    // measurement — no interconnected system has zero load. MEPSO (mk) files
+    // such zeros on days it has not metered yet; store them as "not reported".
+    demandMW: demandMW == null || demandMW <= 0 ? null : Math.round(demandMW),
   }
 }
 

@@ -258,9 +258,11 @@ async function fetchDemandDay(cfg, day) {
     }
   }
   const series = accSumSeries(acc, 'demand')
-  return series?.some((v) => v != null)
-    ? series.map((v) => (v == null ? null : Math.round(v)))
-    : null
+  // Zero-valued hours are filing artifacts, not measurements — no
+  // interconnected system has zero load (MEPSO files such zeros on days it
+  // has not metered yet). Same rule as buildDayRecord's demand guard.
+  const cleaned = series?.map((v) => (v == null || v <= 0 ? null : Math.round(v)))
+  return cleaned?.some((v) => v != null) ? cleaned : null
 }
 
 /**

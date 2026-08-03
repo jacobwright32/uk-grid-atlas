@@ -20,6 +20,7 @@ export type CountryId =
   | 'ro'
   | 'ba'
   | 'rs'
+  | 'mk'
   | 'no'
   | 'se'
   | 'pl'
@@ -55,6 +56,7 @@ export const REAL_COUNTRY_IDS = [
   'ro',
   'ba',
   'rs',
+  'mk',
   'no',
   'se',
   'pl',
@@ -111,8 +113,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Thirty-one grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Thirty-one grids · two continents · every HVDC link',
+      'Thirty-two grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Thirty-two grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -488,6 +490,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. EMS files per-unit output roughly twelve days behind the calendar, so the dotted day trails the mix strip by that lag.',
     tagline: 'Свака електрана · преносна мрежа ЕМС · Ђердап и Колубара',
+  },
+  mk: {
+    id: 'mk',
+    region: 'eu',
+    name: 'North Macedonia',
+    flag: '🇲🇰',
+    bounds: [
+      [20.4, 40.8],
+      [23.05, 42.4],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+      { kvs: [], label: '' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. MEPSO files per-unit output for Bitola, Negotino, the Skopje CHP and the big hydro plants.',
+    tagline: 'Секоја централа · преносната мрежа на МЕПСО · јаглен и вода',
   },
   no: {
     id: 'no',

@@ -277,6 +277,18 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  mk: {
+    decimalComma: true,
+    plantFiles: ['plants_mk_pbf.json', 'plants_mk_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^mk_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // MEPSO is 400/110 — three stray 220 kV tags country-wide are not a tier,
+    // so the 200-380 kV band maps to null rather than inventing one.
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? null : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],
