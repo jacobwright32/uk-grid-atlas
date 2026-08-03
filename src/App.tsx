@@ -20,6 +20,7 @@ import {
   stationFromHash,
 } from './lib/countries'
 import type { CountryId } from './lib/countries'
+import { track } from './lib/analytics'
 import { allGroupIds, computeStats, totalsFor } from './lib/filter'
 import { isBaked, mixTitleFor } from './lib/sources'
 import { computeMixRows, fleetCapacity, interconnectorCapacity } from './lib/fleet'
@@ -211,6 +212,7 @@ export default function App() {
    *  stacking history entries (same replaceState reasoning as writeHash). */
   const showCompare = (open: boolean) => {
     setCompareOpen(open)
+    if (open) track('compare-open')
     const h = open ? '#compare' : hashFor(countryId, null)
     window.history.replaceState(null, '', h || window.location.pathname + window.location.search)
   }
@@ -522,6 +524,7 @@ export default function App() {
               onSelect={(t) => {
                 setSearchTarget(t)
                 writeHash(t.id) // picked stations are instantly shareable (#22)
+                track('search-pick')
               }}
             />
           </div>
@@ -537,6 +540,7 @@ export default function App() {
               liveDiverges={live?.basis === 'elexon'}
               onChange={setTimeIndex}
               onPlayToggle={() => {
+                if (!playing) track('slider-play')
                 setPlaying((p) => !p)
                 if (timeIndex == null) setTimeIndex(0)
               }}
@@ -562,7 +566,10 @@ export default function App() {
                 meteredDate={live.meteredDate}
                 sourceLabel={live.sourceLabel}
                 range={mixRange}
-                onRange={setMixRange}
+                onRange={(r) => {
+                  setMixRange(r)
+                  track('mix-range', r)
+                }}
                 history={history}
                 historyState={historyState}
                 mode={isBaked(live) ? 'daily' : live.source === 'snapshot' ? 'snapshot' : 'live'}

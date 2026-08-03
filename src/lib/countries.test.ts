@@ -9,6 +9,7 @@ import { ENTSOE_COUNTRIES, FLOW_BORDERS } from '../../scripts/entsoe.mjs'
 import {
   COUNTRIES,
   DEFAULT_COUNTRY,
+  embedParam,
   hashFor,
   isCompareHash,
   parseHash,
@@ -89,6 +90,15 @@ describe('hash permalinks (#22)', () => {
     })
     expect(hashFor(DEFAULT_COUNTRY, null)).toBe('')
     expect(hashFor('fi', null)).toBe('#fi')
+  })
+  it('parses ?embed= into a live country or null (#97)', () => {
+    expect(embedParam('?embed=de')).toBe('de')
+    expect(embedParam('?embed=DE')).toBe('de')
+    expect(embedParam('?foo=1&embed=si')).toBe('si')
+    expect(embedParam('?embed=all')).toBeNull() // not a single grid
+    expect(embedParam('?embed=zz')).toBeNull()
+    expect(embedParam('?embed=')).toBeNull()
+    expect(embedParam('')).toBeNull()
   })
   it('recognises the #compare pseudo-route (#95)', () => {
     expect(isCompareHash('#compare')).toBe(true)

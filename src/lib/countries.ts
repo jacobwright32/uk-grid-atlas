@@ -782,6 +782,20 @@ export function stationFromHash(): string | null {
   return parseHash(window.location.hash).station
 }
 
+/**
+ * Embed mode (#97): ?embed=de renders just that grid's mix strip. Query
+ * param rather than hash so the hash routes stay country/station-shaped.
+ * Null for anything that isn't a live single grid — the full app boots
+ * instead, which is the graceful reading of a bad embed URL.
+ */
+export function embedParam(search: string): CountryId | null {
+  const raw = new URLSearchParams(search).get('embed')
+  if (!raw) return null
+  const cc = raw.toLowerCase()
+  if (!Object.hasOwn(COUNTRIES, cc) || cc === 'all') return null
+  return COUNTRIES[cc as CountryId].hasLive ? (cc as CountryId) : null
+}
+
 /** The shareable hash for a view — '' for the plain default view. */
 export function hashFor(country: CountryId, station: string | null): string {
   if (station) return `#${country}/station/${station}`
