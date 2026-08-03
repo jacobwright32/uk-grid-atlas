@@ -767,6 +767,16 @@ export function countryFromHash(): CountryId {
   return parseHash(window.location.hash).country
 }
 
+/**
+ * '#compare' opens the compare view (#95). A pseudo-route rather than a
+ * country: parseHash still resolves it to the default country, which is
+ * what the map keeps showing behind the panel. Country ids are two letters
+ * (plus 'all'), so 'compare' can never collide.
+ */
+export function isCompareHash(raw: string): boolean {
+  return raw.replace(/^#/, '').split('/')[0]?.toLowerCase() === 'compare'
+}
+
 /** Station deep link in the current hash, if any (#22). */
 export function stationFromHash(): string | null {
   return parseHash(window.location.hash).station

@@ -6,7 +6,14 @@ import { describe, expect, it } from 'vitest'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain-JS script module without type declarations
 import { ENTSOE_COUNTRIES, FLOW_BORDERS } from '../../scripts/entsoe.mjs'
-import { COUNTRIES, DEFAULT_COUNTRY, hashFor, parseHash, REAL_COUNTRY_IDS } from './countries'
+import {
+  COUNTRIES,
+  DEFAULT_COUNTRY,
+  hashFor,
+  isCompareHash,
+  parseHash,
+  REAL_COUNTRY_IDS,
+} from './countries'
 
 const entries = Object.entries(COUNTRIES)
 
@@ -82,6 +89,15 @@ describe('hash permalinks (#22)', () => {
     })
     expect(hashFor(DEFAULT_COUNTRY, null)).toBe('')
     expect(hashFor('fi', null)).toBe('#fi')
+  })
+  it('recognises the #compare pseudo-route (#95)', () => {
+    expect(isCompareHash('#compare')).toBe(true)
+    expect(isCompareHash('#Compare')).toBe(true)
+    expect(isCompareHash('#compare/whatever')).toBe(true)
+    expect(isCompareHash('#fi')).toBe(false)
+    expect(isCompareHash('')).toBe(false)
+    // …and parseHash keeps a sane country behind the panel.
+    expect(parseHash('#compare').country).toBe(DEFAULT_COUNTRY)
   })
 })
 

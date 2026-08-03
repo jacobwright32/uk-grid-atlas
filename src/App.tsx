@@ -10,11 +10,13 @@ import { useGridData } from './hooks/useGridData'
 import { useLiveData } from './hooks/useLiveData'
 import { buildWeekScrub, loadHistory } from './lib/history'
 import type { HistoryFile } from './lib/history'
+import ComparePanel from './components/ComparePanel'
 import {
   COUNTRIES,
   countryFromHash,
   DEFAULT_COUNTRY,
   hashFor,
+  isCompareHash,
   stationFromHash,
 } from './lib/countries'
 import type { CountryId } from './lib/countries'
@@ -54,6 +56,8 @@ function useMediaQuery(query: string): boolean {
 
 export default function App() {
   const [countryId, setCountryId] = useState<CountryId>(countryFromHash)
+  // Compare view (#95): a pseudo-route over the map, shareable as #compare.
+  const [compareOpen, setCompareOpen] = useState(() => isCompareHash(window.location.hash))
   const country = COUNTRIES[countryId]
   const { data, error, failures, total, retry } = useGridData(countryId)
   const { status: liveStatus, live, bmuMap } = useLiveData(country)
@@ -197,10 +201,19 @@ export default function App() {
     const onHash = () => {
       setCountryId(countryFromHash())
       setDeepLink(stationFromHash()) // pasted permalinks work mid-session too
+      setCompareOpen(isCompareHash(window.location.hash))
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  /** Open/close the compare view, keeping the address bar shareable without
+   *  stacking history entries (same replaceState reasoning as writeHash). */
+  const showCompare = (open: boolean) => {
+    setCompareOpen(open)
+    const h = open ? '#compare' : hashFor(countryId, null)
+    window.history.replaceState(null, '', h || window.location.pathname + window.location.search)
+  }
 
   // Station permalinks (#22): consume `#cc/station/<id>` once its country's
   // data has the station (progressive ALL loads may deliver it late), then
@@ -258,6 +271,7 @@ export default function App() {
     setTimeIndex(null)
     setPlaying(false)
     setSwitchOpen(false)
+    setCompareOpen(false) // picking a grid from the compare table lands on it
   }
 
   // Thirty grids made the chip strip unmanageably long (#2026 run): a sticky
@@ -414,6 +428,15 @@ export default function App() {
             </div>
           )}
         </div>
+        <button
+          type="button"
+          className="compare-open"
+          aria-pressed={compareOpen}
+          title="All grids side by side"
+          onClick={() => showCompare(!compareOpen)}
+        >
+          ⇄ <span className="compare-open-label">Compare</span>
+        </button>
         <p className="tagline">{country.tagline}</p>
         <div className="headline-stats" aria-live="polite">
           <div className="stat">
@@ -492,16 +515,18 @@ export default function App() {
           }
           onStationPin={writeHash}
         />
-        <div className="search-dock">
-          <SearchBox
-            data={data}
-            onSelect={(t) => {
-              setSearchTarget(t)
-              writeHash(t.id) // picked stations are instantly shareable (#22)
-            }}
-          />
-        </div>
-        {country.hasLive && liveMode && seriesLen > 0 && (
+        {!compareOpen && (
+          <div className="search-dock">
+            <SearchBox
+              data={data}
+              onSelect={(t) => {
+                setSearchTarget(t)
+                writeHash(t.id) // picked stations are instantly shareable (#22)
+              }}
+            />
+          </div>
+        )}
+        {!compareOpen && country.hasLive && liveMode && seriesLen > 0 && (
           <div className="timeslider-dock">
             <TimeSlider
               len={seriesLen}
@@ -522,7 +547,7 @@ export default function App() {
             />
           </div>
         )}
-        {country.hasLive && live?.mix && mixRows.length > 0 && (
+        {!compareOpen && country.hasLive && live?.mix && mixRows.length > 0 && (
           <div className="mixstrip-dock">
             {mixOpen ? (
               <MixStrip
@@ -555,6 +580,9 @@ export default function App() {
               </button>
             )}
           </div>
+        )}
+        {compareOpen && (
+          <ComparePanel onPick={switchCountry} onClose={() => showCompare(false)} />
         )}
       </main>
     </div>
