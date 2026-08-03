@@ -11,6 +11,37 @@ called out explicitly, even in a patch release.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-03
+
+Ten new grids, no API changes. Code written against 0.1.0 keeps working
+unchanged; iteration over `GRIDS`, `codes()` or `grids_frame()` now yields 32
+rows instead of 22.
+
+### Added
+
+- **Ten grids**: Slovenia (`si`), Hungary (`hu`), Slovakia (`sk`), Croatia
+  (`hr`), Bulgaria (`bg`), Greece (`gr`), Romania (`ro`), Bosnia and
+  Herzegovina (`ba`), Serbia (`rs`) and North Macedonia (`mk`). All carry the
+  full rolling history; all publish a live snapshot.
+
+### Notes on the data, current as of this release
+
+- **`ba` has no wholesale prices.** NOS BiH files no day-ahead prices with
+  ENTSO-E, so `price` is `None` on every record and `currency` is `None` —
+  the same shape `us` has always had. Its registry entry carries no `note`
+  because coverage is national; the data itself states the gap.
+- **`rs` publishes per-station output ~12 days behind the calendar.** The mix,
+  demand and prices are current; only the per-station series trail.
+- **`hr` is mix-only**: HEP publishes no per-unit output at all.
+- **Phantom zero demand is now filtered upstream.** MEPSO (`mk`) files literal
+  zeros for demand on days it has not metered yet; the atlas now stores those
+  as "not reported" rather than zero, so a demand mean can never silently
+  include an impossible 0 MW day. No package change was needed — the fix is
+  in the feed — but means computed from pre-fix captures of `mk` data may
+  differ slightly.
+- `gb` remains the one grid without `live()`; `is_partial` still flags exactly
+  `gb`, `ie`, `us`, `ca`.
+
 ## [0.1.0] — 2026-07-31
 
 First release.
@@ -56,5 +87,6 @@ First release.
   with a `UserWarning` rather than failing, because every bump observed so far
   has been additive; an older one is a hard `SchemaError`.
 
-[Unreleased]: https://github.com/jacobwright32/uk-grid-atlas/compare/python-v0.1.0...HEAD
+[Unreleased]: https://github.com/jacobwright32/uk-grid-atlas/compare/python-v0.2.0...HEAD
+[0.2.0]: https://github.com/jacobwright32/uk-grid-atlas/compare/python-v0.1.0...python-v0.2.0
 [0.1.0]: https://github.com/jacobwright32/uk-grid-atlas/releases/tag/python-v0.1.0

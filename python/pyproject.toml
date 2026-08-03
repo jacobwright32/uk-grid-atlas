@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "world-energy-generation"
-version = "0.1.0"
+version = "0.2.0"
 description = "Electricity generation, prices, flows and demand for 22 power grids across Europe and North America"
 readme = "README.md"
 requires-python = ">=3.10"

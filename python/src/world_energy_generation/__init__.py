@@ -78,7 +78,7 @@ from .models import (
     LiveSnapshot,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Grouped by what a reader is looking for rather than alphabetically, which is
 # why RUF022 is silenced here: this list doubles as a table of contents.
