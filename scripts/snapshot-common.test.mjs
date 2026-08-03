@@ -26,6 +26,7 @@ import {
   throughHour,
   upsertHistory,
   carryToday,
+  patchHistoryHour,
 } from './snapshot-common.mjs'
 
 describe('BUCKET_META', () => {
@@ -216,6 +217,16 @@ describe('history', () => {
     const onDisk = JSON.parse(readFileSync(path, 'utf8'))
     expect(onDisk.days.map((d) => d.date)).toEqual(['2026-07-01', '2026-07-02'])
     expect(onDisk.updatedAt).toBeTruthy()
+    rmSync(dir, { recursive: true, force: true })
+  })
+  it('patchHistoryHour patches one hourly record in place (#99)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'hist-'))
+    const path = join(dir, 'us.json')
+    mergeHistory(path, { day: day('2026-07-01'), hourly: hourly('2026-07-01') })
+    expect(patchHistoryHour(path, '2026-07-01', { prices: [1, 2] })).toBe(true)
+    expect(patchHistoryHour(path, '2026-06-30', { prices: [9] })).toBe(false)
+    const onDisk = JSON.parse(readFileSync(path, 'utf8'))
+    expect(onDisk.hourly[0].prices).toEqual([1, 2])
     rmSync(dir, { recursive: true, force: true })
   })
   it('buildDayRecord folds mixRows, skipping the imports row', () => {

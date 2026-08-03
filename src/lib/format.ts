@@ -19,7 +19,7 @@ export function fmtCount(n: number): string {
   return n.toLocaleString('en-GB')
 }
 
-const CURRENCY_SIGNS: Record<string, string> = { EUR: '€', GBP: '£', PLN: 'zł', CAD: 'C$' }
+const CURRENCY_SIGNS: Record<string, string> = { EUR: '€', GBP: '£', PLN: 'zł', CAD: 'C$', USD: '$' }
 
 /** "42 €/MWh" · unknown currencies fall back to their code. */
 export function fmtPrice(v: number, currency: string): string {

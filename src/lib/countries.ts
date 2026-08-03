@@ -722,7 +722,7 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: true,
     liveKind: 'entsoe',
     liveNote:
-      "Fuel mix from ERCOT and NYISO's public feeds (Texas + New York, ≈ a third of US generation), hourly, refreshed by the workflow. No US ISO publishes per-plant output openly. Alaska, Hawaii and Puerto Rico are omitted in v1.",
+      "Fuel mix and day-ahead prices (ERCOT hub + NYISO zone average, USD) from the two ISOs' public feeds — Texas + New York, ≈ a third of US generation, refreshed by the workflow. No US ISO publishes per-plant output openly. Alaska, Hawaii and Puerto Rico are omitted in v1.",
     tagline: 'Every utility-scale plant · the bulk grid · Texas & New York live',
   },
   ca: {

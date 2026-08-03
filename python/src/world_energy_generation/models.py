@@ -213,7 +213,7 @@ class History:
     currency: str | None
     """
     Currency of ``price``, e.g. ``"EUR"``. ``"CAD"`` for Ontario, ``"GBP"`` for GB,
-    ``None`` for ``us`` — the two US ISOs here publish fuel mix but no prices.
+    ``"USD"`` for ``us`` (day-ahead, mean of ERCOT hub + NYISO zones).
     """
     source_label: str | None
     """

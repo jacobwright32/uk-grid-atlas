@@ -245,6 +245,16 @@ export function patchHistoryDay(histPath, date, fields) {
   return true
 }
 
+/** patchHistoryDay's twin for hourly records (#99: retro-filling prices). */
+export function patchHistoryHour(histPath, date, fields) {
+  const h = readHistory(histPath)
+  const rec = h?.hourly?.find((r) => r.date === date)
+  if (!rec) return false
+  Object.assign(rec, fields)
+  writeFileSync(histPath, JSON.stringify(h))
+  return true
+}
+
 /**
  * Dates whose HOURLY record is missing or pre-dates the current schema —
  * the week-scrub catch-up worklist (a v1 file reports every recent day).

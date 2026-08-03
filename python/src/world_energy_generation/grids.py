@@ -134,7 +134,8 @@ GRIDS: tuple[Grid, ...] = (
         operator="ERCOT + NYISO",
         note="Only the two ISOs that publish fuel mix openly — roughly a third of "
         "US generation, not a national figure. No US ISO publishes per-plant "
-        "output openly, so this grid is mix-only and has no prices.",
+        "output openly, so the mix has no station detail. Prices are the mean "
+        "of ERCOT's hub average and NYISO's zone LBMPs, day-ahead, in USD.",
     ),
     Grid(
         "ca",

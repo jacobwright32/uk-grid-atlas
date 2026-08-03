@@ -2,7 +2,16 @@
 // header-mapped NYISO CSV / guarded ERCOT JSON parsers.
 import { describe, expect, it } from 'vitest'
 import { BUCKET_META } from './snapshot-common.mjs'
-import { FUEL_KEY, combine, parseErcot, parseNyisoCsv, rowsFrom } from './fetch-us-snapshot.mjs'
+import {
+  FUEL_KEY,
+  combine,
+  combinePrices,
+  parseErcot,
+  parseErcotDamSpp,
+  parseNyisoCsv,
+  parseNyisoDamCsv,
+  rowsFrom,
+} from './fetch-us-snapshot.mjs'
 
 const seriesWith = (entries) => {
   const s = new Array(24).fill(null)
@@ -141,5 +150,79 @@ describe('FUEL_KEY', () => {
     for (const key of Object.values(FUEL_KEY)) {
       expect(BUCKET_META[key], `bucket ${key}`).toBeTruthy()
     }
+  })
+})
+
+describe('parseErcotDamSpp (#99)', () => {
+  const table = (header, rows) =>
+    `<html><table><tr>${header.map((h) => `<th>${h}</th>`).join('')}</tr>${rows
+      .map((r) => `<tr>${r.map((c) => `<td class="x">${c}</td>`).join('')}</tr>`)
+      .join('')}</table></html>`
+  const HEAD = ['Oper Day', 'Hour Ending', 'HB_BUSAVG', 'HB_HUBAVG', 'LZ_NORTH']
+
+  it('reads HB_HUBAVG by header position, hour ending 1 → slot 0', () => {
+    const html = table(HEAD, [
+      ['08/03/2026', '1', '25.45', '25.78', '26.01'],
+      ['08/03/2026', '24', '30.00', '31.50', '32.00'],
+    ])
+    const s = parseErcotDamSpp(html)
+    expect(s[0]).toBe(25.78)
+    expect(s[23]).toBe(31.5)
+    expect(s[1]).toBeNull()
+  })
+
+  it('fails loudly when the hub column vanishes, null on an empty table', () => {
+    expect(() =>
+      parseErcotDamSpp(table(['Oper Day', 'Hour Ending', 'LZ_WEST'], [['08/03/2026', '1', '9']])),
+    ).toThrow(/header changed/)
+    expect(parseErcotDamSpp('<html>no table</html>')).toBeNull()
+    expect(parseErcotDamSpp(table(HEAD, []))).toBeNull()
+  })
+})
+
+describe('parseNyisoDamCsv (#99)', () => {
+  const CSV = [
+    '"Time Stamp","Name","PTID","LBMP ($/MWHr)","Marginal Cost Losses ($/MWHr)","Marginal Cost Congestion ($/MWHr)"',
+    '"08/03/2026 00:00","CAPITL","61757","40.00","1.00","0.00"',
+    '"08/03/2026 00:00","N.Y.C.","61761","60.00","2.00","-1.00"',
+    '"08/03/2026 01:00","CAPITL","61757","30.00","1.00","0.00"',
+  ].join('\n')
+
+  it('averages zones per hour and counts them', () => {
+    const p = parseNyisoDamCsv(CSV)
+    expect(p.series[0]).toBe(50) // (40 + 60) / 2
+    expect(p.series[1]).toBe(30)
+    expect(p.series[2]).toBeNull()
+    expect(p.zones).toBe(2)
+  })
+
+  it('fails loudly on a changed header, null on an empty file', () => {
+    expect(() => parseNyisoDamCsv('"When","Zone","Price"\n')).toThrow(/header changed/)
+    expect(parseNyisoDamCsv(CSV.split('\n')[0] + '\n')).toBeNull()
+  })
+})
+
+describe('combinePrices (#99)', () => {
+  const flat = (v) => new Array(24).fill(v)
+
+  it('averages the two ISO figures — 15 NY zones must not outvote one Texas hub', () => {
+    const p = combinePrices(flat(100), { series: flat(50), zones: 15 })
+    expect(p.series[0]).toBe(75)
+    expect(p.currency).toBe('USD')
+    expect(p.zones).toBe(16)
+  })
+
+  it('an hour one ISO has not priced still shows the other', () => {
+    const ercot = flat(null)
+    ercot[10] = 20
+    const p = combinePrices(ercot, { series: flat(40), zones: 11 })
+    expect(p.series[10]).toBe(30)
+    expect(p.series[0]).toBe(40) // NYISO alone
+  })
+
+  it('degrades to one ISO and to null', () => {
+    expect(combinePrices(flat(22.222), null).series[0]).toBe(22.22)
+    expect(combinePrices(null, null)).toBeNull()
+    expect(combinePrices(flat(null), { series: flat(null), zones: 3 })).toBeNull()
   })
 })

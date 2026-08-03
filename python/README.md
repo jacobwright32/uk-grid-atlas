@@ -134,7 +134,7 @@ If you want zeros, ask for them explicitly. The default will not guess on your b
 
 **2. Two grids cover less than their names suggest.**
 
-`us` is ERCOT plus NYISO — roughly a third of US generation, not a national figure. No US ISO publishes per-plant output openly, so that grid is mix-only and carries no prices at all (`currency` is `None`). `ca` is Ontario (IESO) alone, with prices in CAD. `ie` is the all-island SEM market for generation but EirGrid's control area for demand, so a demand-minus-generation residual for Ireland is not a net-import figure.
+`us` is ERCOT plus NYISO — roughly a third of US generation, not a national figure. No US ISO publishes per-plant output openly, so that grid has no station detail; prices are day-ahead (mean of ERCOT's hub average and NYISO's zone LBMPs, USD). `ca` is Ontario (IESO) alone, with prices in CAD. `ie` is the all-island SEM market for generation but EirGrid's control area for demand, so a demand-minus-generation residual for Ireland is not a net-import figure.
 
 Every grid carries a `note` saying so, and `is_partial` flags the four that need one:
 
@@ -205,7 +205,7 @@ date
 2026-07-30  11901.0  17696.0  4985.0   54164.0  125.18             270.6
 ```
 
-**Currencies are never converted.** Ontario is CAD, GB is GBP, the ENTSO-E grids are EUR, and `us` has no prices at all. `prices()` carries the currency on every row so that a naive cross-grid mean is at least visibly wrong rather than invisibly wrong.
+**Currencies are never converted.** Ontario is CAD, GB is GBP, the ENTSO-E grids are EUR, and `us` is USD. `prices()` carries the currency on every row so that a naive cross-grid mean is at least visibly wrong rather than invisibly wrong.
 
 The hourly index is *nominal local time*, built as `date + hour` from the publisher's own day buckets. On the two DST changeover days a grid's day is 23 or 25 hours upstream and this frame still shows 24 slots — do not localise it and expect the arithmetic to survive. If you need true instants, take them from the upstream API.
 
