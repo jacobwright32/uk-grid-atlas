@@ -1,0 +1,77 @@
+name: Intraday tick
+
+# Hourly freshness for the headline numbers (#98): refresh only each grid's
+# `today` block (mix, net position, day-ahead prices, demand) + generatedAt —
+# ~4–20 ENTSO-E requests per grid against ~50+ for a full bake. The metered
+# day, per-station detail and history stay untouched; the 6-hourly
+# live-snapshots workflow still owns those. This also acts as the retry net:
+# a full bake lost to an upstream outage can no longer leave grids 10 h
+# stale, because the tick keeps today current in between.
+
+on:
+  schedule:
+    - cron: '37 * * * *' # hourly, offset from the full bake at :17
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write # to dispatch the Pages deploy after a commit
+
+# Its own group — sharing live-snapshots' group would let an hourly tick
+# cancel a 45-minute full bake mid-run.
+concurrency:
+  group: live-intraday
+  cancel-in-progress: true
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Staged rollout: the pilot set, biggest grids first. Widen by adding
+      # codes (or set it empty to tick every ENTSO-E grid) once the pilot
+      # runs clean for a day or two. ca/us/gb are not ENTSO-E: ca and us
+      # refresh below via their own key-less fetchers; GB is browser-live.
+      INTRADAY_GRIDS: 'de fr es it at ch nl pl'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Refresh today blocks (ENTSO-E)
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: node scripts/fetch-entsoe-snapshot.mjs all --intraday
+      - name: Refresh Canada snapshot (IESO, ~4 s)
+        run: node scripts/fetch-ca-snapshot.mjs || echo "IESO tick failed — keeping previous ca.json"
+      - name: Refresh US snapshot (ERCOT + NYISO, ~1 s)
+        run: node scripts/fetch-us-snapshot.mjs || echo "US tick failed — keeping previous us.json"
+      - name: Rebuild coverage.json
+        run: node scripts/build-coverage.mjs
+      - name: Commit
+        id: commit
+        run: |
+          git config user.name "grid-atlas-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/live || true
+          if git diff --cached --quiet; then
+            echo "No changes."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore: intraday tick"
+            # A full bake may push mid-tick; losing that race is fine — the
+            # next tick is an hour away and the bake's data is fresher anyway.
+            if git push; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "push raced the full bake — surrendering this tick"
+              echo "pushed=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+      - name: Trigger site deploy
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

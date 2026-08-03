@@ -36,6 +36,7 @@ import {
   accSumSeries,
   buildDayRecord,
   buildMixRows,
+  carryToday,
   historyDates,
   hourlyDates,
   importAvg,
@@ -66,7 +67,18 @@ if (!token) {
 const client = new EntsoeClient(token)
 
 const target = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'all'
-const countryIds = target === 'all' ? Object.keys(ENTSOE_COUNTRIES) : [target]
+// --intraday (#98): refresh only the today block + generatedAt of existing
+// snapshots — ~4–20 requests per grid instead of ~50+, cheap enough to run
+// hourly. INTRADAY_GRIDS (space/comma-separated) stages the rollout when the
+// target is 'all'; a grid with no snapshot yet is skipped (full bakes create).
+const intraday = process.argv.includes('--intraday')
+const intradayGrids = (process.env.INTRADAY_GRIDS ?? '').split(/[\s,]+/).filter(Boolean)
+const countryIds =
+  target === 'all'
+    ? intraday && intradayGrids.length
+      ? intradayGrids
+      : Object.keys(ENTSOE_COUNTRIES)
+    : [target]
 // --backfill N: one-off deep history fill (default window 7, catch-up cap 3)
 const bfIdx = process.argv.indexOf('--backfill')
 const backfillDays = bfIdx >= 0 ? Math.max(1, parseInt(process.argv[bfIdx + 1], 10) || 31) : null
@@ -422,6 +434,56 @@ for (const cc of countryIds) {
     continue
   }
   console.log(`\n=== ${cc.toUpperCase()} ===`)
+
+  // Intraday tick (#98): today's headline numbers only. The metered day,
+  // per-station detail and history belong to the full bake and are left
+  // byte-identical; generatedAt bumps because the pipeline genuinely reran.
+  if (intraday) {
+    try {
+      const snapPath = join(OUT_DIR, `${cc}.json`)
+      if (!existsSync(snapPath)) {
+        console.log(`${cc}: no snapshot yet — full bake creates it, skipping`)
+        continue
+      }
+      const snapshot = JSON.parse(readFileSync(snapPath, 'utf8'))
+      const todayDate = isoDaysAgo(0)
+      // A stale block from a previous calendar day must not survive under a
+      // fresh timestamp (see carryToday).
+      let today = carryToday(snapshot.today, todayDate)
+      if (todayDate !== snapshot.date) {
+        const t = await fetchMixAndFlows(cc, cfg, todayDate)
+        if (t.hoursCovered >= 3) {
+          const todayPrices = await fetchPrices(cfg, todayDate).catch(() => null)
+          const todayDemand = await fetchDemandDay(cfg, todayDate).catch(() => null)
+          today = {
+            date: todayDate,
+            prices: todayPrices,
+            demandSeries: todayDemand,
+            throughHour: throughHour(t.mixSeries),
+            mixRows: t.mixRows,
+            mixSeries: t.mixSeries,
+            importSeries: t.importSeries,
+            netImportSeries: t.netImportSeries,
+            totalMW: t.totalMW,
+            importMW: Math.round(t.netImportMW ?? t.importMW ?? 0),
+          }
+        }
+      }
+      snapshot.today = today
+      snapshot.generatedAt = new Date().toISOString()
+      writeFileSync(snapPath, JSON.stringify(snapshot))
+      console.log(
+        `${cc}: intraday ${
+          today ? `through ${String(today.throughHour).padStart(2, '0')}:00` : 'too early (<3 h)'
+        } · metered day ${snapshot.date} untouched`,
+      )
+    } catch (err) {
+      console.error(`${cc} intraday failed:`, err.message)
+      process.exitCode = 1
+    }
+    continue
+  }
+
   try {
     const index = stationIndexFor(cc)
     const overrides = overridesFor(cc)

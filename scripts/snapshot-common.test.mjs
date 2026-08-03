@@ -25,6 +25,7 @@ import {
   priceAvg,
   throughHour,
   upsertHistory,
+  carryToday,
 } from './snapshot-common.mjs'
 
 describe('BUCKET_META', () => {
@@ -267,5 +268,15 @@ describe('buildMixRows net-position labels (#93)', () => {
   })
   it('emits no row at all when nothing was measured', () => {
     expect(buildMixRows(buckets, null).rows.every((r) => r.key !== 'imports')).toBe(true)
+  })
+})
+
+describe('carryToday (#98 intraday tick)', () => {
+  it('keeps a same-day block, drops yesterday’s, tolerates absence', () => {
+    const block = { date: '2026-08-03', throughHour: 14 }
+    expect(carryToday(block, '2026-08-03')).toBe(block)
+    expect(carryToday(block, '2026-08-04')).toBeNull()
+    expect(carryToday(null, '2026-08-04')).toBeNull()
+    expect(carryToday(undefined, '2026-08-04')).toBeNull()
   })
 })

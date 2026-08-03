@@ -321,3 +321,13 @@ export function buildMixRows(bucketAvg, importMW = null, { net = false } = {}) {
   const totalMW = rows.filter((r) => r.key !== 'imports').reduce((a, r) => a + r.nowMW, 0)
   return { rows, totalMW }
 }
+
+/**
+ * Whether an existing snapshot's today block may survive an intraday tick
+ * (#98): only when it still describes the current calendar day. A block from
+ * yesterday under a fresh generatedAt would read "today through 23:00" at
+ * 01:00 — a lie the strip has no date field to correct.
+ */
+export function carryToday(existingToday, todayDate) {
+  return existingToday?.date === todayDate ? existingToday : null
+}
