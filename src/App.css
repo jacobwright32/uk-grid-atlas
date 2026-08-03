@@ -1151,3 +1151,10 @@
 .boot-retry:hover {
   border-color: var(--accent);
 }
+
+/* Windows has no emoji flags — the glyph falls back to two regional-indicator
+   letters and every chip reads "GB GB". When detection says flags don't
+   render, drop the flag spans; the code (strip) or full name (sheet) carries. */
+.no-flags .country-btn > span[aria-hidden] {
+  display: none;
+}

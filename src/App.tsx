@@ -128,6 +128,21 @@ export default function App() {
   )
   // Country switcher scroll affordance: fade the clipped edge(s).
   const switchRef = useRef<HTMLDivElement>(null)
+  // Windows renders no flag emoji: 🇬🇧 falls back to the two regional-indicator
+  // letters, so every chip read "GB GB". Detect once — a real flag ligates the
+  // pair into one glyph, so its width is far less than the two letters apart.
+  const flagsRender = useMemo(() => {
+    try {
+      const ctx = document.createElement('canvas').getContext('2d')
+      if (!ctx) return true
+      ctx.font = '16px sans-serif'
+      const pair = ctx.measureText('🇬🇧').width
+      const single = ctx.measureText('🇬').width
+      return pair < single * 1.8
+    } catch {
+      return true
+    }
+  }, [])
   const [switchFades, setSwitchFades] = useState({ l: false, r: false })
   // The boot screen renders before data arrives, so the switcher isn't in
   // the DOM on first mount — both effects below must re-run once it is.
@@ -140,6 +155,9 @@ export default function App() {
       const l = el.scrollLeft > 2
       const r = el.scrollLeft < el.scrollWidth - el.clientWidth - 2
       setSwitchFades((prev) => (prev.l === l && prev.r === r ? prev : { l, r }))
+      // On monitors wide enough to fit every chip, the "show all" sheet is
+      // pure duplication — it only earns its place when the strip overflows.
+      setSwitchOverflow(el.scrollWidth > el.clientWidth + 4)
     }
     update()
     el.addEventListener('scroll', update, { passive: true })
@@ -246,6 +264,11 @@ export default function App() {
   // "▾" chip opens a wrap-grid sheet with every country named in full, so the
   // strip stays a quick neighbour-hop and the sheet is the overview.
   const [switchOpen, setSwitchOpen] = useState(false)
+  const [switchOverflow, setSwitchOverflow] = useState(false)
+  // If a resize makes everything fit, the open sheet loses its reason to exist.
+  useEffect(() => {
+    if (!switchOverflow) setSwitchOpen(false)
+  }, [switchOverflow])
   useEffect(() => {
     if (!switchOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -342,7 +365,7 @@ export default function App() {
           Grid Atlas
         </h1>
         <div
-          className={`country-switch-wrap${switchFades.l ? ' fade-l' : ''}${switchFades.r ? ' fade-r' : ''}`}
+          className={`country-switch-wrap${switchFades.l ? ' fade-l' : ''}${switchFades.r ? ' fade-r' : ''}${flagsRender ? '' : ' no-flags'}`}
         >
           {/* Toggle buttons rather than a tablist — see MixStrip: no tabpanel
               to control and no arrow-key movement, so tab semantics would be
@@ -360,16 +383,20 @@ export default function App() {
                 <span aria-hidden="true">{c.flag}</span> {c.id.toUpperCase()}
               </button>
             ))}
-            <button
-              type="button"
-              className="country-btn country-btn-more"
-              aria-expanded={switchOpen}
-              aria-label={switchOpen ? 'Hide the full country list' : 'Show all countries at once'}
-              title="All countries"
-              onClick={() => setSwitchOpen((o) => !o)}
-            >
-              {switchOpen ? '▴' : '▾'}
-            </button>
+            {switchOverflow && (
+              <button
+                type="button"
+                className="country-btn country-btn-more"
+                aria-expanded={switchOpen}
+                aria-label={
+                  switchOpen ? 'Hide the full country list' : 'Show all countries at once'
+                }
+                title="All countries"
+                onClick={() => setSwitchOpen((o) => !o)}
+              >
+                {switchOpen ? '▴' : '▾'}
+              </button>
+            )}
           </div>
           {switchOpen && (
             <div className="country-sheet" role="group" aria-label="All countries">
@@ -482,6 +509,7 @@ export default function App() {
               playing={playing}
               meteredDate={live?.meteredDate ?? null}
               weekDates={weekScrub?.dates ?? null}
+              liveDiverges={live?.basis === 'elexon'}
               onChange={setTimeIndex}
               onPlayToggle={() => {
                 setPlaying((p) => !p)

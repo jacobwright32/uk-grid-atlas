@@ -11,6 +11,11 @@ interface Props {
   meteredDate: string | null
   /** Week mode (#65): calendar day per 24 slots — labels + faster playback. */
   weekDates?: string[] | null
+  /** GB runs on two clocks: the strip shows the live mix (now) while this
+   *  slider scrubs the settled per-station day, ~a week behind. When they
+   *  differ, the label must say which day it owns, or the week-old date
+   *  under a live strip reads as a bug. */
+  liveDiverges?: boolean
   onChange: (index: number) => void
   onPlayToggle: () => void
   onReset: () => void
@@ -33,6 +38,7 @@ export default function TimeSlider({
   playing,
   meteredDate,
   weekDates,
+  liveDiverges,
   onChange,
   onPlayToggle,
   onReset,
@@ -93,6 +99,7 @@ export default function TimeSlider({
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <span className="timeslider-label">
+        {liveDiverges && !week ? 'metered ' : ''}
         {dateLabel} · {index == null ? (week ? 'week view' : 'day view') : clock}
       </span>
       {index != null && (

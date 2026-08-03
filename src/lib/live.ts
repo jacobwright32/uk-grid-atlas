@@ -83,7 +83,9 @@ export interface EntsoeToday {
   throughHour: number
   mixRows: import('./fleet').MixRow[]
   mixSeries: Record<string, (number | null)[]>
-  importSeries: (number | null)[]
+  importSeries: (number | null)[] | null
+  /** Signed net position so far today, when the bake measured it (#93). */
+  netImportSeries?: (number | null)[] | null
   totalMW: number
   importMW: number
 }
@@ -98,6 +100,8 @@ interface EntsoeSnapshotFile {
   mixRows: import('./fleet').MixRow[]
   mixSeries?: Record<string, (number | null)[]>
   importSeries?: (number | null)[]
+  /** A11 summed over every border (#93) — signed net position. */
+  netImportSeries?: (number | null)[] | null
   flowSeries?: Record<string, (number | null)[]>
   prices?: PriceDay | null
   demandSeries?: (number | null)[] | null
@@ -122,7 +126,8 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
       mix: snap.mix,
       mixRows: snap.mixRows,
       mixSeries: snap.mixSeries ?? null,
-      importSeries: snap.importSeries ?? null,
+      // The honest net series when the bake measured it, HVDC-only otherwise.
+      importSeries: snap.netImportSeries ?? snap.importSeries ?? null,
       flowSeries: snap.flowSeries ?? null,
       prices: snap.prices ?? null,
       demandSeries: snap.demandSeries ?? null,

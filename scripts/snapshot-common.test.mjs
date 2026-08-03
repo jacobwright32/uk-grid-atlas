@@ -255,3 +255,17 @@ describe('history', () => {
     expect(hoursCovered({})).toBe(0)
   })
 })
+
+describe('buildMixRows net-position labels (#93)', () => {
+  const buckets = new Map([['gas', 1000]])
+  it('labels the measured all-border sum as plain net imports/exports', () => {
+    expect(buildMixRows(buckets, 420, { net: true }).rows.at(-1).label).toBe('Net imports')
+    expect(buildMixRows(buckets, -380, { net: true }).rows.at(-1).label).toBe('Net exports')
+  })
+  it('keeps the HVDC qualifier when only mapped links were measured', () => {
+    expect(buildMixRows(buckets, 420).rows.at(-1).label).toBe('Imports (HVDC)')
+  })
+  it('emits no row at all when nothing was measured', () => {
+    expect(buildMixRows(buckets, null).rows.every((r) => r.key !== 'imports')).toBe(true)
+  })
+})

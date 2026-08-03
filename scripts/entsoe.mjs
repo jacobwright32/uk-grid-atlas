@@ -215,6 +215,45 @@ export const ENTSOE_COUNTRIES = {
   },
 }
 
+// Zones that neighbour the atlas's grids without being grids themselves —
+// needed only as A11 counterparties for the net-position sum below.
+const Z_UA = '10Y1001C--00003F' // Ukraine IPS (post-2022 synchronous zone)
+const Z_MD = '10Y1001A1001A990' // Moldova
+const Z_TR = '10YTR-TEIAS----W' // Türkiye (TEİAŞ)
+const Z_AL = '10YAL-KESH-----5' // Albania (KESH/OST)
+const Z_XK = '10Y1001C--00100H' // Kosovo (KOSTT)
+const Z_ME = '10YCS-CG-TSO---S' // Montenegro (CGES)
+const Z_IT_NORTH = '10Y1001A1001A73I' // IT-North bidding zone (AT/CH/SI borders)
+const Z_IT_SUD = '10Y1001A1001A788' // IT-South bidding zone (the GRITA cable)
+
+/**
+ * Every electrical border of a zone, for the honest net position (#93):
+ * summing A11 physical flows over ALL borders — both directions — gives the
+ * measured net import/export, which FLOW_BORDERS (HVDC-only, below) never
+ * could. Single-zone grids only: the multi-zone countries (no/se/dk/it/de)
+ * would need internal-border exclusion, and their HVDC rows already carry
+ * real measured data. Every pair here was probed against the live API on
+ * 2026-08-03 and answered in at least one direction; mk–al did not and is
+ * deliberately absent.
+ */
+export const NET_BORDERS = {
+  at: ['10Y1001A1001A82H', '10YCH-SWISSGRIDZ', '10YCZ-CEPS-----N', '10YHU-MAVIR----U', '10YSI-ELES-----O', Z_IT_NORTH],
+  ch: ['10YFR-RTE------C', '10Y1001A1001A82H', '10YAT-APG------L', Z_IT_NORTH],
+  cz: ['10Y1001A1001A82H', '10YAT-APG------L', '10YSK-SEPS-----K', '10YPL-AREA-----S'],
+  pt: ['10YES-REE------0'],
+  lv: ['10Y1001A1001A39I', '10YLT-1001A0008Q'],
+  si: ['10YAT-APG------L', Z_IT_NORTH, '10YHR-HEP------M', '10YHU-MAVIR----U'],
+  hu: ['10YAT-APG------L', '10YSK-SEPS-----K', Z_UA, '10YRO-TEL------P', '10YCS-SERBIATSOV', '10YHR-HEP------M', '10YSI-ELES-----O'],
+  sk: ['10YCZ-CEPS-----N', '10YPL-AREA-----S', Z_UA, '10YHU-MAVIR----U'],
+  hr: ['10YSI-ELES-----O', '10YHU-MAVIR----U', '10YCS-SERBIATSOV', '10YBA-JPCC-----D'],
+  bg: ['10YRO-TEL------P', '10YCS-SERBIATSOV', '10YMK-MEPSO----8', '10YGR-HTSO-----Y', Z_TR],
+  gr: [Z_AL, '10YMK-MEPSO----8', '10YCA-BULGARIA-R', Z_TR, Z_IT_SUD],
+  ro: [Z_UA, Z_MD, '10YCA-BULGARIA-R', '10YCS-SERBIATSOV', '10YHU-MAVIR----U'],
+  ba: ['10YHR-HEP------M', '10YCS-SERBIATSOV', Z_ME],
+  rs: ['10YHU-MAVIR----U', '10YRO-TEL------P', '10YCA-BULGARIA-R', '10YMK-MEPSO----8', Z_XK, Z_ME, '10YBA-JPCC-----D', '10YHR-HEP------M'],
+  mk: ['10YCS-SERBIATSOV', '10YCA-BULGARIA-R', '10YGR-HTSO-----Y', Z_XK],
+}
+
 /**
  * Borders whose physical flow is carried entirely by mapped HVDC links, so
  * the A11 border total can be attributed (capacity-proportional when a

@@ -16,6 +16,7 @@ import {
   ENTSOE_COUNTRIES,
   EntsoeClient,
   FLOW_BORDERS,
+  NET_BORDERS,
   PSR_BUCKETS,
   dayStartMs,
   dayWindow,
@@ -234,7 +235,43 @@ async function fetchMixAndFlows(cc, cfg, day) {
   // of zero trade where the truth is "not tracked". No coverage → null → no row.
   const measuresFlows = importSeries.some((v) => v != null)
   const importMW = measuresFlows ? meanCovered(importSeries) : null
-  const { rows: mixRows, totalMW } = buildMixRows(bucketAvg, importMW)
+
+  // Honest net position (#93): A11 summed over EVERY border of the zone, both
+  // directions, signed — imports positive, exports negative. This is the
+  // measured answer to the demand-vs-stack gap the strip has always drawn:
+  // Croatia imports ~40% of demand, Bosnia exports ~60% of generation, and
+  // until now the only cross-border figure on screen was an HVDC-shaped zero.
+  let netImportSeries = null
+  const neighbours = NET_BORDERS[cc]
+  if (neighbours?.length) {
+    const own = cfg.mixDomains[0]
+    const acc = new Array(24).fill(null)
+    for (const nbr of neighbours) {
+      for (const [outD, inD, sign] of [
+        [nbr, own, 1], // flow INTO cc → import
+        [own, nbr, -1], // flow OUT of cc → export
+      ]) {
+        const doc = await client.get({
+          documentType: 'A11',
+          out_Domain: outD,
+          in_Domain: inD,
+          ...dayWindow(day),
+        })
+        for (const s of parseSeries(doc ?? {})) {
+          const perHour = 60 / s.stepMin
+          for (const { hour, value } of expandSeries(s, originMs)) {
+            acc[hour] = (acc[hour] ?? 0) + (sign * value) / perHour
+          }
+        }
+      }
+    }
+    if (acc.some((v) => v != null)) netImportSeries = acc.map((v) => (v == null ? null : Math.round(v)))
+  }
+  const netImportMW = netImportSeries ? Math.round(meanCovered(netImportSeries)) : null
+
+  const { rows: mixRows, totalMW } = buildMixRows(bucketAvg, netImportMW ?? importMW, {
+    net: netImportMW != null,
+  })
 
   return {
     mixSeries,
@@ -242,6 +279,8 @@ async function fetchMixAndFlows(cc, cfg, day) {
     flowSeries,
     importSeries: measuresFlows ? importSeries : null,
     importMW,
+    netImportSeries,
+    netImportMW,
     mixRows,
     totalMW,
     hoursCovered,
@@ -354,14 +393,18 @@ async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
     day: buildDayRecord(
       date,
       t.mixRows,
-      importAvg(t.importSeries),
+      // Net position when measured (#93) — signed, and finally matching the
+      // Python package's documented import_mw semantics ("negative when
+      // exporting"). HVDC-only gross imports remain the fallback.
+      t.netImportMW ?? importAvg(t.importSeries),
       priceAvg(p?.series),
       demand ? meanCovered(demand) : null,
     ),
     hourly: {
       date,
       mixSeries: t.mixSeries,
-      importSeries: t.importSeries.some((v) => v != null) ? t.importSeries : null,
+      importSeries: t.importSeries?.some((v) => v != null) ? t.importSeries : null,
+      netImportSeries: t.netImportSeries ?? null,
       prices: p?.series ?? null,
       perStation: stationSeriesOnly(perStation),
       flowSeries: Object.keys(t.flowSeries).length ? t.flowSeries : null,
@@ -452,7 +495,17 @@ for (const cc of countryIds) {
     // (#17 scrub) and day averages derived from them. The same fetch runs
     // again for today's partial day (#18 intraday, below).
     const metered = await fetchMixAndFlows(cc, cfg, day)
-    const { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW } = metered
+    const {
+      mixSeries,
+      flows,
+      flowSeries,
+      importSeries,
+      importMW,
+      netImportSeries,
+      netImportMW,
+      mixRows,
+      totalMW,
+    } = metered
     const prices = await fetchPrices(cfg, day).catch(() => null)
     const demandSeries = await fetchDemandDay(cfg, day).catch(() => null)
 
@@ -475,8 +528,9 @@ for (const cc of countryIds) {
             mixRows: t.mixRows,
             mixSeries: t.mixSeries,
             importSeries: t.importSeries,
+            netImportSeries: t.netImportSeries,
             totalMW: t.totalMW,
-            importMW: Math.round(t.importMW),
+            importMW: Math.round(t.netImportMW ?? t.importMW ?? 0),
           }
         }
       } catch {
@@ -494,6 +548,7 @@ for (const cc of countryIds) {
       mixSeries,
       flowSeries,
       importSeries,
+      netImportSeries,
       prices,
       demandSeries,
       today,
@@ -504,7 +559,8 @@ for (const cc of countryIds) {
           .map((r) => ({ key: r.key, label: r.label, mw: r.nowMW })),
         interconnectors: flows,
         totalMW,
-        importMW: Math.round(importMW),
+        // Net position when measured (#93), signed; HVDC gross otherwise.
+        importMW: Math.round(netImportMW ?? importMW ?? 0),
       },
     }
     writeFileSync(join(OUT_DIR, `${cc}.json`), JSON.stringify(snapshot))

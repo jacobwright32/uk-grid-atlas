@@ -289,7 +289,7 @@ export function hoursCovered(mixSeries) {
  * null to omit it (IESO/US feeds carry no flow data).
  * Row shape matches src/lib/fleet.ts MixRow (capMW omitted for snapshots).
  */
-export function buildMixRows(bucketAvg, importMW = null) {
+export function buildMixRows(bucketAvg, importMW = null, { net = false } = {}) {
   const rows = [...bucketAvg.entries()]
     .map(([key, mw]) => ({
       key,
@@ -303,7 +303,16 @@ export function buildMixRows(bucketAvg, importMW = null) {
   if (importMW != null) {
     rows.push({
       key: 'imports',
-      label: importMW >= 0 ? 'Imports (HVDC)' : 'Net export (HVDC)',
+      // `net` means the figure is the A11 sum over EVERY border (#93) — the
+      // honest signed position. Without it the figure is HVDC links only,
+      // and the label must keep saying so.
+      label: net
+        ? importMW >= 0
+          ? 'Net imports'
+          : 'Net exports'
+        : importMW >= 0
+          ? 'Imports (HVDC)'
+          : 'Net export (HVDC)',
       color: IMPORTS_COLOR,
       nowMW: Math.round(Math.abs(importMW)),
       capMW: 0,

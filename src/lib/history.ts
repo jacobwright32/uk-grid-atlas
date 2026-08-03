@@ -19,6 +19,8 @@ export interface HistoryHourly {
   date: string
   mixSeries: Record<string, (number | null)[]>
   importSeries: (number | null)[] | null
+  /** Signed net position from A11 over every border, where measured (#93). */
+  netImportSeries?: (number | null)[] | null
   prices: (number | null)[] | null
   /** Station id → 24-slot MW series (v2; where the TSO publishes per-unit). */
   perStation?: Record<string, (number | null)[]> | null
@@ -167,7 +169,7 @@ export function stitchHourly(hourly: HistoryHourly[]): StitchedWeek {
     keys: ordered,
     series,
     prices: stitchAux((h) => h.prices),
-    imports: stitchAux((h) => h.importSeries),
+    imports: stitchAux((h) => h.netImportSeries ?? h.importSeries),
     demand: stitchAux((h) => h.demand ?? null),
   }
 }
