@@ -17,7 +17,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **~60,000 generation sites across thirty grids on two continents** —
+- **~60,000 generation sites across thirty-one grids on two continents** —
   nuclear, gas, offshore/onshore wind, solar, hydro, pumped storage,
   bioenergy, geothermal, battery storage and more — each sized by installed
   capacity and coloured by fuel. Hover for a card with capacity, operator
@@ -50,7 +50,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 The JSON this atlas publishes is a public API, and
 [**world-energy-generation**](https://pypi.org/project/world-energy-generation/)
 is the Python client for it — generation, prices, cross-border flows and demand
-for all thirty grids, with no key and no required dependencies.
+for all thirty-one grids, with no key and no required dependencies.
 
 ```bash
 pip install world-energy-generation
@@ -136,8 +136,8 @@ ever downloads the full 20 MB of line geometry. Stations stay GeoJSON
 build keeps the old GeoJSON line bundles so it stays truly self-contained.
 
 The app is multi-country: a header switcher (or `#nl`, `#be`, `#ie`, `#dk`,
-`#fr`, `#de`, `#ch`, `#at`, `#cz`, `#si`, `#hu`, `#sk`, `#hr`, `#bg`, `#gr`, `#ro`, `#ba`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#ee`, `#lv`, `#lt`, `#us`, `#ca`, `#all` in the URL)
-swaps data bundles, map bounds and voltage tiers per country. Thirty grids
+`#fr`, `#de`, `#ch`, `#at`, `#cz`, `#si`, `#hu`, `#sk`, `#hr`, `#bg`, `#gr`, `#ro`, `#ba`, `#rs`, `#no`, `#se`, `#fi`, `#pl`, `#es`, `#pt`, `#it`, `#ee`, `#lv`, `#lt`, `#us`, `#ca`, `#all` in the URL)
+swaps data bundles, map bounds and voltage tiers per country. Thirty-one grids
 ship today: Great Britain (400/275/132 kV), the Netherlands
 (380/220/150/110), Belgium (380/220/150), the island of Ireland
 (400/275/220/110 — the SEM is mapped as one grid), Denmark (400/150/132),
@@ -146,7 +146,7 @@ France (400/225; the huge 90/63 kV layer is omitted), Germany (380/220;
 railway grid omitted), Austria (380/220; regional 110 kV and the ÖBB
 railway grid omitted), Czechia (400/220; 110 kV omitted), Slovenia
 (400/220/110 — 110 kV is transmission voltage there, as in Finland),
-Hungary (400/220; the 120 kV layer is barely mapped in OSM, and the single 750 kV line to Ukraine is omitted), Slovakia (400/220/110), Croatia (400/220/110), Bulgaria (400/220/110), Greece (400/150 — Portugal's shape; island 66 kV systems omitted), Romania (400/220/110), Bosnia and Herzegovina (400/220/110 — generation and demand but no wholesale prices), Norway (420/300/132), Sweden (400/220/130), Poland
+Hungary (400/220; the 120 kV layer is barely mapped in OSM, and the single 750 kV line to Ukraine is omitted), Slovakia (400/220/110), Croatia (400/220/110), Bulgaria (400/220/110), Greece (400/150 — Portugal's shape; island 66 kV systems omitted), Romania (400/220/110), Bosnia and Herzegovina (400/220/110 — generation and demand but no wholesale prices), Serbia (400/220/110 — mix only, no per-unit output), Norway (420/300/132), Sweden (400/220/130), Poland
 (400/220; 110 kV omitted), Spain (400/220; regional networks omitted),
 Portugal (400/220/150), Finland (400/220/110 — 110 kV is transmission
 voltage there), Italy (380/220; the vast 150 kV layer is omitted), Estonia, Latvia and
@@ -188,9 +188,9 @@ public domain. Keep the attribution control visible if you deploy this.
 ### Extracting from a Geofabrik PBF
 
 Overpass is the convenient path but not the universal one. Only fourteen of
-the thirty grids have queries in `scripts/fetch-overpass.mjs` — `gb`, `no`,
+the thirty-one grids have queries in `scripts/fetch-overpass.mjs` — `gb`, `no`,
 `se`, `pl`, `pt`, `fi`, `ch`, `at`, `cz`, `ee`, `lv`, `lt`, `es`, `it`. The
-other sixteen — **`nl`, `be`, `ie`, `dk`, `fr`, `de`, `si`, `hu`, `sk`, `hr`, `bg`, `gr`, `ro`, `ba`, `ca`, `us`** — have none at
+other seventeen — **`nl`, `be`, `ie`, `dk`, `fr`, `de`, `si`, `hu`, `sk`, `hr`, `bg`, `gr`, `ro`, `ba`, `rs`, `ca`, `us`** — have none at
 all: most are too big for public Overpass servers to hand out (the US
 alone is 36k line segments), so their raw extracts are cut locally from a
 Geofabrik country download. The 2026 adds (Slovenia onward) are smaller but

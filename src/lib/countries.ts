@@ -19,6 +19,7 @@ export type CountryId =
   | 'gr'
   | 'ro'
   | 'ba'
+  | 'rs'
   | 'no'
   | 'se'
   | 'pl'
@@ -53,6 +54,7 @@ export const REAL_COUNTRY_IDS = [
   'gr',
   'ro',
   'ba',
+  'rs',
   'no',
   'se',
   'pl',
@@ -109,8 +111,8 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     hasLive: false,
     liveKind: 'none',
     liveNote:
-      'Thirty grids, one map. Switch to a single country for its details and its live output layer.',
-    tagline: 'Thirty grids · two continents · every HVDC link',
+      'Thirty-one grids, one map. Switch to a single country for its details and its live output layer.',
+    tagline: 'Thirty-one grids · two continents · every HVDC link',
   },
   gb: {
     id: 'gb',
@@ -466,6 +468,26 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     liveNote:
       'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. NOS BiH files generation and demand but no day-ahead prices — the price line stays empty here, honestly.',
     tagline: 'Svaka elektrana · prijenosna mreža NOS BiH · voda i ugalj',
+  },
+  rs: {
+    id: 'rs',
+    region: 'eu',
+    name: 'Serbia',
+    flag: '🇷🇸',
+    bounds: [
+      [18.8, 42.2],
+      [23.1, 46.2],
+    ],
+    tiers: [
+      { kvs: [400], label: '400 kV lines' },
+      { kvs: [220], label: '220 kV lines' },
+      { kvs: [110], label: '110 kV lines' },
+    ],
+    hasLive: true,
+    liveKind: 'entsoe',
+    liveNote:
+      'Latest metered day per station from ENTSO-E, refreshed by a scheduled workflow. EMS files per-unit output roughly twelve days behind the calendar, so the dotted day trails the mix strip by that lag.',
+    tagline: 'Свака електрана · преносна мрежа ЕМС · Ђердап и Колубара',
   },
   no: {
     id: 'no',

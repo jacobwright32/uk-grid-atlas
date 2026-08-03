@@ -266,6 +266,17 @@ const COUNTRIES = {
     classify: (volts) =>
       volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
   },
+  rs: {
+    decimalComma: true,
+    plantFiles: ['plants_rs_pbf.json', 'plants_rs_wind_clusters.json'],
+    seaFiles: [],
+    lineFile: /^rs_lines.*\.json$/,
+    isForeignSea: () => false,
+    isForeignLine: () => false,
+    // EMS runs 400/220/110 (FI rule). Kosovo is not in this extract or zone.
+    classify: (volts) =>
+      volts >= 380000 ? 400 : volts >= 200000 ? 220 : volts >= 100000 ? 110 : null,
+  },
   no: {
     decimalComma: true,
     plantFiles: ['plants_no_s.json', 'plants_no_m.json', 'plants_no_n.json', 'plants_no_pbf.json'],

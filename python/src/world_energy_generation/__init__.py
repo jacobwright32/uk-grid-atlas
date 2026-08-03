@@ -1,6 +1,6 @@
 """
 world-energy-generation — electricity generation, price, flow and demand data
-for 30 power grids across Europe and North America, as typed Python.
+for 31 power grids across Europe and North America, as typed Python.
 
 Reads the JSON published by Grid Atlas (https://jacobwright32.github.io/uk-grid-atlas/),
 which in turn aggregates Elexon/BMRS, ENTSO-E, ERCOT, NYISO and IESO. No API key,
@@ -18,11 +18,11 @@ Two datasets:
 
 ``history(code)``
     A rolling ~31 days of daily means plus the last several days (7-8) at hourly
-    resolution. Available for all 30 grids. This is the uniform surface — reach
+    resolution. Available for all 31 grids. This is the uniform surface — reach
     for it first.
 
 ``live(code)``
-    The most recent snapshot. Available for 29 grids; Great Britain's is
+    The most recent snapshot. Available for 30 grids; Great Britain's is
     compiled into the atlas web app rather than published as JSON, so
     ``live("gb")`` raises :class:`DataNotPublished` and points you at history.
 
@@ -130,7 +130,7 @@ __all__ = [  # noqa: RUF022
 
 def history(code: str, *, client: Client | None = None) -> History:
     """
-    Rolling ~31-day history for one grid. Available for all 30.
+    Rolling ~31-day history for one grid. Available for all 31.
 
     >>> history("no").days[-1].mix["hydro"]     # doctest: +SKIP
     12844.0
@@ -143,7 +143,7 @@ def history(code: str, *, client: Client | None = None) -> History:
 
 def live(code: str, *, client: Client | None = None) -> LiveSnapshot:
     """
-    Most recent snapshot for one grid. Available for 29 of 30.
+    Most recent snapshot for one grid. Available for 30 of 31.
 
     Raises :class:`DataNotPublished` for ``"gb"``, whose snapshot is bundled into
     the atlas's JavaScript rather than served as JSON — use :func:`history`.

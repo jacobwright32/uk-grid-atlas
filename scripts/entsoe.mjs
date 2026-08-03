@@ -149,6 +149,8 @@ export const ENTSOE_COUNTRIES = {
   // NOS BiH files generation and load but no day-ahead prices (A44 empty) —
   // the first ENTSO-E grid here with currency: null, the us shape.
   ba: { unitDomains: ['10YBA-JPCC-----D'], mixDomains: ['10YBA-JPCC-----D'] },
+  // EMS publishes no per-unit output — mix, load and prices only (hr shape).
+  rs: { unitDomains: ['10YCS-SERBIATSOV'], mixDomains: ['10YCS-SERBIATSOV'] },
   no: {
     // Five bidding zones; per-unit and mix data both publish per zone.
     unitDomains: [

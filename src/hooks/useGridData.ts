@@ -76,6 +76,10 @@ import baStations from '../data/ba/stations.json?url'
 import baTransmission from '../data/ba/transmission.json?url'
 import baInterconnectors from '../data/ba/interconnectors.json?url'
 import baMeta from '../data/ba/meta.json?url'
+import rsStations from '../data/rs/stations.json?url'
+import rsTransmission from '../data/rs/transmission.json?url'
+import rsInterconnectors from '../data/rs/interconnectors.json?url'
+import rsMeta from '../data/rs/meta.json?url'
 import noStations from '../data/no/stations.json?url'
 import noTransmission from '../data/no/transmission.json?url'
 import noInterconnectors from '../data/no/interconnectors.json?url'
@@ -239,6 +243,12 @@ const URLS: Record<RealCountryId, Bundle> = {
     transmission: baTransmission,
     interconnectors: baInterconnectors,
     meta: baMeta,
+  },
+  rs: {
+    stations: rsStations,
+    transmission: rsTransmission,
+    interconnectors: rsInterconnectors,
+    meta: rsMeta,
   },
   no: {
     stations: noStations,

@@ -239,7 +239,28 @@ export default function App() {
     setCountryId(id)
     setTimeIndex(null)
     setPlaying(false)
+    setSwitchOpen(false)
   }
+
+  // Thirty grids made the chip strip unmanageably long (#2026 run): a sticky
+  // "▾" chip opens a wrap-grid sheet with every country named in full, so the
+  // strip stays a quick neighbour-hop and the sheet is the overview.
+  const [switchOpen, setSwitchOpen] = useState(false)
+  useEffect(() => {
+    if (!switchOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSwitchOpen(false)
+    }
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as Element)?.closest?.('.country-switch-wrap')) setSwitchOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('pointerdown', onDown)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onDown)
+    }
+  }, [switchOpen])
 
   const seriesLen = useMemo(() => {
     if (weekScrub) return weekScrub.len // week mode re-scopes the slider (#65)
@@ -335,7 +356,32 @@ export default function App() {
                 <span aria-hidden="true">{c.flag}</span> {c.id.toUpperCase()}
               </button>
             ))}
+            <button
+              type="button"
+              className="country-btn country-btn-more"
+              aria-expanded={switchOpen}
+              aria-label={switchOpen ? 'Hide the full country list' : 'Show all countries at once'}
+              title="All countries"
+              onClick={() => setSwitchOpen((o) => !o)}
+            >
+              {switchOpen ? '▴' : '▾'}
+            </button>
           </div>
+          {switchOpen && (
+            <div className="country-sheet" role="group" aria-label="All countries">
+              {Object.values(COUNTRIES).map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={c.id === countryId}
+                  className={`country-btn${c.id === countryId ? ' country-btn--on' : ''}`}
+                  onClick={() => switchCountry(c.id)}
+                >
+                  <span aria-hidden="true">{c.flag}</span> {c.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <p className="tagline">{country.tagline}</p>
         <div className="headline-stats" aria-live="polite">

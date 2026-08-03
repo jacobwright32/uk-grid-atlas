@@ -125,6 +125,39 @@
   color: var(--ink-2);
 }
 
+/* The "show everything" chip stays pinned at the strip's right edge while the
+   strip scrolls beneath it (thirty grids — the strip alone stopped scaling). */
+.country-btn-more {
+  position: sticky;
+  right: -2px;
+  z-index: 2;
+  background: var(--surface-2);
+  box-shadow: -10px 0 10px -6px var(--surface-2);
+  padding: 4px 7px;
+}
+
+/* Every country at once, wrapped and named in full — anchored under the strip. */
+.country-sheet {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  width: max-content;
+  max-width: min(92vw, 680px);
+}
+
+.country-sheet .country-btn {
+  white-space: nowrap;
+}
+
 .tagline {
   margin: 0;
   color: var(--ink-muted);
