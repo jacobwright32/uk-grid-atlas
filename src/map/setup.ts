@@ -36,6 +36,16 @@ export function createAtlasMap(
     pitchWithRotate: false,
   })
   map.touchZoomRotate.disableRotation()
+  // Sources fail quietly by default: a dropped PMTiles range request would
+  // just mean missing lines with no trace. Log once per distinct message —
+  // a flaky connection can emit hundreds of identical tile errors.
+  const seenErrors = new Set<string>()
+  map.on('error', (e) => {
+    const msg = String((e as { error?: { message?: string } }).error?.message ?? e)
+    if (seenErrors.has(msg)) return
+    seenErrors.add(msg)
+    console.warn(`map error: ${msg}`)
+  })
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
   map.addControl(
     new maplibregl.AttributionControl({

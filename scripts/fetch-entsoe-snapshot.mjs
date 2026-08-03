@@ -228,10 +228,24 @@ async function fetchMixAndFlows(cc, cfg, day) {
   for (let h = 0; h < 24; h++) {
     if (importSeries[h] != null) importSeries[h] = Math.round(importSeries[h])
   }
-  const importMW = meanCovered(importSeries)
+  // Only grids with a FLOW_BORDERS entry actually measure anything here. For
+  // the other eighteen, meanCovered over the untouched all-null series used to
+  // come back 0 and put a hard "Imports (HVDC) 0 MW" row on screen — a claim
+  // of zero trade where the truth is "not tracked". No coverage → null → no row.
+  const measuresFlows = importSeries.some((v) => v != null)
+  const importMW = measuresFlows ? meanCovered(importSeries) : null
   const { rows: mixRows, totalMW } = buildMixRows(bucketAvg, importMW)
 
-  return { mixSeries, flows, flowSeries, importSeries, importMW, mixRows, totalMW, hoursCovered }
+  return {
+    mixSeries,
+    flows,
+    flowSeries,
+    importSeries: measuresFlows ? importSeries : null,
+    importMW,
+    mixRows,
+    totalMW,
+    hoursCovered,
+  }
 }
 
 /**

@@ -160,7 +160,7 @@ def generation(
     Tidy generation across one, several, or all grids.
 
     Long format — ``grid``, ``date`` (or ``timestamp``), ``fuel``, ``mw`` — which
-    is what you want for grouping and plotting. Pass nothing for all 22, which is
+    is what you want for grouping and plotting. Pass nothing for all 32, which is
     22 HTTP requests, so let the client cache do its job.
 
     Rows for buckets a grid does not report are omitted rather than emitted as

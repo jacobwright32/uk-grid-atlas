@@ -605,11 +605,15 @@ describe('EntsoeClient', () => {
     return calls
   }
 
-  /** Records what we'd have slept instead of actually sleeping. */
+  /** Records what we'd have slept instead of actually sleeping. The pacing
+   *  gap is off here — these tests pin retry/backoff semantics, and the
+   *  process-wide last-request timestamp would otherwise leak a spurious
+   *  pacing sleep into whichever test runs second. */
   const makeClient = (opts = {}) => {
     const slept = []
     const client = new EntsoeClient('token-abc', {
       sleep: async (ms) => void slept.push(ms),
+      minGapMs: 0,
       ...opts,
     })
     return { client, slept }

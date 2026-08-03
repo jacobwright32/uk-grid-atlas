@@ -290,6 +290,10 @@ export default function App() {
     return (
       <div className="boot boot--error">
         <p>Couldn’t load grid data: {error}</p>
+        {/* useGridData always had a retry — the screen just never offered it. */}
+        <button type="button" className="boot-retry" onClick={retry}>
+          Try again
+        </button>
       </div>
     )
   }

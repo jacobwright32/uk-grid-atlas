@@ -162,3 +162,33 @@ describe('Sidebar as dialog (narrow)', () => {
     expect(tab.defaultPrevented).toBe(false)
   })
 })
+
+describe('per-grid honesty (gaps audit)', () => {
+  const bakedLive = (generatedAt: string) =>
+    ({
+      basis: 'entsoe',
+      meteredDate: '2026-08-02',
+      generatedAt,
+      perStationNow: null,
+      sourceLabel: undefined,
+    }) as never
+
+  it('renders the authored liveNote for an ENTSO-E grid, not the generic footnote', () => {
+    render(<Sidebar {...base} country={COUNTRIES.ba} live={bakedLive(new Date().toISOString())} />)
+    // ba's note is the no-prices disclosure — previously authored but never shown.
+    expect(screen.getByText(/no day-ahead prices/i)).toBeTruthy()
+  })
+
+  it('reports measured snapshot age instead of a hard-coded cadence claim', () => {
+    const threeHoursAgo = new Date(Date.now() - 3 * 3_600_000).toISOString()
+    render(<Sidebar {...base} country={COUNTRIES.si} live={bakedLive(threeHoursAgo)} />)
+    expect(screen.getByText(/updated 3 h ago/)).toBeTruthy()
+    expect(screen.queryByText(/refreshed every 6 h/)).toBeNull()
+  })
+
+  it('flags a snapshot older than two refresh cycles as possibly stale', () => {
+    const dayOld = new Date(Date.now() - 26 * 3_600_000).toISOString()
+    render(<Sidebar {...base} country={COUNTRIES.si} live={bakedLive(dayOld)} />)
+    expect(screen.getByText(/refresh workflow may be down/)).toBeTruthy()
+  })
+})

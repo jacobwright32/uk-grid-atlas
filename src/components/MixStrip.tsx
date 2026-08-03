@@ -84,15 +84,21 @@ export default function MixStrip({
   const showToday = !scrubbing && today != null
 
   const shownRows = useMemo(() => {
-    if (scrubbing) {
-      return rows.map((r) => {
-        const series = r.key === 'imports' ? importSeries : (mixSeries?.[r.key] ?? null)
-        const v = series?.[timeIndex] ?? null
-        return { ...r, nowMW: v == null ? 0 : Math.abs(v) }
-      })
-    }
-    if (showToday) return today.mixRows
-    return rows
+    const base = scrubbing
+      ? rows.map((r) => {
+          const series = r.key === 'imports' ? importSeries : (mixSeries?.[r.key] ?? null)
+          const v = series?.[timeIndex] ?? null
+          return { ...r, nowMW: v == null ? 0 : Math.abs(v) }
+        })
+      : showToday
+        ? today.mixRows
+        : rows
+    // Honesty guard: 18 of 32 grids have no flow coverage (no FLOW_BORDERS
+    // entry), and their older snapshots carry a hard "Imports (HVDC) 0 MW"
+    // row — a claim of zero trade where the truth is "not tracked". Drop the
+    // imports row unless flows were actually measured or it carries a value.
+    const flowsMeasured = importSeries?.some((v) => v != null) ?? false
+    return base.filter((r) => r.key !== 'imports' || flowsMeasured || r.nowMW > 0)
   }, [scrubbing, showToday, today, rows, mixSeries, importSeries, timeIndex])
 
   if (!rows.length) return null

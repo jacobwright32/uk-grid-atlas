@@ -78,7 +78,9 @@ export function useLiveData(country: CountryConfig): State {
     let mixTimer: ReturnType<typeof setInterval> | undefined
     const startMixRefresh = () => {
       mixTimer = setInterval(async () => {
-        const mix = await fetchMixNow()
+        // A blip in the Elexon feed must not surface as an unhandled
+        // rejection every five minutes — keep the last good figures instead.
+        const mix = await fetchMixNow().catch(() => null)
         if (!mix) return
         setState((prev) => {
           if (!prev.live) return prev

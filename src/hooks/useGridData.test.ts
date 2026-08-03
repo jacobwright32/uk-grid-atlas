@@ -56,6 +56,7 @@ describe('loadAllProgressive (#60)', () => {
       {
         load,
         cache,
+        concurrency: 99,
       },
     )
     // resolve in reverse order — the shipped bug was order-sensitivity
@@ -80,7 +81,7 @@ describe('loadAllProgressive (#60)', () => {
       () => {
         errored = true
       },
-      { load, cache },
+      { load, cache, concurrency: 99 },
     )
     for (const id of ids) await settle(id)
     await run
@@ -99,7 +100,7 @@ describe('loadAllProgressive (#60)', () => {
     const run = loadAllProgressive(
       (_d, failures) => counts.push(failures),
       () => {},
-      { load, cache },
+      { load, cache, concurrency: 99 },
     )
     // Every success first, the failure last: without the post-settle
     // re-announce, every onUpdate would have carried failures = 0 and the
@@ -119,7 +120,7 @@ describe('loadAllProgressive (#60)', () => {
     const run = loadAllProgressive(
       (_d, failures) => counts.push(failures),
       () => {},
-      { load, cache },
+      { load, cache, concurrency: 99 },
     )
     for (const id of ids) await settle(id)
     await run
@@ -138,7 +139,7 @@ describe('loadAllProgressive (#60)', () => {
       (e) => {
         err = e
       },
-      { load, cache },
+      { load, cache, concurrency: 99 },
     )
     for (const id of ids) await settle(id)
     await run

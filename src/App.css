@@ -1133,3 +1133,21 @@
     transition: none;
   }
 }
+
+/* Snapshot older than two missed refresh cycles — measured, not assumed. */
+.footnote--stale {
+  color: var(--warn, #e0a83c);
+}
+
+.boot-retry {
+  margin-top: 10px;
+  padding: 6px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.boot-retry:hover {
+  border-color: var(--accent);
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { COUNTRIES, REAL_COUNTRY_IDS } from '../lib/countries'
 import type { CountryId, RealCountryId } from '../lib/countries'
 import { mergeGridData } from '../lib/merge'
+import { pooled } from '../lib/pool'
 import type { GridData } from '../lib/types'
 
 import gbStations from '../data/gb/stations.json?url'
@@ -406,6 +407,10 @@ export async function loadAllProgressive(
   deps: {
     load: (id: RealCountryId) => Promise<GridData>
     cache: Map<string, GridData>
+    /** Countries in flight at once. 32 grids × ~4 fetches unpooled was a
+     *  ~128-request burst on a cold ALL load — the exact stampede pool.ts
+     *  was written to stop (#9), now applied here too. */
+    concurrency?: number
   } = { load: loadCountry, cache },
 ): Promise<void> {
   const cached = deps.cache.get('all')
@@ -418,20 +423,18 @@ export async function loadAllProgressive(
   /** Failure count the most recent onUpdate carried. */
   let announced = 0
   let firstError: unknown = null
-  await Promise.all(
-    REAL_COUNTRY_IDS.map(async (id) => {
-      try {
-        const bundle = await deps.load(id)
-        arrived.push(bundle)
-        announced = failures
-        onUpdate(mergeGridData(arrived), failures)
-      } catch (err) {
-        failures++
-        firstError ??= err
-        console.warn(`ALL view: failed to load ${id} — showing the rest`)
-      }
-    }),
-  )
+  await pooled(REAL_COUNTRY_IDS, deps.concurrency ?? 6, async (id) => {
+    try {
+      const bundle = await deps.load(id)
+      arrived.push(bundle)
+      announced = failures
+      onUpdate(mergeGridData(arrived), failures)
+    } catch (err) {
+      failures++
+      firstError ??= err
+      console.warn(`ALL view: failed to load ${id} — showing the rest`)
+    }
+  })
   if (!arrived.length) {
     onError(firstError)
     return

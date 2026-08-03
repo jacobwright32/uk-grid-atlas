@@ -16,6 +16,9 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # A wedged retry-tail (ENTSO-E ban waits stack up to 15 min each) must not
+    # ride to GitHub's 6-hour default and block the next scheduled run.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

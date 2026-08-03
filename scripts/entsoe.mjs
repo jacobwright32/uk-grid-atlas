@@ -62,15 +62,25 @@ export class EntsoeClient {
    * @param opts.maxAttempts total tries per request, including the first.
    * @param opts.sleep injectable for tests.
    */
-  constructor(token, { maxAttempts = 4, sleep = sleepMs } = {}) {
+  constructor(token, { maxAttempts = 4, sleep = sleepMs, minGapMs = 300 } = {}) {
     if (!token) throw new Error('ENTSOE_TOKEN missing')
     this.token = token
     this.maxAttempts = maxAttempts
     this.sleep = sleep
+    this.minGapMs = minGapMs
   }
 
   async get(params) {
     const qs = new URLSearchParams({ securityToken: this.token, ...params })
+    // Proactive pacing, not just reactive backoff: a minimum gap between
+    // requests keeps a 31-day backfill under the limiter's radar instead of
+    // sprinting into a 429 and then serving the full ban. ~3 req/s is well
+    // inside ENTSO-E's published tolerance.
+    if (this.minGapMs > 0) {
+      const since = Date.now() - (EntsoeClient._lastRequestAt ?? 0)
+      if (since < this.minGapMs) await this.sleep(this.minGapMs - since)
+      EntsoeClient._lastRequestAt = Date.now()
+    }
     for (let attempt = 1; ; attempt++) {
       const res = await fetch(`${BASE}?${qs}`, {
         headers: { 'User-Agent': 'grid-atlas/1.0 (open-data dashboard)' },

@@ -45,6 +45,9 @@ export interface LiveData {
   basis: 'elexon' | 'entsoe'
   /** ISO settlement date of the metered day. */
   meteredDate: string | null
+  /** When the snapshot was baked — drives the measured staleness label.
+   *  Null on the GB browser-live path, which has no bake step. */
+  generatedAt: string | null
   perStationDay: Map<string, StationDay>
   /** Scheduled output right now (PN), per station — Elexon only. */
   perStationNow: Map<string, number> | null
@@ -113,6 +116,7 @@ export async function loadEntsoeSnapshot(countryId: string): Promise<LiveData | 
     return {
       basis: 'entsoe',
       meteredDate: snap.date,
+      generatedAt: snap.generatedAt ?? null,
       perStationDay,
       perStationNow: null,
       mix: snap.mix,
@@ -291,6 +295,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
     return {
       basis: 'elexon',
       meteredDate: day?.date ?? null,
+      generatedAt: null,
       perStationDay: day?.per ?? snapshotToMap(snapshot),
       perStationNow: nowData?.perStation ?? null,
       mix,
@@ -310,6 +315,7 @@ export async function loadLive(bmuMap: BmuMap, snapshot: SnapshotFile | null): P
   return {
     basis: 'elexon',
     meteredDate: snapshot?.date ?? null,
+    generatedAt: snapshot?.generatedAt ?? null,
     perStationDay: snapshotToMap(snapshot),
     perStationNow: null,
     mix: snapshot?.mix ?? null,

@@ -71,7 +71,7 @@ class Client:
     # ---- public datasets -------------------------------------------------
 
     def history(self, code: str) -> History:
-        """Rolling 31-day history for one grid. Available for all 22."""
+        """Rolling 31-day history for one grid. Available for all 32."""
         g = grid(code)
         return History._parse(g.code, self._json(f"live/history/{g.code}.json"))
 

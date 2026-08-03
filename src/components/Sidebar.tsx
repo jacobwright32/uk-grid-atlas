@@ -47,8 +47,33 @@ function liveStatusLine(status: LiveStatus, live: LiveData | null, kind: string)
     : null
   if (status === 'snapshot') return `Offline — bundled snapshot${date ? ` of ${date}` : ''}.`
   if (isBaked(live) && live)
-    return `${sourceMetaFor(live.sourceLabel).label} metered day: ${date ?? '—'} · refreshed every 6 h`
+    return `${sourceMetaFor(live.sourceLabel).label} metered day: ${date ?? '—'} · ${snapshotAgeLabel(live)}`
   return `Latest metered day: ${date ?? '—'} (settles ~a week behind)${live?.perStationNow ? ' · schedules live' : ''}`
+}
+
+/**
+ * Measured freshness, not a promise. The line used to say "refreshed every
+ * 6 h" as a hard-coded string — if the workflow ever died, that claim silently
+ * became false. Now the age is computed from the snapshot's own generatedAt.
+ */
+function snapshotAgeHours(live: LiveData | null): number | null {
+  if (!live?.generatedAt) return null
+  const t = Date.parse(live.generatedAt)
+  if (Number.isNaN(t)) return null
+  return Math.max(0, (Date.now() - t) / 3_600_000)
+}
+
+function snapshotAgeLabel(live: LiveData | null): string {
+  const h = snapshotAgeHours(live)
+  if (h == null) return 'refresh cadence: 6 h'
+  if (h < 1) return 'updated under an hour ago'
+  return `updated ${Math.round(h)} h ago`
+}
+
+/** Past two missed refresh cycles the snapshot is officially stale. */
+function snapshotIsStale(live: LiveData | null): boolean {
+  const h = snapshotAgeHours(live)
+  return h != null && h > 12
 }
 
 /** Tab order of the drawer. `:not([disabled])` keeps the "size dots by output"
@@ -151,15 +176,24 @@ export default function Sidebar({
               />
               <span>Size dots by output (bright) over capacity (ghost)</span>
             </label>
-            <p className="footnote">{liveStatusLine(liveStatus, live, country.liveKind)}</p>
+            <p className={`footnote${snapshotIsStale(live) ? ' footnote--stale' : ''}`}>
+              {liveStatusLine(liveStatus, live, country.liveKind)}
+              {snapshotIsStale(live) ? ' — the refresh workflow may be down' : ''}
+            </p>
             {live && country.liveKind === 'elexon' && (
               <p className="footnote">
                 Unit-level data covers transmission-connected stations (~70–80% of GB generation);
                 embedded solar &amp; small sites have no public per-site feed.
               </p>
             )}
+            {/* Per-grid honesty (#audit): every country carries an authored
+                liveNote — ba's missing prices, hr's missing per-unit output,
+                rs's 12-day lag. These used to render only on the ALL view;
+                the generic source footnote is now just the fallback. */}
             {live && country.liveKind === 'entsoe' && (
-              <p className="footnote">{sourceMetaFor(live.sourceLabel).footnote}</p>
+              <p className="footnote">
+                {country.liveNote || sourceMetaFor(live.sourceLabel).footnote}
+              </p>
             )}
           </>
         ) : (
