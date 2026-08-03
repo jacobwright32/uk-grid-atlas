@@ -17,7 +17,7 @@ complete `plant:source` value table.
 ## What the queries select
 
 Two ingest paths feed the same builder. Fourteen countries have Overpass
-queries in `fetch-overpass.mjs`; the remaining eight are reachable only by
+queries in `fetch-overpass.mjs`; the remaining eighteen are reachable only by
 extracting a Geofabrik `.osm.pbf` locally (see
 [the PBF section of the README](../README.md#extracting-from-a-geofabrik-pbf)).
 Both paths emit the same Overpass-shaped JSON, so `build-data.mjs` reads
@@ -99,8 +99,9 @@ quietly matter.
 | `generator:source`             | `power=generator` | Selects wind turbines for the clustering pass (`generator:method` is the fallback)              |
 | `generator:output:electricity` | `power=generator` | Per-turbine rating, summed into the synthetic farm's capacity                                   |
 
-The `power=generator` rows apply only to the four grids rebuilt from
-individually mapped turbines — Finland, Austria, Estonia and Canada. That pass
+The `power=generator` rows apply only to the eleven grids rebuilt from
+individually mapped turbines — Finland, Austria, Estonia, Canada, Hungary,
+Croatia, Bulgaria, Greece, Romania, Serbia and North Macedonia. That pass
 also reads `name` and `operator` off each turbine; the full story is
 [below](#the-powergenerator-family).
 
@@ -210,6 +211,12 @@ switch. Several grids leave the third tier empty by design.
 | `fi`             | ≥380k→400, ≥200k→220, ≥100k→110            | 400     | 220     | 110     |
 | `pt`             | ≥380k→400, ≥200k→220, ≥140k→150            | 400     | 220     | 150     |
 | `ee`, `lv`, `lt` | ≥300k→330, ≥100k→110                       | 330     | 110     | —       |
+| `si`, `hr`, `ba` | ≥380k→400, ≥200k→220, ≥100k→110            | 400     | 220     | 110     |
+| `sk`, `rs`, `ro` | ≥380k→400, ≥200k→220, ≥100k→110            | 400     | 220     | 110     |
+| `hu`             | ≥500k→drop, ≥380k→400, ≥200k→220           | 400     | 220     | —       |
+| `bg`             | ≥500k→drop, ≥380k→400, ≥200k→220, ≥100k→110 | 400     | 220     | 110     |
+| `gr`             | ≥380k→400, ≥140k→150                       | 400     | 150     | —       |
+| `mk`             | ≥380k→400, 200–380k→drop, ≥100k→110        | 400     | 110     | —       |
 | `us`             | ≥700k→765, ≥450k→500, ≥300k→345, ≥200k→230 | 765+500 | 345     | 230     |
 | `ca`             | ≥650k→735, ≥440k→500, ≥280k→315, ≥200k→230 | 735+500 | 315     | 230     |
 
@@ -223,8 +230,9 @@ says.
 
 Some mapping communities never draw a `power=plant` around a wind farm; they
 map every turbine as a `power=generator` and stop there, which makes whole
-GW-scale fleets invisible to the plants query. Four grids — Finland, Austria,
-Estonia and Canada — are rebuilt with a compensating pass:
+GW-scale fleets invisible to the plants query. Eleven grids — Finland,
+Austria, Estonia, Canada and most of the 2026 Balkan adds (hu, hr, bg, gr,
+ro, rs, mk) — are rebuilt with a compensating pass:
 
 `scripts/pbf-extract-generators.py` pulls every element where `power=generator`
 and either `generator:source` or `generator:method` contains `wind`, as nodes

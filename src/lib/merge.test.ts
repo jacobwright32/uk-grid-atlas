@@ -42,6 +42,21 @@ describe('mergeGridData', () => {
     expect(merged.meta.stationCount).toBe(2)
   })
 
+  it('dedupes cross-border stations by id and counts the deduped set', () => {
+    // Iron Gates I lives in both ro's and rs's bundles as the same relation —
+    // the ALL view must show one pin, not two stacked ones.
+    const merged = mergeGridData([
+      bundle('relation/10245510', ['britned']),
+      bundle('relation/10245510', ['norned']),
+      bundle('way/9', []),
+    ])
+    expect(merged.stations.features.map((f) => f.properties.id)).toEqual([
+      'relation/10245510',
+      'way/9',
+    ])
+    expect(merged.meta.stationCount).toBe(2)
+  })
+
   it('throws on empty input', () => {
     expect(() => mergeGridData([])).toThrow()
   })

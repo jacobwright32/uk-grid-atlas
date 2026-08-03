@@ -38,6 +38,16 @@ body:
         - it — Italy
         - at — Austria
         - cz — Czechia
+        - si — Slovenia
+        - hu — Hungary
+        - sk — Slovakia
+        - hr — Croatia
+        - bg — Bulgaria
+        - gr — Greece
+        - ro — Romania
+        - ba — Bosnia and Herzegovina
+        - rs — Serbia
+        - mk — North Macedonia
         - pl — Poland
         - dk — Denmark
         - "no — Norway"

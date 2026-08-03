@@ -69,7 +69,7 @@ pip install -e '.[pandas]' pytest pytest-cov ruff mypy
 ```
 
 ```bash
-pytest                   # 245 tests, no network, no key
+pytest                   # ~300 tests, no network, no key
 ruff check .
 ruff format --check .
 mypy

@@ -103,7 +103,7 @@ export const COUNTRIES: Record<CountryId, CountryConfig> = {
     flag: '🌍',
     bounds: [
       [-139.5, 24.0],
-      [31.5, 71.0],
+      [31.5, 71.5],
     ],
     tiers: [
       { kvs: [765, 735, 500, 420, 400, 380], label: 'Backbone (≥380 kV)' },

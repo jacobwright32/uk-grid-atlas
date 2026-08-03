@@ -1,4 +1,4 @@
-// Country-registry invariants (#61): 22 grids × a dozen hand-typed fields.
+// Country-registry invariants (#61): 32 grids × a dozen hand-typed fields.
 // "Added a country, forgot a field / typo'd a domain" should fail here, not
 // in production. Cross-checks the client registry against the scripts-side
 // ENTSO-E registry so the two can't silently drift apart.

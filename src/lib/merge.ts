@@ -32,11 +32,25 @@ export function mergeGridData(bundles: GridData[]): GridData {
     }),
   }
 
+  // Stations dedupe by OSM id — cross-border plants exist in BOTH endpoint
+  // countries' bundles (Iron Gates in ro+rs, the Douro dams in pt+es, the
+  // Rhine chain in de+ch, 82 shared GB/IE border sites…). 390 ids repeat
+  // across the 32 bundles; without this they render as stacked double pins
+  // and inflate the ALL-view count.
+  const seenSt = new Set<string>()
+  const stations = {
+    type: 'FeatureCollection' as const,
+    features: bundles.flatMap((b) =>
+      b.stations.features.filter((f) => {
+        if (seenSt.has(f.properties.id)) return false
+        seenSt.add(f.properties.id)
+        return true
+      }),
+    ),
+  }
+
   return {
-    stations: {
-      type: 'FeatureCollection',
-      features: bundles.flatMap((b) => b.stations.features),
-    },
+    stations,
     transmission: {
       type: 'FeatureCollection',
       features: bundles.flatMap((b) => b.transmission.features),
@@ -45,7 +59,9 @@ export function mergeGridData(bundles: GridData[]): GridData {
     basemap,
     meta: {
       generated: first.meta.generated,
-      stationCount: bundles.reduce((a, b) => a + b.meta.stationCount, 0),
+      // The deduped count, not the sum of per-country counts — shared
+      // border plants are one site, not two.
+      stationCount: stations.features.length,
       lineCount: bundles.reduce((a, b) => a + b.meta.lineCount, 0),
       attribution: first.meta.attribution,
     },

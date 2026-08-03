@@ -1,7 +1,7 @@
 /**
  * Derived carbon intensity (#21): generation-weighted average of standard
  * lifecycle emission factors over the mix buckets we already have — no new
- * feeds, works identically for GB (Elexon), the 19 ENTSO-E grids, Ontario
+ * feeds, works identically for GB (Elexon), the 29 ENTSO-E grids, Ontario
  * and the US.
  *
  * Factors are IPCC AR5 / UNECE-style lifecycle medians in gCO₂e/kWh. They

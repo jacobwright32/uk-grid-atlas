@@ -1,4 +1,4 @@
-# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇨🇭 🇦🇹 🇨🇿 🇳🇴 🇸🇪 🇫🇮 🇵🇱 🇪🇸 🇵🇹 🇮🇹 🇪🇪 🇱🇻 🇱🇹 🇺🇸 🇨🇦 🌍
+# ⚡ Grid Atlas — 🇬🇧 🇳🇱 🇧🇪 🇮🇪 🇩🇰 🇫🇷 🇩🇪 🇨🇭 🇦🇹 🇨🇿 🇸🇮 🇭🇺 🇸🇰 🇭🇷 🇧🇦 🇷🇸 🇧🇬 🇬🇷 🇷🇴 🇲🇰 🇳🇴 🇸🇪 🇫🇮 🇵🇱 🇪🇸 🇵🇹 🇮🇹 🇪🇪 🇱🇻 🇱🇹 🇺🇸 🇨🇦 🌍
 
 **Live site → [jacobwright32.github.io/uk-grid-atlas](https://jacobwright32.github.io/uk-grid-atlas/)**
 [![CI](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwright32/uk-grid-atlas/actions/workflows/ci.yml)
@@ -7,7 +7,7 @@
 [![Grid Atlas — interactive dark map of generation, transmission and live output across Europe and North America](public/og.png)](https://jacobwright32.github.io/uk-grid-atlas/)
 
 An interactive, dark-mode atlas of power grids — Great Britain in full detail,
-nineteen European countries, the United States, Canada, and a transatlantic ALL view:
+twenty-nine European countries, the United States, Canada, and a transatlantic ALL view:
 tens of thousands of utility-scale generation sites, each country's
 high-voltage transmission backbone, and the HVDC interconnectors that tie
 the grids together.
@@ -17,7 +17,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
 
 ## Features
 
-- **~60,000 generation sites across thirty-two grids on two continents** —
+- **~71,500 generation sites across thirty-two grids on two continents** —
   nuclear, gas, offshore/onshore wind, solar, hydro, pumped storage,
   bioenergy, geothermal, battery storage and more — each sized by installed
   capacity and coloured by fuel. Hover for a card with capacity, operator
@@ -30,7 +30,7 @@ rendering, Google-Maps-style pan/zoom, no API keys required.
   known flow glow teal (importing) or amber (exporting), width tracking
   utilisation.
 - **Live output, five sources, zero API keys in the browser** — GB per
-  station via Elexon (PN right now + the metered day, half-hourly); 19
+  station via Elexon (PN right now + the metered day, half-hourly); 29
   European countries per station/mix via ENTSO-E snapshots; Ontario per
   station via IESO's public report; Texas + New York fuel mixes via ERCOT
   and NYISO. Refreshed every 6 hours by a scheduled workflow. Dots resize
@@ -119,7 +119,7 @@ npm run data:fetch -- gb    # download raw extracts from Overpass (mirrors, retr
                             #   grids have queries: gb | no | se | pl | pt | fi | ch | at | cz |
                             #   ee | lv | lt | es | it — or `all` to walk every one of them.
 node scripts/build-data.mjs gb   # → src/data/gb/*.json
-node scripts/build-data.mjs nl   # → src/data/nl/*.json (nl is one of the eight grids with no
+node scripts/build-data.mjs nl   # → src/data/nl/*.json (nl is one of the eighteen grids with no
                                  #   Overpass query — its raw extracts come from a Geofabrik
                                  #   .osm.pbf, see "Extracting from a Geofabrik PBF" below)
 npm run data:slim                # shrink committed bundles (drop sub-threshold noise)
@@ -158,18 +158,18 @@ Labrador–Island and Maritime HVDC links) — plus a transatlantic ALL view tha
 lot. Each country is ~30 lines of config in `scripts/build-data.mjs` +
 `src/lib/countries.ts` plus its raw extracts — adding another is an
 afternoon, not a project. Live output: GB via Elexon (browser-side); every
-European grid via ENTSO-E snapshots (the Nordics and Italy are mix-only —
+European grid via ENTSO-E snapshots (the Nordics, Italy and Croatia are mix-only —
 their TSOs publish little per-unit data); Ontario per station via IESO's
 public report; Texas + New York fuel mixes via ERCOT and NYISO — every
 source free and key-less (only the workflow's ENTSO-E token needs a free
 account). Grids whose mappers tag single turbines instead of farms
-(FI/AT/EE/CA) get synthetic wind-farm stations via
+(eleven of them — FI/AT/EE/CA plus most of the 2026 Balkan adds) get synthetic wind-farm stations via
 `scripts/pbf-extract-generators.py` + `scripts/cluster-wind.mjs`.
 
 | Layer                    | Source                                                       | Notes                                                                                                                                                                                        |
 | ------------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Generation sites         | OpenStreetMap `power=plant` via Overpass or PBF              | Admin area + offshore bounding boxes; near-duplicates de-duplicated by name; foreign offshore farms excluded by heuristic — every tag read is listed in [docs/osm-tags.md](docs/osm-tags.md) |
-| Wind farms (FI/AT/EE/CA) | OpenStreetMap `power=generator` via PBF                      | Individually mapped turbines clustered into synthetic farm stations (`cluster-wind.mjs`)                                                                                                     |
+| Wind farms (11 grids)    | OpenStreetMap `power=generator` via PBF                      | Individually mapped turbines clustered into synthetic farm stations (`cluster-wind.mjs`)                                                                                                     |
 | Wind on/offshore split   | Computed                                                     | Point-in-polygon against Natural Earth 1:10m land                                                                                                                                            |
 | Transmission lines       | OpenStreetMap `power=line`                                   | `voltage` ≥ 275 kV UK-wide, ≥ 132 kV within Scotland; per-country voltage ladders in [docs/osm-tags.md](docs/osm-tags.md); geometry simplified (RDP, ~25 m)                                  |
 | Interconnectors / HVDC   | Curated (`scripts/interconnectors.mjs`)                      | OSM submarine coverage is patchy, so routes are schematic; capacities/status from operator publications — update there                                                                       |
@@ -180,7 +180,7 @@ account). Grids whose mappers tag single turbines instead of farms
 | Live output (Canada)     | IESO Generator Output & Capability report (public, key-less) | Per-generator hourly XML → Ontario per-station day series + today-so-far mix, same snapshot shape as the EU                                                                                  |
 | Live output (US)         | ERCOT fuel-mix JSON + NYISO rtfuelmix CSV (public, key-less) | Texas + New York hourly fuel mixes (≈⅓ of US generation), mix-only — no US ISO publishes per-plant output openly                                                                             |
 | Wholesale prices         | ENTSO-E A44 day-ahead + Elexon MID (GB)                      | Per bidding zone, averaged for multi-zone countries; today's prices ship with the snapshot (known since yesterday's auction)                                                                 |
-| Transmission tiles       | `scripts/build-tiles.mjs` (tippecanoe → PMTiles)             | All 22 countries' lines in one committed range-requested archive; re-run after any `build-data` refresh                                                                                      |
+| Transmission tiles       | `scripts/build-tiles.mjs` (tippecanoe → PMTiles)             | All 32 countries' lines in one committed range-requested archive; re-run after any `build-data` refresh                                                                                      |
 
 **Licences:** power data © OpenStreetMap contributors, ODbL; Natural Earth is
 public domain. Keep the attribution control visible if you deploy this.
@@ -219,7 +219,7 @@ python3 scripts/pbf-extract-plants.py netherlands-latest.osm.pbf ../data/nl_plan
 python3 scripts/pbf-extract-lines.py netherlands-latest.osm.pbf \
   ../data/nl_lines_pbf.json "380000|220000|150000|110000"
 
-# turbines: power=generator wind, for grids with no farm polygons (FI/AT/EE/CA)
+# turbines: power=generator wind, for grids with no farm polygons (11 grids)
 python3 scripts/pbf-extract-generators.py finland-latest.osm.pbf ../data/gens_fi_wind.json
 node scripts/build-data.mjs fi     # cluster-wind reads the stations it produces
 node scripts/cluster-wind.mjs fi   # → ../data/plants_fi_wind_clusters.json
@@ -342,7 +342,7 @@ scripts/
   pbf-extract-plants.py    power=plant → Overpass-shaped JSON, from a Geofabrik PBF
   pbf-extract-lines.py     power=line (voltage-filtered) → Overpass-shaped JSON
   pbf-extract-generators.py  power=generator wind turbines, for farm-less grids
-  cluster-wind.mjs      turbines → synthetic farm stations (FI/AT/EE/CA)
+  cluster-wind.mjs      turbines → synthetic farm stations (11 grids)
   build-data.mjs        raw → app GeoJSON (dedupe, classify, simplify)
   interconnectors.mjs   curated HVDC link registry
   basemap.mjs           region coastline builder (antimeridian-safe clipping)

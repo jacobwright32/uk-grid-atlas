@@ -395,7 +395,7 @@ async function loadCountry(id: RealCountryId): Promise<GridData> {
  * cached, so transient failures heal on the next visit.
  *
  * `onUpdate` carries the failure count so the UI can own up to a partial map
- * instead of quietly showing 20 of 22 grids (#3).
+ * instead of quietly showing 30 of 32 grids (#3).
  *
  * `deps` is dependency-injected for the race tests (#60): the ordering and
  * failure semantics live HERE, not in the per-country fetch plumbing.

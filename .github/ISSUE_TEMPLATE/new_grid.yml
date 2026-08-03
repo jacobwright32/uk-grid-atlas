@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        The biggest gap in this project. Current coverage is 22 grids: 20 in
+        The biggest gap in this project. Current coverage is 32 grids: 30 in
         Europe via ENTSO-E plus Elexon for Great Britain, and two in North
         America — ERCOT + NYISO, and Ontario.
 

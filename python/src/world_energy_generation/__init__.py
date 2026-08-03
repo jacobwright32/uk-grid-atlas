@@ -158,7 +158,7 @@ def latest(code: str, *, client: Client | None = None) -> DayRecord | None:
     """
     Most recent complete day for one grid, from history. ``None`` if empty.
 
-    Works for all 22 including Great Britain, which is the point — it is the
+    Works for all 32 including Great Britain, which is the point — it is the
     portable way to ask "what happened most recently" without special-casing
     the one grid with no live JSON.
     """
@@ -193,7 +193,7 @@ def demand(codes: str | Sequence[str] | None = None, *, client: Client | None = 
 
 
 def grids_frame() -> Any:
-    """The 22-grid registry as a DataFrame. See :func:`.frames.grids_frame`."""
+    """The 32-grid registry as a DataFrame. See :func:`.frames.grids_frame`."""
     from .frames import grids_frame as _grids_frame
 
     return _grids_frame()
