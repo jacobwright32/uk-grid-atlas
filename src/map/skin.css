@@ -1,0 +1,90 @@
+/* MapLibre's stylesheet plus our dark skin for it — deliberately one file.
+   The two sheets collide on single-class selectors of equal specificity
+   (`.maplibregl-map` vs `.map-container`, and the ctrl-group / attribution /
+   scale chrome below), so if they land in separate emitted files the cascade
+   is decided by whichever the bundler happens to put last. That flipped when
+   App became a dynamic chunk (#97): maplibre's CSS loaded after ours,
+   `position: relative` beat `position: absolute; inset: 0`, the map container
+   collapsed to 0 px tall and the atlas went blank in production. Inside one
+   file the order is ours to set, and it can't flip again.
+
+   Only the map path imports this (GridMap.tsx) — the ?embed= strip never
+   downloads maplibre's JS, so it shouldn't pay for its CSS either. */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+/* ------------------------------------------------------------- map canvas */
+.map-container {
+  position: absolute;
+  inset: 0;
+  background: #0b0f14;
+}
+
+/* Belt and braces for the one rule whose loss is fatal (#100): MapLibre adds
+   its own `maplibregl-map` class to this div, and two classes beat one, so the
+   fill survives even if the @import above is ever undone. */
+.map-container.maplibregl-map {
+  position: absolute;
+  inset: 0;
+}
+
+/* MapLibre puts the tabindex on the <canvas>, so that's what gets the ring.
+   Drawn inside the edges — the canvas fills the pane, and the global +2px
+   offset would put half the ring off-screen (#12). */
+.maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
+}
+
+/* MapLibre chrome, re-skinned dark */
+.maplibregl-ctrl-group {
+  background: var(--surface) !important;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--hairline) !important;
+}
+
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: invert(0.9);
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(13, 13, 13, 0.75) !important;
+  font-size: 10.5px;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--ink-muted) !important;
+}
+
+.maplibregl-ctrl-scale {
+  background: rgba(13, 13, 13, 0.6) !important;
+  color: var(--ink-2) !important;
+  border-color: var(--ink-muted) !important;
+}
+
+/* ------------------------------------------------------------- hovercard */
+.grid-popup .maplibregl-popup-content {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  font:
+    13px/1.45 system-ui,
+    sans-serif;
+}
+
+.grid-popup .maplibregl-popup-tip {
+  border-top-color: var(--surface) !important;
+  border-bottom-color: var(--surface) !important;
+}
+
+.grid-popup .maplibregl-popup-close-button {
+  color: var(--ink-muted);
+  font-size: 16px;
+  padding: 2px 7px;
+}

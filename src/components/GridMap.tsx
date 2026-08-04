@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+// maplibre's own stylesheet comes in through skin.css, which @imports it above
+// our overrides. Importing 'maplibre-gl/dist/maplibre-gl.css' here instead lets
+// the bundler emit it as a separate file that can load *after* ours and blank
+// the map (#100) — so don't. Skin also stays off the ?embed= path this way.
+import '../map/skin.css'
 import type { GridData, GroupId, NetworkToggles } from '../lib/types'
 import type { BmuMap, LiveData } from '../lib/live'
 import type { CountryConfig } from '../lib/countries'

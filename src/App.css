@@ -402,80 +402,15 @@
   color: inherit;
 }
 
-/* ------------------------------------------------------------------- map */
+/* --------------------------------------------------------------- map pane */
+/* Layout only. The map's own skin — and MapLibre's stylesheet with it — lives
+   in src/map/skin.css so the cascade between the two is settled inside one
+   file (#100). */
 .map-pane {
   grid-area: map;
   position: relative;
   min-width: 0;
   min-height: 0;
-}
-
-.map-container {
-  position: absolute;
-  inset: 0;
-  background: #0b0f14;
-}
-
-/* MapLibre puts the tabindex on the <canvas>, so that's what gets the ring.
-   Drawn inside the edges — the canvas fills the pane, and the global +2px
-   offset would put half the ring off-screen (#12). */
-.maplibregl-canvas:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -3px;
-}
-
-/* MapLibre chrome, re-skinned dark */
-.maplibregl-ctrl-group {
-  background: var(--surface) !important;
-  border: 1px solid var(--hairline);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
-}
-
-.maplibregl-ctrl-group button + button {
-  border-top: 1px solid var(--hairline) !important;
-}
-
-.maplibregl-ctrl button .maplibregl-ctrl-icon {
-  filter: invert(0.9);
-}
-
-.maplibregl-ctrl-attrib {
-  background: rgba(13, 13, 13, 0.75) !important;
-  font-size: 10.5px;
-}
-
-.maplibregl-ctrl-attrib a {
-  color: var(--ink-muted) !important;
-}
-
-.maplibregl-ctrl-scale {
-  background: rgba(13, 13, 13, 0.6) !important;
-  color: var(--ink-2) !important;
-  border-color: var(--ink-muted) !important;
-}
-
-/* ------------------------------------------------------------- hovercard */
-.grid-popup .maplibregl-popup-content {
-  background: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 13px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
-  font:
-    13px/1.45 system-ui,
-    sans-serif;
-}
-
-.grid-popup .maplibregl-popup-tip {
-  border-top-color: var(--surface) !important;
-  border-bottom-color: var(--surface) !important;
-}
-
-.grid-popup .maplibregl-popup-close-button {
-  color: var(--ink-muted);
-  font-size: 16px;
-  padding: 2px 7px;
 }
 
 .hovercard {

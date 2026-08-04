@@ -113,8 +113,20 @@ await page.waitForTimeout(500)
 
 const checks = await page.evaluate(() => {
   const m = window.__ukgridMap
+  const pane = document.querySelector('.map-pane')
+  const box = document.querySelector('.map-container')
+  const cv = document.querySelector('canvas.maplibregl-canvas')
   return {
     canvas: Boolean(document.querySelector('canvas.maplibregl-canvas')),
+    // #100: the map can be fully "loaded", render features and still be
+    // invisible — a CSS-order flip gave `.map-container` 0 px of height and
+    // the whole atlas went blank on the live site while every other check
+    // here passed. Geometry is the check that would have caught it.
+    paneH: pane?.clientHeight ?? 0,
+    boxH: box?.clientHeight ?? 0,
+    boxW: box?.clientWidth ?? 0,
+    canvasH: cv?.clientHeight ?? 0,
+    canvasW: cv?.clientWidth ?? 0,
     stations: m.queryRenderedFeatures(undefined, { layers: ['stations'] }).length,
     lines: ['lines-t1', 'lines-t2', 'lines-t3'].some(
       (l) => m.getLayer(l) && m.queryRenderedFeatures(undefined, { layers: [l] }).length > 0,
@@ -124,6 +136,14 @@ const checks = await page.evaluate(() => {
 })
 
 if (!checks.canvas) fail('map canvas missing')
+if (checks.paneH < 300) fail(`map pane only ${checks.paneH} px tall — layout broken`)
+if (checks.boxH < checks.paneH * 0.9 || checks.boxW < 300)
+  fail(
+    `.map-container is ${checks.boxW}×${checks.boxH} inside a ${checks.paneH} px pane — ` +
+      'the map is collapsed (CSS order/layout regression, see #100)',
+  )
+if (checks.canvasH < checks.paneH * 0.9 || checks.canvasW < 300)
+  fail(`map canvas is ${checks.canvasW}×${checks.canvasH} in a ${checks.paneH} px pane — invisible`)
 if (checks.stations < 50) fail(`only ${checks.stations} stations rendered (expected hundreds)`)
 if (!checks.lines) fail('no transmission lines rendered')
 if (!/Finland/.test(checks.stripTitle)) fail(`mix strip title wrong: "${checks.stripTitle}"`)
@@ -131,7 +151,8 @@ if (pageErrors.length) fail(`uncaught page errors:\n${pageErrors.join('\n')}`)
 
 clearTimeout(watchdog)
 console.log(
-  `e2e OK: canvas ✓ · ${checks.stations} stations · lines ✓ · strip "${checks.stripTitle.trim()}" · 0 page errors`,
+  `e2e OK: canvas ${checks.canvasW}×${checks.canvasH} ✓ · ${checks.stations} stations · lines ✓ · ` +
+    `strip "${checks.stripTitle.trim()}" · 0 page errors`,
 )
 await browser.close()
 server.close()
