@@ -1,38 +1,85 @@
 name: Intraday tick
 
-# Hourly freshness for the headline numbers (#98): refresh only each grid's
-# `today` block (mix, net position, day-ahead prices, demand) + generatedAt —
-# ~4–20 ENTSO-E requests per grid against ~50+ for a full bake. The metered
-# day, per-station detail and history stay untouched; the 6-hourly
-# live-snapshots workflow still owns those. This also acts as the retry net:
-# a full bake lost to an upstream outage can no longer leave grids 10 h
-# stale, because the tick keeps today current in between.
+# Freshness for the headline numbers (#98): refresh only each grid's `today`
+# block (mix, net position, day-ahead prices, demand) + generatedAt — ~4–20
+# ENTSO-E requests per grid against ~50+ for a full bake. The metered day,
+# per-station detail and history stay untouched; the 6-hourly live-snapshots
+# workflow still owns those.
+#
+# Cadence, after measuring what actually happens: GitHub delays and silently
+# drops `schedule` events. Between 3 Aug 20:32 and 4 Aug 08:00 UTC this
+# workflow fired 4 times out of ~11 — every one a success — and the 6-hourly
+# bake landed 1h25m–4h08m late with one 17.5 h gap. A single hourly cron is
+# therefore a request, not a schedule. So: ask three times an hour and let
+# scripts/live-age.mjs decide whether each attempt has work to do. A landed
+# tick silences the next two slots for ~15 s each; a dropped slot costs 20
+# minutes instead of 60.
 
 on:
   schedule:
-    - cron: '37 * * * *' # hourly, offset from the full bake at :17
+    # Three attempts an hour, all clear of the :17 full bake and off the top of
+    # the hour (the busiest, most-dropped minute). The gate below is what keeps
+    # this from becoming three ticks an hour.
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:
 
+# Read-only by default so the gate job — which runs three times an hour on a
+# bare checkout — holds a token that cannot write to the repo. `tick` elevates.
 permissions:
-  contents: write
-  actions: write # to dispatch the Pages deploy after a commit
+  contents: read
 
-# Its own group — sharing live-snapshots' group would let an hourly tick
-# cancel a 45-minute full bake mid-run.
+# Its own group — sharing live-snapshots' group would let a tick cancel a
+# 45-minute full bake mid-run. cancel-in-progress is false: a slow tick is
+# worth finishing, and a run that queues behind it re-measures freshness in its
+# own gate, so the duplicate resolves itself instead of being killed.
 concurrency:
   group: live-intraday
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  tick:
+  # Cheap enough to run on every slot: checkout plus the runner's own node, no
+  # setup-node and no `npm ci`, because live-age.mjs imports nothing but node
+  # built-ins. Seconds, against ~50 s to install the toolchain.
+  gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # slow upstream nights blow 10
+    timeout-minutes: 5
+    outputs:
+      stale: ${{ steps.age.outputs.stale }}
+      median: ${{ steps.age.outputs.median }}
+      oldest: ${{ steps.age.outputs.oldest }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is public/live stale enough to tick?
+        id: age
+        run: node scripts/live-age.mjs
+
+  tick:
+    needs: gate
+    # Fail open. A gate that errors must not be able to freeze the data — the
+    # whole point of this workflow is that staleness is the expensive failure —
+    # so anything other than a clean "fresh" verdict runs the tick. A hand-fired
+    # dispatch always ticks. `!cancelled()` is what lets this `if` see a failed
+    # gate at all; without a status function, a failed `needs` skips the job.
+    if: >-
+      !cancelled() && (
+      github.event_name == 'workflow_dispatch'
+      || needs.gate.outputs.stale == 'true'
+      || needs.gate.result != 'success' )
+    runs-on: ubuntu-latest
+    # A full 29-grid --intraday pass measures at 253 s. 20 leaves room for the
+    # slow upstream nights that used to blow the old 15.
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: write # to dispatch the Pages deploy after a commit
     env:
-      # Staged rollout: the pilot set, biggest grids first. Widen by adding
-      # codes (or set it empty to tick every ENTSO-E grid) once the pilot
-      # runs clean for a day or two. ca/us/gb are not ENTSO-E: ca and us
-      # refresh below via their own key-less fetchers; GB is browser-live.
-      INTRADAY_GRIDS: 'de fr es it at ch nl pl'
+      # Empty means every ENTSO-E grid (29). It was 'de fr es it at ch nl pl'
+      # while the tick was on trial, which left the other 21 grids moving only
+      # on the 6-hourly bake — measured at 4.7 h stale on 4 Aug while the pilot
+      # eight sat at 71 min. Narrow it again by listing codes here.
+      # ca/us/gb are not ENTSO-E: ca and us refresh below via their own
+      # key-less fetchers; GB is browser-live.
+      INTRADAY_GRIDS: ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,6 +100,12 @@ jobs:
         run: node scripts/fetch-us-snapshot.mjs || echo "US tick failed — keeping previous us.json"
       - name: Rebuild coverage.json
         run: node scripts/build-coverage.mjs
+      # Informational: the tick never touches the metered day, but nothing else
+      # reports on it, and some grids sit a long way back (rs 13 d, pl 10 d on
+      # 4 Aug). Cheap to surface it in a log we already read.
+      - name: Report metered-day lag
+        continue-on-error: true
+        run: node scripts/live-age.mjs --lagging 3
       - name: Commit
         id: commit
         run: |
@@ -65,7 +118,7 @@ jobs:
           else
             git commit -m "chore: intraday tick"
             # A full bake may push mid-tick; losing that race is fine — the
-            # next tick is an hour away and the bake's data is fresher anyway.
+            # next slot is 20 minutes away and the bake's data is fresher.
             if git push; then
               echo "pushed=true" >> "$GITHUB_OUTPUT"
             else
