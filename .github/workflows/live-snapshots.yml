@@ -29,7 +29,10 @@ jobs:
       - name: Fetch ENTSO-E snapshots
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-        run: node scripts/fetch-entsoe-snapshot.mjs all
+        # Same partial-success rule as the ca/us/gb steps below: one failed
+        # grid must not discard the other 28 (it cost 10 h of staleness on
+        # 3 Aug when a single timeout marked the whole run failed).
+        run: node scripts/fetch-entsoe-snapshot.mjs all || echo "partial bake - committing what refreshed"
       - name: Fetch Canada snapshot (IESO, key-less)
         run: node scripts/fetch-ca-snapshot.mjs || echo "IESO fetch failed — keeping previous ca.json"
       - name: Fetch US snapshot (ERCOT + NYISO, key-less)

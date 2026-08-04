@@ -26,7 +26,7 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15 # slow upstream nights blow 10
     env:
       # Staged rollout: the pilot set, biggest grids first. Widen by adding
       # codes (or set it empty to tick every ENTSO-E grid) once the pilot
@@ -43,7 +43,10 @@ jobs:
       - name: Refresh today blocks (ENTSO-E)
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-        run: node scripts/fetch-entsoe-snapshot.mjs all --intraday
+        # Per-grid failures set a non-zero exit; without the fallback that
+        # skipped the commit step and threw away every grid that DID refresh
+        # (the overnight-silence bug - one 503 tail per hour muted the tick).
+        run: node scripts/fetch-entsoe-snapshot.mjs all --intraday || echo "partial tick - committing what refreshed"
       - name: Refresh Canada snapshot (IESO, ~4 s)
         run: node scripts/fetch-ca-snapshot.mjs || echo "IESO tick failed — keeping previous ca.json"
       - name: Refresh US snapshot (ERCOT + NYISO, ~1 s)
