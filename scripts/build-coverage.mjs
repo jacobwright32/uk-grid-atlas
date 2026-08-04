@@ -33,6 +33,10 @@ export function coverageForGrid(cc, snapshot, history) {
     browserLive: BROWSER_LIVE.has(cc),
     generatedAt: snapshot?.generatedAt ?? null,
     meteredDate: snapshot?.date ?? null,
+    /** True when the per-station basis was carried from an earlier run because
+     *  the TSO stopped filing per-unit actuals (#106): meteredDate is real and
+     *  frozen, not a fresh measurement. */
+    meteredCarried: snapshot?.carriedBasis != null,
     /** Stations with any live per-unit output in the snapshot. */
     perStationLive: Object.entries(snapshot?.perStation ?? {}).filter(([, day]) =>
       someValue(day?.series),

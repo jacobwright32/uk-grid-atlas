@@ -44,6 +44,7 @@ import {
   makeHourlyAcc,
   meanCovered,
   mergeHistory,
+  meteredBasis,
   missingDates,
   priceAvg,
   patchHistoryDay,
@@ -82,6 +83,10 @@ const countryIds =
 // --backfill N: one-off deep history fill (default window 7, catch-up cap 3)
 const bfIdx = process.argv.indexOf('--backfill')
 const backfillDays = bfIdx >= 0 ? Math.max(1, parseInt(process.argv[bfIdx + 1], 10) || 31) : null
+// How far back to hunt for per-unit actuals. Overridable so the carry path
+// (#106) can be exercised against a live feed without waiting for a TSO to
+// fall off the end of the window.
+const LOOKBACK_DAYS = Math.max(1, Number(process.env.A73_LOOKBACK_DAYS) || 14)
 
 // --------------------------------------------------- unit → station mapping
 function stationIndexFor(cc) {
@@ -277,7 +282,8 @@ async function fetchMixAndFlows(cc, cfg, day) {
         }
       }
     }
-    if (acc.some((v) => v != null)) netImportSeries = acc.map((v) => (v == null ? null : Math.round(v)))
+    if (acc.some((v) => v != null))
+      netImportSeries = acc.map((v) => (v == null ? null : Math.round(v)))
   }
   const netImportMW = netImportSeries ? Math.round(meanCovered(netImportSeries)) : null
 
@@ -426,6 +432,15 @@ async function recordHistoryDay(cc, cfg, histPath, date, ctx, pre = null) {
   return true
 }
 
+/** The snapshot already on disk; null when absent or unreadable. */
+function readSnapshot(path) {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
 // --------------------------------------------------------------- main loop
 for (const cc of countryIds) {
   const cfg = ENTSOE_COUNTRIES[cc]
@@ -434,13 +449,13 @@ for (const cc of countryIds) {
     continue
   }
   console.log(`\n=== ${cc.toUpperCase()} ===`)
+  const snapPath = join(OUT_DIR, `${cc}.json`)
 
   // Intraday tick (#98): today's headline numbers only. The metered day,
   // per-station detail and history belong to the full bake and are left
   // byte-identical; generatedAt bumps because the pipeline genuinely reran.
   if (intraday) {
     try {
-      const snapPath = join(OUT_DIR, `${cc}.json`)
       if (!existsSync(snapPath)) {
         console.log(`${cc}: no snapshot yet — full bake creates it, skipping`)
         continue
@@ -524,34 +539,40 @@ for (const cc of countryIds) {
       )
     }
 
-    // 2. Latest day with per-unit actuals (A73), walking back up to 14 days.
-    let day = null
+    // 2. Latest day with per-unit actuals (A73), walking back over the lookback
+    //    window. `found` stays null when the TSO has published none of it.
+    let found = null
     let unitSeries = []
-    for (let back = 1; back <= 14 && !day; back++) {
+    for (let back = 1; back <= LOOKBACK_DAYS && !found; back++) {
       const candidate = isoDaysAgo(back)
       const collected = await fetchUnitsDay(cfg, candidate)
       if (collected.length) {
-        day = candidate
+        found = candidate
         unitSeries = collected
       }
     }
-    if (!day) {
-      // Nordic TSOs publish little/no per-unit A73 — fall back to a
-      // mix-only snapshot so the country still gets its generation mix.
-      console.warn(`${cc}: no A73 data in lookback window — writing mix-only snapshot`)
-      day = isoDaysAgo(1)
-      unitSeries = []
-    }
 
-    // 3. Aggregate unit series → stations.
-    const { perStation, unmappedMW, registryDirty } = stationsFromUnits(
-      unitSeries,
-      index,
-      overrides,
-      registry,
-      day,
-    )
-    if (registryDirty) writeFileSync(mapPath, JSON.stringify(registry, null, 1))
+    // 3. Aggregate unit series → stations, then decide whether that basis beats
+    // the one the file already has (#106, meteredBasis). A TSO that stops filing
+    // A73 used to cost the grid its entire per-station set *and* move its date
+    // forward to yesterday — data loss presented as freshness. A grid that has
+    // never had A73 (several Nordic TSOs) has nothing to keep and still gets its
+    // mix-only snapshot for yesterday.
+    const yesterday = isoDaysAgo(1)
+    const fresh = stationsFromUnits(unitSeries, index, overrides, registry, found ?? yesterday)
+    if (fresh.registryDirty) writeFileSync(mapPath, JSON.stringify(registry, null, 1))
+    const prevSnap = readSnapshot(snapPath)
+    const basis = meteredBasis({
+      found,
+      foundStations: Object.keys(fresh.perStation).length,
+      prev: prevSnap,
+      fallbackDate: yesterday,
+    })
+    const day = basis.date
+    const perStation = basis.carried ? prevSnap.perStation : fresh.perStation
+    const unmappedMW = basis.carried ? 0 : fresh.unmappedMW
+    if (basis.carried || found == null) console.warn(`${cc}: ${basis.reason}`)
+    else console.log(`${cc}: ${basis.reason}`)
 
     // 4+5. Mix (A75) + border flows (A11) for the metered day: hourly series
     // (#17 scrub) and day averages derived from them. The same fetch runs
@@ -605,6 +626,10 @@ for (const cc of countryIds) {
       basis: 'entsoe',
       date: day,
       generatedAt: new Date().toISOString(),
+      // #106: the per-station basis is older than this run could confirm — kept
+      // deliberately rather than blanked, and said out loud so a frozen date is
+      // never mistaken for a fresh measurement.
+      ...(basis.carried ? { carriedBasis: { days: basis.ageDays, note: basis.reason } } : {}),
       perStation,
       mixRows,
       mixSeries,
@@ -625,7 +650,7 @@ for (const cc of countryIds) {
         importMW: Math.round(netImportMW ?? importMW ?? 0),
       },
     }
-    writeFileSync(join(OUT_DIR, `${cc}.json`), JSON.stringify(snapshot))
+    writeFileSync(snapPath, JSON.stringify(snapshot))
 
     // 7. Rolling history: week of hourly series (with per-station/link
     // detail for the map scrub) + month of daily averages. The metered day
@@ -687,9 +712,11 @@ for (const cc of countryIds) {
     }
 
     console.log(
-      `${cc}: day ${day} · ${Object.keys(perStation).length} stations · mix ${
-        Math.round(totalMW / 100) / 10
-      } GW avg · ${Object.keys(flows).length} link flows · unmapped peak ${Math.round(unmappedMW)} MW${
+      `${cc}: day ${day}${basis.carried ? ` (carried, ${basis.ageDays} d)` : ''} · ${
+        Object.keys(perStation).length
+      } stations · mix ${Math.round(totalMW / 100) / 10} GW avg · ${
+        Object.keys(flows).length
+      } link flows · unmapped peak ${Math.round(unmappedMW)} MW${
         today ? ` · today through ${String(today.throughHour).padStart(2, '0')}:00` : ''
       }`,
     )

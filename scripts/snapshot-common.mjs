@@ -341,3 +341,92 @@ export function buildMixRows(bucketAvg, importMW = null, { net = false } = {}) {
 export function carryToday(existingToday, todayDate) {
   return existingToday?.date === todayDate ? existingToday : null
 }
+
+/** Whole days from ISO date `from` to ISO date `to`; NaN if either won't parse. */
+export const daysBetween = (from, to) =>
+  (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000
+
+export const CARRY_DEFAULTS = { maxCarryDays: 60, collapseFraction: 0.5 }
+
+/**
+ * Which metered day a snapshot should carry, and whether it should keep the
+ * per-station set the file already has.
+ *
+ * The A73 walk-back looks back a bounded number of days for per-unit actuals.
+ * When a TSO stops publishing them the walk-back eventually finds nothing, and
+ * the old behaviour was to write a mix-only snapshot dated *yesterday* with an
+ * empty perStation. That threw away real data, and — worse — it presented as
+ * freshness: the metered date jumped forward while everything behind it
+ * vanished, so the staleness indicator went green on a dead feed. Same shape as
+ * #100, where every semantic signal was green and the map was blank.
+ *
+ * Measured 4 Aug 2026: PSE (pl) filed no A73 after 2026-07-25 and EMS (rs) none
+ * after 07-22, both hard cliffs rather than rolling lag. At a 14-day window rs
+ * was two days from blanking 11 stations and pl five days from blanking 21.
+ *
+ * So: never regress. A file that already knows stations keeps them, and keeps
+ * saying honestly how old that basis is, until either the TSO publishes again or
+ * the basis passes `maxCarryDays` — past which carrying it stops being
+ * disclosure and starts being fiction, and it is released with a warning.
+ *
+ * `collapseFraction` covers the partial publication: DE and others file A73 in
+ * pieces, so a day that arrives holding a small minority of the known fleet is a
+ * half-written day, not news. A fraction rather than a strict "fewer than
+ * before" because station counts jitter honestly — a plant that ran yesterday
+ * and not today files no series at all — and a strict test would pin the metered
+ * day at the fleet's historical maximum forever.
+ *
+ * Pure: give it the walk-back result and the previous snapshot, get a decision.
+ * `carried` true means reuse `prev.perStation` under the returned date.
+ */
+export function meteredBasis({ found, foundStations = 0, prev = null, fallbackDate }, opts = {}) {
+  const { maxCarryDays, collapseFraction } = { ...CARRY_DEFAULTS, ...opts }
+  const prevDate = prev?.date ?? null
+  const prevStations = Object.keys(prev?.perStation ?? {}).length
+  const age = prevDate ? daysBetween(prevDate, fallbackDate) + 1 : NaN
+  // Worth keeping only if it has stations and sits inside the bound. A NaN or
+  // negative age is a corrupt or future-dated file, not a basis — both fail
+  // this comparison, which is the point of writing it this way round.
+  const carryable = prevStations > 0 && age >= 0 && age <= maxCarryDays
+
+  // `ageDays` is how far the returned date sits behind today, so a caller can
+  // disclose the basis age without recomputing it.
+  const keep = (reason) => ({
+    date: prevDate,
+    carried: true,
+    stations: prevStations,
+    ageDays: Math.round(age),
+    reason,
+  })
+  const take = (date, stations, reason) => ({
+    date,
+    carried: false,
+    stations,
+    ageDays: Math.round(daysBetween(date, fallbackDate)) + 1,
+    reason,
+  })
+
+  if (found == null) {
+    if (carryable)
+      return keep(
+        `no per-unit data in the lookback window — keeping ${prevDate}, ` +
+          `${prevStations} stations, ${Math.round(age)} d old`,
+      )
+    if (prevStations > 0 && Number.isFinite(age))
+      return take(
+        fallbackDate,
+        0,
+        `per-unit basis ${Math.round(age)} d old, past the ${maxCarryDays} d carry bound — ` +
+          `releasing ${prevStations} stations to a mix-only snapshot`,
+      )
+    return take(fallbackDate, 0, 'no per-unit data in the lookback window — mix-only snapshot')
+  }
+  if (carryable && found < prevDate)
+    return keep(`walk-back found ${found}, older than the file's ${prevDate} — keeping the newer`)
+  if (carryable && foundStations < prevStations * collapseFraction)
+    return keep(
+      `${found} filed only ${foundStations} of ${prevStations} known stations — ` +
+        `partial publication, keeping ${prevDate}`,
+    )
+  return take(found, foundStations, `per-unit basis ${found}, ${foundStations} stations`)
+}

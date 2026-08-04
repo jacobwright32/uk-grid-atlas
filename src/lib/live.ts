@@ -96,6 +96,10 @@ interface EntsoeSnapshotFile {
   basis: 'entsoe'
   date: string
   generatedAt: string
+  /** Present only when `date`/`perStation` were carried from an earlier bake
+   *  because the TSO stopped publishing per-unit actuals (#106). The date is
+   *  real; `days` says how far behind today it now sits. */
+  carriedBasis?: { days: number; note: string } | null
   perStation: Record<string, StationDay>
   mixRows: import('./fleet').MixRow[]
   mixSeries?: Record<string, (number | null)[]>

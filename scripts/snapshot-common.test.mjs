@@ -27,6 +27,9 @@ import {
   upsertHistory,
   carryToday,
   patchHistoryHour,
+  CARRY_DEFAULTS,
+  daysBetween,
+  meteredBasis,
 } from './snapshot-common.mjs'
 
 describe('BUCKET_META', () => {
@@ -289,5 +292,152 @@ describe('carryToday (#98 intraday tick)', () => {
     expect(carryToday(block, '2026-08-04')).toBeNull()
     expect(carryToday(null, '2026-08-04')).toBeNull()
     expect(carryToday(undefined, '2026-08-04')).toBeNull()
+  })
+})
+
+describe('daysBetween', () => {
+  it('counts whole days, signed, and refuses to guess at nonsense', () => {
+    expect(daysBetween('2026-07-22', '2026-08-03')).toBe(12)
+    expect(daysBetween('2026-08-03', '2026-08-03')).toBe(0)
+    expect(daysBetween('2026-08-05', '2026-08-03')).toBe(-2)
+    expect(daysBetween('2026-02-28', '2026-03-01')).toBe(1) // 2026 is not a leap year
+    expect(daysBetween('nonsense', '2026-08-03')).toBeNaN()
+    expect(daysBetween('2026-08-03', '')).toBeNaN()
+  })
+})
+
+// #106. The A73 walk-back is bounded, so a TSO that stops filing per-unit
+// actuals eventually falls off the end of it. The old fallback wrote an empty
+// perStation dated *yesterday*: it threw away real stations and moved the date
+// forward while doing it, so a dead feed read as a fresh one. Measured 4 Aug
+// 2026, PSE (pl) had filed nothing since 2026-07-25 and EMS (rs) nothing since
+// 07-22 — hard cliffs, not rolling lag — putting rs two days and pl five days
+// from silently losing 11 and 21 stations.
+describe('meteredBasis (#106 never regress the station set)', () => {
+  const YESTERDAY = '2026-08-03'
+  /** An ISO date sitting exactly `n` days behind today (= YESTERDAY + 1). */
+  const aged = (n) =>
+    new Date(Date.parse(`${YESTERDAY}T00:00:00Z`) - (n - 1) * 86400000).toISOString().slice(0, 10)
+  /** A previous snapshot with `n` stations, metered `age` days ago. */
+  const prevOf = (age, n) => ({
+    date: aged(age),
+    perStation: Object.fromEntries(Array.from({ length: n }, (_, i) => [`s${i}`, { series: [] }])),
+  })
+  const decide = (args, opts) => meteredBasis({ fallbackDate: YESTERDAY, ...args }, opts)
+
+  it('pins the helper to the measured rs/pl dates', () => {
+    expect(aged(13)).toBe('2026-07-22') // rs
+    expect(aged(10)).toBe('2026-07-25') // pl
+    expect(aged(1)).toBe(YESTERDAY)
+  })
+
+  it('takes the walk-back’s day when it found one', () => {
+    const b = decide({ found: aged(1), foundStations: 42, prev: prevOf(2, 40) })
+    expect(b).toMatchObject({ date: aged(1), carried: false, stations: 42, ageDays: 1 })
+    expect(b.reason).toContain('42 stations')
+  })
+
+  it('takes it on a first-ever bake, with no previous file to consult', () => {
+    expect(decide({ found: aged(2), foundStations: 21, prev: null })).toMatchObject({
+      date: aged(2),
+      carried: false,
+      stations: 21,
+      ageDays: 2,
+    })
+  })
+
+  it('re-measures the same day when the TSO refiles it', () => {
+    // Not "older than prev", so it advances and the station set is refreshed —
+    // this is the ordinary DE case, where A73 fills in piecemeal.
+    expect(decide({ found: aged(3), foundStations: 60, prev: prevOf(3, 55) })).toMatchObject({
+      date: aged(3),
+      carried: false,
+      stations: 60,
+    })
+  })
+
+  // The bug, in the two shapes it was about to appear in.
+  it('keeps rs’s 11 stations when the walk-back comes back empty', () => {
+    const b = decide({ found: null, prev: prevOf(13, 11) })
+    expect(b).toMatchObject({ date: '2026-07-22', carried: true, stations: 11, ageDays: 13 })
+    expect(b.reason).toContain('keeping 2026-07-22')
+    expect(b.reason).toContain('13 d old')
+  })
+
+  it('keeps pl’s 21 stations too', () => {
+    expect(decide({ found: null, prev: prevOf(10, 21) })).toMatchObject({
+      date: '2026-07-25',
+      carried: true,
+      stations: 21,
+    })
+  })
+
+  // The sharper half: blanking the stations was bad, dating the blank snapshot
+  // *yesterday* was worse, because staleness is read off `date`.
+  it('never moves the date forward while the feed is dead', () => {
+    for (const age of [2, 5, 13, 59, 60]) {
+      const b = decide({ found: null, prev: prevOf(age, 8) })
+      expect(b.date).not.toBe(YESTERDAY)
+      expect(b.ageDays).toBe(age)
+    }
+  })
+
+  it('still writes a mix-only snapshot for a grid that has never had A73', () => {
+    // Several Nordic TSOs publish no per-unit actuals at all. Nothing to keep,
+    // so the pre-#106 behaviour is exactly right: yesterday, no stations.
+    for (const prev of [null, {}, { date: aged(4) }, { date: aged(4), perStation: {} }]) {
+      const b = decide({ found: null, prev })
+      expect(b).toMatchObject({ date: YESTERDAY, carried: false, stations: 0, ageDays: 1 })
+      expect(b.reason).toContain('mix-only')
+    }
+  })
+
+  it('releases a basis that has aged past the carry bound, and says so', () => {
+    expect(decide({ found: null, prev: prevOf(60, 11) }).carried).toBe(true) // exactly 60: kept
+    const b = decide({ found: null, prev: prevOf(61, 11) })
+    expect(b).toMatchObject({ date: YESTERDAY, carried: false, stations: 0 })
+    expect(b.reason).toContain('60 d carry bound')
+    expect(b.reason).toContain('releasing 11 stations')
+  })
+
+  it('keeps the newer day when the walk-back finds an older one', () => {
+    const b = decide({ found: aged(9), foundStations: 30, prev: prevOf(4, 28) })
+    expect(b).toMatchObject({ date: aged(4), carried: true, stations: 28 })
+    expect(b.reason).toContain('keeping the newer')
+  })
+
+  it('rides out a partial publication instead of adopting it', () => {
+    const b = decide({ found: aged(1), foundStations: 4, prev: prevOf(3, 40) })
+    expect(b).toMatchObject({ date: aged(3), carried: true, stations: 40 })
+    expect(b.reason).toContain('only 4 of 40')
+  })
+
+  // The trap a strict "fewer stations than before" test would have fallen into:
+  // counts jitter honestly — a plant that ran yesterday and not today files no
+  // series — so a strict test pins the metered day at the fleet's high-water
+  // mark forever. Half is the line.
+  it('accepts an honestly smaller day, and is strict at exactly half', () => {
+    expect(decide({ found: aged(1), foundStations: 39, prev: prevOf(3, 40) }).carried).toBe(false)
+    expect(decide({ found: aged(1), foundStations: 20, prev: prevOf(3, 40) }).carried).toBe(false)
+    expect(decide({ found: aged(1), foundStations: 19, prev: prevOf(3, 40) }).carried).toBe(true)
+  })
+
+  it('will not carry a corrupt or future-dated basis', () => {
+    // A negative or unparseable age is not a basis, whatever else it holds.
+    const future = { date: '2026-09-01', perStation: { a: {}, b: {} } }
+    expect(decide({ found: null, prev: future }).date).toBe(YESTERDAY)
+    expect(decide({ found: aged(1), foundStations: 1, prev: future }).date).toBe(aged(1))
+    const junk = { date: 'last tuesday', perStation: { a: {}, b: {} } }
+    expect(decide({ found: null, prev: junk }).date).toBe(YESTERDAY)
+    expect(decide({ found: aged(2), foundStations: 1, prev: junk }).date).toBe(aged(2))
+  })
+
+  it('honours overridden bounds', () => {
+    expect(decide({ found: null, prev: prevOf(13, 11) }, { maxCarryDays: 7 }).carried).toBe(false)
+    expect(
+      decide({ found: aged(1), foundStations: 30, prev: prevOf(3, 40) }, { collapseFraction: 0.9 })
+        .carried,
+    ).toBe(true)
+    expect(CARRY_DEFAULTS).toEqual({ maxCarryDays: 60, collapseFraction: 0.5 })
   })
 })
