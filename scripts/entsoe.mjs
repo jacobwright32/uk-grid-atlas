@@ -61,13 +61,18 @@ export class EntsoeClient {
    * @param token ENTSO-E security token.
    * @param opts.maxAttempts total tries per request, including the first.
    * @param opts.sleep injectable for tests.
+   * @param opts.deadlineAt epoch ms; a retry wait that would run past it
+   *   throws (err.deadlineExceeded = true) instead of sleeping. This is what
+   *   keeps a banned tail from riding a run into the workflow timeout, where
+   *   cancellation discards even the partial-success commit.
    */
-  constructor(token, { maxAttempts = 4, sleep = sleepMs, minGapMs = 300 } = {}) {
+  constructor(token, { maxAttempts = 4, sleep = sleepMs, minGapMs = 300, deadlineAt = null } = {}) {
     if (!token) throw new Error('ENTSOE_TOKEN missing')
     this.token = token
     this.maxAttempts = maxAttempts
     this.sleep = sleep
     this.minGapMs = minGapMs
+    this.deadlineAt = deadlineAt
   }
 
   async get(params) {
@@ -103,6 +108,16 @@ export class EntsoeClient {
         retryAfter: res.headers?.get?.('retry-after') ?? null,
         attempt,
       })
+      // Sleeping past the run deadline can't help: the caller is out of time
+      // to use the answer. Fail this request now so the run can move on to
+      // committing whatever already refreshed.
+      if (this.deadlineAt != null && Date.now() + waitMs > this.deadlineAt) {
+        const err = new Error(
+          `ENTSO-E ${res.status} — ${Math.round(waitMs / 1000)}s ban wait would pass the run deadline, giving up`,
+        )
+        err.deadlineExceeded = true
+        throw err
+      }
       console.warn(
         `ENTSO-E ${res.status} — waiting ${Math.round(waitMs / 1000)}s then retrying (attempt ${attempt}/${this.maxAttempts})`,
       )

@@ -1,7 +1,7 @@
 /**
  * fetch-entsoe-snapshot.mjs — bake per-country European live snapshots.
  *
- *   ENTSOE_TOKEN=... node scripts/fetch-entsoe-snapshot.mjs [cc|all]
+ *   ENTSOE_TOKEN=... node scripts/fetch-entsoe-snapshot.mjs [cc|all] [--deadline-minutes N]
  *
  * For each country: finds the latest day with per-unit data (A73), maps
  * units to map stations (registry from A71 + fuzzy name matching, cached in
@@ -65,7 +65,17 @@ if (!token) {
   console.log('ENTSOE_TOKEN not set — skipping European snapshots (nothing to do).')
   process.exit(0)
 }
-const client = new EntsoeClient(token)
+// --deadline-minutes N: total time budget for this run. Once spent, no more
+// ban waits are served and remaining grids are skipped — the run exits
+// (non-zero, so the workflow's partial-success fallback fires) in time for
+// the commit step to keep whatever DID refresh. Without it, a wedged
+// ENTSO-E retry tail rode runs into the job's 45-min kill, which cancels
+// the job mid-step and discards everything (runs #126–131, 22–23 Aug).
+const dlIdx = process.argv.indexOf('--deadline-minutes')
+const deadlineMinutes = dlIdx >= 0 ? Math.max(1, Number(process.argv[dlIdx + 1]) || 0) : null
+const deadlineAt = deadlineMinutes ? Date.now() + deadlineMinutes * 60_000 : null
+
+const client = new EntsoeClient(token, { deadlineAt })
 
 const target = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'all'
 // --intraday (#98): refresh only the today block + generatedAt of existing
@@ -442,7 +452,19 @@ function readSnapshot(path) {
 }
 
 // --------------------------------------------------------------- main loop
-for (const cc of countryIds) {
+for (const [ccIdx, cc] of countryIds.entries()) {
+  // Out of budget: stop cleanly instead of starting a grid we can't finish.
+  // Exit code 1 marks the bake partial; the skipped grids keep their
+  // previous snapshots and catch up on the next 6-hourly run.
+  if (deadlineAt && Date.now() >= deadlineAt) {
+    console.warn(
+      `run deadline (${deadlineMinutes} min) reached — skipping ${
+        countryIds.length - ccIdx
+      } remaining grid(s): ${countryIds.slice(ccIdx).join(' ')}`,
+    )
+    process.exitCode = 1
+    break
+  }
   const cfg = ENTSOE_COUNTRIES[cc]
   if (!cfg) {
     console.error(`unknown country ${cc}`)

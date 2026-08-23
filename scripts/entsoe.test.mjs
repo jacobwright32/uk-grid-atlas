@@ -695,6 +695,32 @@ describe('EntsoeClient', () => {
     expect(slept).toEqual([])
   })
 
+  it('refuses to sleep a ban wait past the run deadline (deadlineAt)', async () => {
+    // Ban lifts 10 min out, but the run's budget ends in 60 s: sleeping is
+    // pointless — the caller must fail fast so the partial commit can land.
+    const until = new Date(Date.now() + 10 * 60_000).toISOString()
+    const calls = stubFetch([
+      { status: 429, body: `<html><p>Requester banned until '${until}'.</p></html>` },
+    ])
+    const { client, slept } = makeClient({ deadlineAt: Date.now() + 60_000 })
+    const err = await client.get({ documentType: 'A75' }).catch((e) => e)
+    expect(err.message).toMatch(/run deadline/)
+    expect(err.deadlineExceeded).toBe(true)
+    expect(calls).toHaveLength(1)
+    expect(slept).toEqual([]) // the wait was refused, not served
+  })
+
+  it('still sleeps a short retry wait that fits inside the deadline', async () => {
+    stubFetch([
+      { status: 503, body: 'upstream down' },
+      { status: 200, body: OK_XML },
+    ])
+    const { client, slept } = makeClient({ deadlineAt: Date.now() + 60 * 60_000 })
+    const doc = await client.get({ documentType: 'A75' })
+    expect(doc).toHaveProperty('GL_MarketDocument')
+    expect(slept).toEqual([30_000])
+  })
+
   it('truncates a huge error body instead of pasting it into the log', async () => {
     stubFetch([{ status: 500, body: 'x'.repeat(5_000) }])
     const { client } = makeClient({ maxAttempts: 1 })

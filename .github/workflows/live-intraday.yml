@@ -93,7 +93,10 @@ jobs:
         # Per-grid failures set a non-zero exit; without the fallback that
         # skipped the commit step and threw away every grid that DID refresh
         # (the overnight-silence bug - one 503 tail per hour muted the tick).
-        run: node scripts/fetch-entsoe-snapshot.mjs all --intraday || echo "partial tick - committing what refreshed"
+        # --deadline-minutes 15: same protection as the full bake — a banned
+        # tail exits partial (committable) instead of riding to the job's
+        # 20-min kill, which cancels mid-step and skips ca/us + the commit.
+        run: node scripts/fetch-entsoe-snapshot.mjs all --intraday --deadline-minutes 15 || echo "partial tick - committing what refreshed"
       - name: Refresh Canada snapshot (IESO, ~4 s)
         run: node scripts/fetch-ca-snapshot.mjs || echo "IESO tick failed — keeping previous ca.json"
       - name: Refresh US snapshot (ERCOT + NYISO, ~1 s)
