@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-08-29T03:40:33.628Z",
+ "generatedAt": "2026-08-29T07:09:35.388Z",
  "grids": {
   "at": {
    "source": "ENTSO-E",
@@ -86,7 +86,7 @@
    "source": "IESO",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-08-29T03:40:32.670Z",
+   "generatedAt": "2026-08-29T07:09:34.112Z",
    "meteredDate": "2026-08-28",
    "meteredCarried": false,
    "perStationLive": 46,
@@ -626,11 +626,11 @@
    "source": "ERCOT + NYISO",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-08-29T03:40:33.574Z",
+   "generatedAt": "2026-08-29T07:09:34.448Z",
    "meteredDate": "2026-08-28",
    "meteredCarried": false,
    "perStationLive": 0,
-   "intraday": false,
+   "intraday": true,
    "prices": true,
    "demand": false,
    "flows": "none",
