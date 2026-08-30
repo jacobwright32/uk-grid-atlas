@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-08-30T12:00:00.631Z",
+ "generatedAt": "2026-08-30T12:36:48.194Z",
  "grids": {
   "at": {
    "source": "ENTSO-E",
@@ -346,7 +346,7 @@
    "source": "ENTSO-E",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-08-30T05:57:11.748Z",
+   "generatedAt": "2026-08-30T12:35:07.335Z",
    "meteredDate": "2026-08-28",
    "meteredCarried": false,
    "perStationLive": 15,
@@ -359,7 +359,7 @@
    "hourlyDays": 7,
    "perStationHistoryDays": 6,
    "priceDays": 31,
-   "demandDays": 31,
+   "demandDays": 30,
    "currency": "EUR"
   },
   "it": {
@@ -446,8 +446,8 @@
    "source": "ENTSO-E",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-08-30T07:35:20.695Z",
-   "meteredDate": "2026-08-27",
+   "generatedAt": "2026-08-30T12:16:00.452Z",
+   "meteredDate": "2026-08-28",
    "meteredCarried": false,
    "perStationLive": 7,
    "intraday": false,
