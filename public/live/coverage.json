@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-08-30T21:12:47.497Z",
+ "generatedAt": "2026-08-30T21:48:16.216Z",
  "grids": {
   "at": {
    "source": "ENTSO-E",
@@ -446,11 +446,11 @@
    "source": "ENTSO-E",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-08-30T17:43:40.807Z",
+   "generatedAt": "2026-08-30T21:26:43.360Z",
    "meteredDate": "2026-08-28",
    "meteredCarried": false,
    "perStationLive": 7,
-   "intraday": true,
+   "intraday": false,
    "prices": true,
    "demand": true,
    "flows": "hvdc",
