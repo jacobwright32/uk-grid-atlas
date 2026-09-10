@@ -1,12 +1,11 @@
 {
- "builtAt": "2026-07-23T08:28:44.118Z",
- "unitCount": 48,
+ "builtAt": "2026-09-10T16:54:22.472Z",
+ "unitCount": 40,
  "byUnit": {
   "26WUUUUUVENAUS10": "way/401799924",
   "26WUUUUFADALTO1G": "way/893805657",
   "26WUUUOSTIGLIA33": "way/82104200",
   "26WUUUCHIVASSO1V": "way/95099552",
-  "26WUUUUTURBIGO4K": "way/51601405",
   "26WUUUUUUROSEN1B": "way/941164388",
   "26WUUUUCANDELA1R": "way/92433464",
   "26WUUANAPO-C-L1O": "relation/6010414",
@@ -92,12 +91,6 @@
    "mw": 756
   },
   {
-   "eic": "26WUUS-MASS-CL10",
-   "name": "UP_S.MASS.CL_1",
-   "psr": "B10",
-   "mw": 497
-  },
-  {
    "eic": "26WUUUSGIACOMO3I",
    "name": "UP_SGIACOMO_3",
    "psr": "B10",
@@ -116,22 +109,28 @@
    "mw": 380
   },
   {
-   "eic": "26WUVALMALENCO17",
-   "name": "003014036",
-   "psr": "B11",
-   "mw": 350
-  },
-  {
-   "eic": "26WUUUUUCHIESE16",
-   "name": "UP_CHIESE_1",
-   "psr": "B11",
-   "mw": 335
-  },
-  {
-   "eic": "26WUUUALTOADDA15",
-   "name": "UP_ALTOADDA_1",
+   "eic": "26WUUBARGI-CEN11",
+   "name": "UP_BARGI_CEN_1",
    "psr": "B10",
-   "mw": 327
+   "mw": 281
+  },
+  {
+   "eic": "26WOEEPSNL31781W",
+   "name": "UP_OEEPSNL_31781",
+   "psr": "B20",
+   "mw": 200
+  },
+  {
+   "eic": "26W1336013185007",
+   "name": "UP_133601_31850",
+   "psr": "B20",
+   "mw": 200
+  },
+  {
+   "eic": "26WOEEPSNL31754Z",
+   "name": "UP_OEEPSNL_31754",
+   "psr": "B20",
+   "mw": 200
   }
  ]
 }
