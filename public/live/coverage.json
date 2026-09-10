@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generatedAt": "2026-09-10T04:51:40.838Z",
+ "generatedAt": "2026-09-10T05:27:25.397Z",
  "grids": {
   "at": {
    "source": "ENTSO-E",
@@ -346,7 +346,7 @@
    "source": "ENTSO-E",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-09-10T01:24:44.302Z",
+   "generatedAt": "2026-09-10T05:22:49.554Z",
    "meteredDate": "2026-08-28",
    "meteredCarried": true,
    "perStationLive": 15,
@@ -446,8 +446,8 @@
    "source": "ENTSO-E",
    "snapshot": true,
    "browserLive": false,
-   "generatedAt": "2026-09-10T01:22:51.107Z",
-   "meteredDate": "2026-09-06",
+   "generatedAt": "2026-09-10T04:58:06.134Z",
+   "meteredDate": "2026-09-07",
    "meteredCarried": false,
    "perStationLive": 7,
    "intraday": false,
@@ -457,9 +457,9 @@
    "links": 3,
    "historyDays": 31,
    "hourlyDays": 7,
-   "perStationHistoryDays": 3,
-   "priceDays": 31,
-   "demandDays": 30,
+   "perStationHistoryDays": 4,
+   "priceDays": 30,
+   "demandDays": 29,
    "currency": "EUR"
   },
   "no": {
