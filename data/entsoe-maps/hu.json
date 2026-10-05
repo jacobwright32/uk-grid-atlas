@@ -1,6 +1,6 @@
 {
- "builtAt": "2026-09-05T05:11:50.189Z",
- "unitCount": 22,
+ "builtAt": "2026-10-05T05:55:47.767Z",
+ "unitCount": 20,
  "byUnit": {
   "15WAJKA2345--STU": "way/921478873",
   "15WAJKA67----STX": "way/921478873",
@@ -37,19 +37,13 @@
    "eic": "15WVPPG1----VPPF",
    "name": "CHP1ae",
    "psr": "B04",
-   "mw": 103.3
+   "mw": 101.65
   },
   {
    "eic": "15WDUHAMB1---PPI",
    "name": "DUHAMB_gép1",
    "psr": "B04",
    "mw": 42.3
-  },
-  {
-   "eic": "15WVEOT1----VPPS",
-   "name": "VEO1ae",
-   "psr": "B04",
-   "mw": 33.7
   },
   {
    "eic": "15WSKOVP1----WTR",
@@ -67,19 +61,13 @@
    "eic": "15W-KECKPV--AE-X",
    "name": "KECKPVae",
    "psr": "B16",
-   "mw": 20
+   "mw": 19.98
   },
   {
    "eic": "15WDUNAPVSZ-VPP9",
    "name": "DUNAPVSZK_gép1",
    "psr": "B16",
    "mw": 17.4
-  },
-  {
-   "eic": "15W-GREEBAB-AE-B",
-   "name": "GREEBABae",
-   "psr": "B16",
-   "mw": 13.9
   },
   {
    "eic": "15WTUSKPV1---PVJ",
